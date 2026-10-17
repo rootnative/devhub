@@ -1,14 +1,10 @@
-import { stat } from 'node:fs/promises'
-import path from 'node:path'
-import { findBuild, scanStore } from '../store/builds'
-import { resolveHome } from '../store/home'
 import {
   EXIT_CODE,
-  errorMessage,
   parseCommandArgs,
   usageError,
   type CliContext,
 } from './context'
+import { findStoredBuild } from './find'
 
 export const WHERE_HELP = `Usage: devhub where <id> [options]
 
@@ -45,37 +41,8 @@ export async function whereCommand(
     return usageError(io, 'devhub where takes one build ID.', 'where')
   }
 
-  let found
-  try {
-    found = findBuild((await scanStore(resolveHome(context))).builds, query)
-  } catch (error) {
-    io.err(errorMessage(error))
-    return EXIT_CODE.failure
-  }
-  if (found.kind === 'none') {
-    io.err(
-      `The store has no build with an ID that starts with "${query}". Run devhub list to see the stored builds.`,
-    )
-    return EXIT_CODE.failure
-  }
-  if (found.kind === 'ambiguous') {
-    io.err(
-      [
-        `The ID "${query}" matches ${found.matches.length} stored builds:`,
-        ...found.matches.map((build) => `  ${build.id}`),
-        'Give more characters of the ID.',
-      ].join('\n'),
-    )
-    return EXIT_CODE.failure
-  }
-
-  const { build } = found
-  try {
-    await stat(build.path)
-  } catch {
-    io.err(
-      `The record of the build ${build.id} names the file ${build.path}, but the file does not exist. Delete the folder ${path.dirname(build.path)}, and then run devhub sync in the project to download the build again.`,
-    )
+  const build = await findStoredBuild(context, query)
+  if (build === undefined) {
     return EXIT_CODE.failure
   }
   io.out(

@@ -7,9 +7,10 @@ keeps every development build on your machine, finds the build that matches
 your current code by its native fingerprint, and starts a simulator or an
 emulator with that build in one action.
 
-> **Status:** Milestone 1, "Keep". DevHub downloads your EAS dev client
-> builds before EAS deletes them. Install and launch come in later
-> milestones. The package is not on npm yet.
+> **Status:** Milestone 2, "Install", is in progress. DevHub downloads your
+> EAS dev client builds before EAS deletes them, and installs a stored
+> Android build on a running emulator or device. Launch comes in a later
+> milestone. The package is not on npm yet.
 
 Source, design, and roadmap: https://github.com/rootnative/devhub
 
@@ -32,6 +33,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub list` | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
+| `devhub install <id>` | Installs a stored Android build on the one ready Android emulator or device. |
 
 Options of `devhub sync`:
 
@@ -40,7 +42,8 @@ Options of `devhub sync`:
 - `--dry-run` shows what the sync downloads, and downloads nothing.
 - `--json` prints the result as JSON.
 
-`devhub list`, `devhub where`, and `devhub devices` also accept `--json`.
+`devhub list`, `devhub where`, `devhub devices`, and `devhub install` also
+accept `--json`.
 Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.
@@ -80,6 +83,18 @@ shows only the booted iOS simulators, with their iOS version. tvOS, watchOS,
 and visionOS simulators do not show. If adb or Xcode is missing, DevHub
 writes a warning and lists the devices of the other tool. The exit code is
 `1` only when no tool works.
+
+### Install a build
+
+`devhub install <id>` installs a stored Android `.apk` with
+`adb -s <serial> install -r -d <apk>`. `-r` replaces the installed app, and
+`-d` lets you go back to an older build. The command needs exactly one ready
+Android emulator or device. It does not start a device, and it does not open
+the app.
+
+To load the JavaScript of the project, run `npx expo start` in the project
+folder, and press `a`. Expo CLI then opens the installed dev client with the
+URL of Metro.
 
 ### The store
 

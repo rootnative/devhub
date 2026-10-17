@@ -7,6 +7,7 @@ import {
   type CliContext,
 } from './context'
 import { devicesCommand } from './devices'
+import { installCommand } from './install'
 import { listCommand } from './list'
 import { syncCommand } from './sync'
 import { whereCommand } from './where'
@@ -19,10 +20,11 @@ Keep every dev build. Launch any one in one click.
 Usage: devhub <command> [options]
 
 Commands:
-  sync        Download the EAS dev client builds of this project.
-  list        Show the stored builds.
-  where <id>  Print the path of a stored build file.
-  devices     List the Android devices and the iOS simulators.
+  sync          Download the EAS dev client builds of this project.
+  list          Show the stored builds.
+  where <id>    Print the path of a stored build file.
+  devices       List the Android devices and the iOS simulators.
+  install <id>  Install a stored Android build on the ready device.
 
 Options:
   -h, --help     Show this help.
@@ -38,6 +40,7 @@ const COMMANDS: Record<
   list: listCommand,
   where: whereCommand,
   devices: devicesCommand,
+  install: installCommand,
 }
 
 export async function run(

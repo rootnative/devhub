@@ -14,6 +14,8 @@ export {
   adbAvdNameCommand,
   adbDevice,
   adbDevicesCommand,
+  adbInstallCommand,
+  adbInstallFailure,
   isEmulatorSerial,
   listAndroidDevices,
   parseAdbDevices,
@@ -67,6 +69,11 @@ export {
   withExtraProfiles,
   type SyncProfile,
 } from './eas/profiles'
+export {
+  installBuild,
+  installProblem,
+  type InstallOptions,
+} from './install/install'
 export {
   findBuild,
   scanStore,

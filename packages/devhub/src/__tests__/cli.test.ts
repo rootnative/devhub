@@ -43,7 +43,7 @@ describe('devhub CLI', () => {
     },
   )
 
-  it.each([['sync'], ['list'], ['where'], ['devices']])(
+  it.each([['sync'], ['list'], ['where'], ['devices'], ['install']])(
     'devhub %s --help prints the help of the command',
     async (command) => {
       const { io, out } = capture()
@@ -64,6 +64,8 @@ describe('devhub CLI', () => {
     [['where'], 'needs a build ID', 'devhub where --help'],
     [['where', 'a', 'b'], 'takes one build ID', 'devhub where --help'],
     [['devices', 'extra'], 'takes no arguments', 'devhub devices --help'],
+    [['install'], 'needs a build ID', 'devhub install --help'],
+    [['install', 'a', 'b'], 'takes one build ID', 'devhub install --help'],
   ])('args %j give a usage error', async (argv, message, help) => {
     const { io, out, err } = capture()
 
@@ -600,5 +602,153 @@ describe('devhub devices', () => {
     expect(out).toEqual([
       'No device runs now. Start an emulator or a simulator, or connect a device with USB debugging on.',
     ])
+  })
+})
+
+describe('devhub install', () => {
+  const tempDir = useTempDir()
+  const EMULATOR_LINE =
+    'emulator-5554  device product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64'
+  const PHONE_LINE = 'R58M12ABCDE    unauthorized usb:1-1'
+
+  function adbList(...lines: string[]): string {
+    return ['List of devices attached', ...lines, ''].join('\n')
+  }
+
+  async function store() {
+    const home = await tempDir()
+    const file = await writeStoredBuild(home, easBuild({ id: ID_A }))
+    return { home, file }
+  }
+
+  it('installs the build on the one ready device', async () => {
+    const { home, file } = await store()
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({
+      devices: adbList(EMULATOR_LINE, PHONE_LINE),
+      avdNames: { 'emulator-5554': 'Pixel_Light_34' },
+    })
+
+    expect(
+      await run(['install', 'aaaa'], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.ok)
+    expect(out).toEqual([
+      `Installed the build ${ID_A} on Pixel_Light_34 (emulator-5554).`,
+    ])
+    expect(err).toEqual([
+      `Installing the build ${ID_A} on Pixel_Light_34 (emulator-5554).`,
+    ])
+    expect(tools.calls.at(-1)?.slice(1)).toEqual([
+      '-s',
+      'emulator-5554',
+      'install',
+      '-r',
+      '-d',
+      file,
+    ])
+  })
+
+  it('prints the build and the device as JSON', async () => {
+    const { home, file } = await store()
+    const { io, out } = capture()
+    const tools = fakeDeviceTools({ devices: adbList(EMULATOR_LINE) })
+
+    await run(
+      ['install', ID_A, '--json'],
+      testContext({ io, home, run: tools.run }),
+    )
+
+    expect(JSON.parse(out.join('\n'))).toEqual({
+      id: ID_A,
+      path: file,
+      device: expect.objectContaining({ id: 'emulator-5554', ready: true }),
+    })
+  })
+
+  it('runs no device tool when the store has no such build', async () => {
+    const { home } = await store()
+    const { io, err } = capture()
+    const tools = fakeDeviceTools()
+
+    expect(
+      await run(['install', 'ffff'], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(err.join('\n')).toContain(
+      'The store has no build with an ID that starts with "ffff".',
+    )
+    expect(tools.calls).toEqual([])
+  })
+
+  it('runs no device tool for a build that is not an Android .apk', async () => {
+    const home = await tempDir()
+    await writeStoredBuild(
+      home,
+      easBuild({ id: ID_B, platform: 'IOS', isForIosSimulator: true }),
+      'app.tar.gz',
+    )
+    const { io, err } = capture()
+    const tools = fakeDeviceTools()
+
+    expect(
+      await run(['install', ID_B], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(err).toEqual([
+      `DevHub can install only an Android .apk build now. The build ${ID_B} is the file app.tar.gz.`,
+    ])
+    expect(tools.calls).toEqual([])
+  })
+
+  it.each([
+    ['no device is ready', adbList(PHONE_LINE), 0],
+    [
+      'two devices are ready',
+      adbList(EMULATOR_LINE, 'emulator-5556  device'),
+      2,
+    ],
+  ])('stops when %s', async (_label, devices, count) => {
+    const { home } = await store()
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({ devices })
+
+    expect(
+      await run(['install', ID_A], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(out).toEqual([])
+    expect(err).toEqual([
+      `devhub install needs exactly one ready Android emulator or device, and ${count} are ready. Run devhub devices to see the devices.`,
+    ])
+    expect(tools.calls.map((command) => command[3])).not.toContain('install')
+  })
+
+  it('stops with the fix when adb is missing', async () => {
+    const { home } = await store()
+    const { io, err } = capture()
+    const tools = fakeDeviceTools({ adbMissing: true })
+
+    expect(
+      await run(['install', ID_A], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(err.join('\n')).toContain('DevHub cannot find adb.')
+  })
+
+  it('reports a failed install with the end of the adb output', async () => {
+    const { home } = await store()
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({
+      devices: adbList(EMULATOR_LINE),
+      install: {
+        code: 1,
+        stdout: 'Performing Streamed Install\n',
+        stderr: 'adb: failed to install: Failure [INSTALL_FAILED_OLDER_SDK]\n',
+      },
+    })
+
+    expect(
+      await run(['install', ID_A], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(out).toEqual([])
+    expect(err.at(-1)).toMatch(
+      /^"adb install" failed with exit code 1\.\n.*\n.*INSTALL_FAILED_OLDER_SDK/,
+    )
   })
 })

@@ -4,7 +4,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach } from 'vitest'
 import type { CliContext, Io } from '../cli/context'
-import type { Command, CommandRunner } from '../command/run-command'
+import type {
+  Command,
+  CommandResult,
+  CommandRunner,
+} from '../command/run-command'
 import type { EasBuild } from '../eas/build'
 import { EAS_ON_PATH, EAS_WITH_NPX } from '../eas/cli'
 import {
@@ -112,8 +116,9 @@ export function fakeEas(
 /**
  * A fake for the device tools. adb answers `adb devices -l` with `devices`,
  * and `adb -s <serial> emu avd name` from `avdNames`. `xcrun simctl list`
- * answers with `simulators`. It finds a tool by the base name, because the
- * runner can get the full path of a real SDK.
+ * answers with `simulators`, and `adb -s <serial> install` with `install`.
+ * It finds a tool by the base name, because the runner can get the full
+ * path of a real SDK.
  */
 export function fakeDeviceTools(
   options: {
@@ -128,6 +133,8 @@ export function fakeDeviceTools(
     /** `true`: xcrun does not start. */
     xcrunMissing?: boolean
     simctlFailure?: { code: number; stderr: string }
+    /** The answer to `adb -s <serial> install`. The default is a success. */
+    install?: CommandResult
   } = {},
 ): FakeRunner {
   const calls: Command[] = []
@@ -163,6 +170,15 @@ export function fakeDeviceTools(
       }
     }
     const [, flag, serial = '', ...rest] = command
+    if (flag === '-s' && rest[0] === 'install') {
+      return (
+        options.install ?? {
+          code: 0,
+          stdout: 'Performing Streamed Install\nSuccess\n',
+          stderr: '',
+        }
+      )
+    }
     if (flag === '-s' && rest.join(' ') === 'emu avd name') {
       const name = options.avdNames?.[serial]
       return name === undefined

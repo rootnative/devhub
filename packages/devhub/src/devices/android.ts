@@ -3,6 +3,7 @@ import path from 'node:path'
 import {
   outputTail,
   type Command,
+  type CommandResult,
   type CommandRunner,
 } from '../command/run-command'
 import { DeviceError, runTool, type Device } from './device'
@@ -53,6 +54,35 @@ export function adbDevicesCommand(adb: string): Command {
 
 export function adbAvdNameCommand(adb: string, serial: string): Command {
   return [adb, '-s', serial, 'emu', 'avd', 'name']
+}
+
+/**
+ * `-r` replaces the installed app. `-d` allows an older version code, so the
+ * user can go back to an older build. Android allows `-d` only for a
+ * debuggable app, and a dev client is debuggable.
+ */
+export function adbInstallCommand(
+  adb: string,
+  serial: string,
+  apk: string,
+): Command {
+  return [adb, '-s', serial, 'install', '-r', '-d', apk]
+}
+
+/**
+ * Returns the reason that `adb install` failed, or `undefined` when it
+ * worked. An old adb exits with 0 after a failure, so the output decides
+ * too.
+ */
+export function adbInstallFailure(result: CommandResult): string | undefined {
+  const output = [result.stdout, result.stderr]
+    .map((text) => text.trim())
+    .filter((text) => text !== '')
+    .join('\n')
+  if (result.code === 0 && !/Failure \[/.test(output)) {
+    return undefined
+  }
+  return `"adb install" failed with exit code ${result.code}.${outputTail(output)}`
 }
 
 export type AdbEntry = {
