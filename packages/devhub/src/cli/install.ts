@@ -1,5 +1,6 @@
 import { listAndroidDevices, resolveAdb } from '../devices/android'
 import { DeviceError, type Device } from '../devices/device'
+import { selectDevice } from '../devices/select'
 import { installBuild, installProblem } from '../install/install'
 import {
   EXIT_CODE,
@@ -12,16 +13,19 @@ import { findStoredBuild } from './find'
 
 export const INSTALL_HELP = `Usage: devhub install <id> [options]
 
-Install a stored Android build on the emulator or device that is ready. <id>
+Install a stored Android build on an emulator or a device that is ready. <id>
 is the EAS build ID, or the start of it. "devhub list" shows the builds, and
 "devhub devices" shows the devices. DevHub does not start a device, and does
 not open the app.
 
 Options:
-  --json      Print the build and the device as JSON.
-  -h, --help  Show this help.`
+  --device <id>  The adb serial of the device. Necessary when two or more
+                 devices are ready.
+  --json         Print the build and the device as JSON.
+  -h, --help     Show this help.`
 
 const OPTIONS = {
+  device: { type: 'string' },
   json: { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
 } as const
@@ -60,16 +64,19 @@ export async function installCommand(
   const adb = resolveAdb(context)
   let device: Device
   try {
-    const ready = (
-      await listAndroidDevices(context.run, adb, context.cwd)
-    ).filter((candidate) => candidate.ready)
-    if (ready.length !== 1 || ready[0] === undefined) {
-      io.err(
-        `devhub install needs exactly one ready Android emulator or device, and ${ready.length} are ready. Run devhub devices to see the devices.`,
-      )
+    const choice = selectDevice(
+      await listAndroidDevices(context.run, adb, context.cwd),
+      'android',
+      parsed.values.device,
+    )
+    if (choice.kind === 'error') {
+      if (choice.usage) {
+        return usageError(io, choice.message, 'install')
+      }
+      io.err(choice.message)
       return EXIT_CODE.failure
     }
-    device = ready[0]
+    device = choice.device
     io.err(`Installing the build ${build.id} on ${device.name} (${device.id}).`)
     await installBuild(build, device, {
       run: context.run,

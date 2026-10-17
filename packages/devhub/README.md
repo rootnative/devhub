@@ -33,7 +33,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub list` | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
-| `devhub install <id>` | Installs a stored Android build on the one ready Android emulator or device. |
+| `devhub install <id>` | Installs a stored Android build on a ready Android emulator or device. |
 
 Options of `devhub sync`:
 
@@ -88,9 +88,13 @@ writes a warning and lists the devices of the other tool. The exit code is
 
 `devhub install <id>` installs a stored Android `.apk` with
 `adb -s <serial> install -r -d <apk>`. `-r` replaces the installed app, and
-`-d` lets you go back to an older build. The command needs exactly one ready
-Android emulator or device. It does not start a device, and it does not open
-the app.
+`-d` lets you go back to an older build. It does not start a device, and it
+does not open the app.
+
+When one Android emulator or device is ready, DevHub uses it. When two or
+more are ready, select one with `--device <serial>`. `devhub devices` shows
+the serials. When no device is ready, DevHub gives the reason for each
+device.
 
 To load the JavaScript of the project, run `npx expo start` in the project
 folder, and press `a`. Expo CLI then opens the installed dev client with the

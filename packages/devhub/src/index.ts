@@ -43,6 +43,7 @@ export {
   type DeviceListOptions,
   type DeviceSource,
 } from './devices/list'
+export { selectDevice, type DeviceChoice } from './devices/select'
 export {
   artifactUrl,
   isExpired,

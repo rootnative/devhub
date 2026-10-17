@@ -15,6 +15,7 @@ import {
   simctlListCommand,
 } from '../devices/ios'
 import { listDevices } from '../devices/list'
+import { selectDevice } from '../devices/select'
 import { fakeDeviceTools } from './helpers'
 
 const ADB_OUTPUT = [
@@ -451,5 +452,97 @@ describe('listDevices on macOS', () => {
       expect(list.sources).toEqual([{ platform: 'android' }])
       expect(tools.calls.map(([program]) => program)).not.toContain('xcrun')
     }
+  })
+})
+
+describe('selectDevice', () => {
+  const emulator = adbDevice(
+    { serial: 'emulator-5554', state: 'device', fields: {} },
+    'Pixel_Light_34',
+  )
+  const phone = adbDevice({
+    serial: '4Z01Z3227Y353006313',
+    state: 'device',
+    fields: { model: 'Nokia_C32' },
+  })
+  const locked = adbDevice({
+    serial: 'R58M12ABCDE',
+    state: 'unauthorized',
+    fields: {},
+  })
+
+  it('selects the one ready device', () => {
+    expect(selectDevice([emulator, locked], 'android')).toEqual({
+      kind: 'selected',
+      device: emulator,
+    })
+  })
+
+  it('asks for --device, as a usage error, when two devices are ready', () => {
+    expect(selectDevice([emulator, phone, locked], 'android')).toEqual({
+      kind: 'error',
+      usage: true,
+      message: [
+        '2 devices are ready. Select one with --device <id>:',
+        '  emulator-5554        Pixel_Light_34',
+        '  4Z01Z3227Y353006313  Nokia C32',
+      ].join('\n'),
+    })
+  })
+
+  it('gives the reason of each device when no device is ready', () => {
+    expect(selectDevice([locked], 'android')).toEqual({
+      kind: 'error',
+      usage: false,
+      message: [
+        'No Android emulator or device is ready:',
+        '  R58M12ABCDE  Unlock the device, and accept the USB debugging prompt on it.',
+      ].join('\n'),
+    })
+  })
+
+  it.each([
+    [
+      'android',
+      'No Android emulator or device runs now. Start an emulator, or connect a device with USB debugging on. Then run the command again.',
+    ],
+    [
+      'ios',
+      'No iOS simulator runs now. Boot a simulator, and then run the command again.',
+    ],
+  ] as const)(
+    'says how to start a %s device when none runs',
+    (platform, message) => {
+      expect(selectDevice([], platform)).toEqual({
+        kind: 'error',
+        usage: false,
+        message,
+      })
+    },
+  )
+
+  it('selects the device that --device names, with or without the same case', () => {
+    expect(selectDevice([emulator, phone], 'android', phone.id)).toEqual({
+      kind: 'selected',
+      device: phone,
+    })
+    expect(selectDevice([emulator, phone], 'android', 'EMULATOR-5554')).toEqual(
+      { kind: 'selected', device: emulator },
+    )
+  })
+
+  it('stops when --device names no device, or a device that is not ready', () => {
+    expect(selectDevice([emulator], 'android', 'emulator-9999')).toEqual({
+      kind: 'error',
+      usage: false,
+      message:
+        'No running Android emulator or device has the ID "emulator-9999". Run devhub devices to see the devices.',
+    })
+    expect(selectDevice([emulator, locked], 'android', 'R58M12ABCDE')).toEqual({
+      kind: 'error',
+      usage: false,
+      message:
+        'The device R58M12ABCDE is not ready. Unlock the device, and accept the USB debugging prompt on it.',
+    })
   })
 })

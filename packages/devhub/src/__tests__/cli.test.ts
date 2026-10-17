@@ -698,26 +698,106 @@ describe('devhub install', () => {
     expect(tools.calls).toEqual([])
   })
 
-  it.each([
-    ['no device is ready', adbList(PHONE_LINE), 0],
-    [
-      'two devices are ready',
-      adbList(EMULATOR_LINE, 'emulator-5556  device'),
-      2,
-    ],
-  ])('stops when %s', async (_label, devices, count) => {
+  function installCalls(tools: { calls: (readonly string[])[] }) {
+    return tools.calls.filter((command) => command[3] === 'install')
+  }
+
+  it('stops with the reason of each device when no device is ready', async () => {
     const { home } = await store()
     const { io, out, err } = capture()
-    const tools = fakeDeviceTools({ devices })
+    const tools = fakeDeviceTools({ devices: adbList(PHONE_LINE) })
 
     expect(
       await run(['install', ID_A], testContext({ io, home, run: tools.run })),
     ).toBe(EXIT_CODE.failure)
     expect(out).toEqual([])
     expect(err).toEqual([
-      `devhub install needs exactly one ready Android emulator or device, and ${count} are ready. Run devhub devices to see the devices.`,
+      [
+        'No Android emulator or device is ready:',
+        '  R58M12ABCDE  Unlock the device, and accept the USB debugging prompt on it.',
+      ].join('\n'),
     ])
-    expect(tools.calls.map((command) => command[3])).not.toContain('install')
+    expect(installCalls(tools)).toEqual([])
+  })
+
+  it('says how to start a device when no device runs', async () => {
+    const { home } = await store()
+    const { io, err } = capture()
+    const tools = fakeDeviceTools()
+
+    expect(
+      await run(['install', ID_A], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.failure)
+    expect(err).toEqual([
+      'No Android emulator or device runs now. Start an emulator, or connect a device with USB debugging on. Then run the command again.',
+    ])
+  })
+
+  it('asks for --device with a usage error when two devices are ready', async () => {
+    const { home } = await store()
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({
+      devices: adbList(EMULATOR_LINE, 'emulator-5556  device'),
+    })
+
+    expect(
+      await run(['install', ID_A], testContext({ io, home, run: tools.run })),
+    ).toBe(EXIT_CODE.usage)
+    expect(out).toEqual([])
+    expect(err.join('\n')).toContain(
+      '2 devices are ready. Select one with --device <id>:\n  emulator-5554',
+    )
+    expect(err.join('\n')).toContain('Run "devhub install --help"')
+    expect(installCalls(tools)).toEqual([])
+  })
+
+  it('installs on the device that --device names', async () => {
+    const { home, file } = await store()
+    const { io, out } = capture()
+    const tools = fakeDeviceTools({
+      devices: adbList(EMULATOR_LINE, 'emulator-5556  device'),
+    })
+
+    expect(
+      await run(
+        ['install', ID_A, '--device', 'emulator-5556'],
+        testContext({ io, home, run: tools.run }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(out).toEqual([
+      `Installed the build ${ID_A} on emulator-5556 (emulator-5556).`,
+    ])
+    expect(installCalls(tools).map((command) => command.slice(1))).toEqual([
+      ['-s', 'emulator-5556', 'install', '-r', '-d', file],
+    ])
+  })
+
+  it.each([
+    [
+      'no running device',
+      'emulator-9999',
+      'No running Android emulator or device has the ID "emulator-9999". Run devhub devices to see the devices.',
+    ],
+    [
+      'a device that is not ready',
+      'R58M12ABCDE',
+      'The device R58M12ABCDE is not ready. Unlock the device, and accept the USB debugging prompt on it.',
+    ],
+  ])('stops when --device names %s', async (_label, wanted, message) => {
+    const { home } = await store()
+    const { io, err } = capture()
+    const tools = fakeDeviceTools({
+      devices: adbList(EMULATOR_LINE, PHONE_LINE),
+    })
+
+    expect(
+      await run(
+        ['install', ID_A, '--device', wanted],
+        testContext({ io, home, run: tools.run }),
+      ),
+    ).toBe(EXIT_CODE.failure)
+    expect(err).toEqual([message])
+    expect(installCalls(tools)).toEqual([])
   })
 
   it('stops with the fix when adb is missing', async () => {
