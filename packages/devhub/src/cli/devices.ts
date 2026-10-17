@@ -10,8 +10,9 @@ import { formatTable } from './format'
 
 export const DEVICES_HELP = `Usage: devhub devices [options]
 
-List the Android emulators and devices that adb sees. DevHub can install a
-build on a device in the state "ready".
+List the Android emulators and devices that adb sees, and on macOS the iOS
+simulators that run now. DevHub can install a build on a device in the state
+"ready".
 
 Options:
   --json      Print the devices as JSON.
@@ -63,8 +64,12 @@ export async function devicesCommand(
   if (devices.length > 0) {
     io.out(formatTable([HEADER, ...devices.map(deviceRow)]).join('\n'))
   } else if (exitCode === EXIT_CODE.ok) {
+    const start =
+      context.platform === 'darwin'
+        ? 'Start an emulator or a simulator'
+        : 'Start an emulator'
     io.out(
-      'No device runs now. Start an emulator, or connect a device with USB debugging on.',
+      `No device runs now. ${start}, or connect a device with USB debugging on.`,
     )
   }
   return exitCode
@@ -75,7 +80,9 @@ function deviceRow(device: Device): string[] {
     device.id,
     device.platform,
     device.kind,
-    device.name,
+    device.osVersion === undefined
+      ? device.name
+      : `${device.name} (iOS ${device.osVersion})`,
     device.ready ? 'ready' : device.state,
   ]
 }

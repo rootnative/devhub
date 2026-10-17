@@ -110,36 +110,51 @@ export function fakeEas(
 }
 
 /**
- * A fake adb that answers `adb devices -l` with `devices`, and
- * `adb -s <serial> emu avd name` from `avdNames`. It finds adb by the base
- * name, because the runner can get the full path of a real SDK.
+ * A fake for the device tools. adb answers `adb devices -l` with `devices`,
+ * and `adb -s <serial> emu avd name` from `avdNames`. `xcrun simctl list`
+ * answers with `simulators`. It finds a tool by the base name, because the
+ * runner can get the full path of a real SDK.
  */
-export function fakeAdb(
+export function fakeDeviceTools(
   options: {
     devices?: string
     /** The AVD name of each emulator serial. A missing serial fails. */
     avdNames?: Record<string, string>
     /** `true`: adb does not start. */
-    missing?: boolean
-    failure?: { code: number; stderr: string }
+    adbMissing?: boolean
+    adbFailure?: { code: number; stderr: string }
+    /** The JSON value that `xcrun simctl list devices --json` prints. */
+    simulators?: unknown
+    /** `true`: xcrun does not start. */
+    xcrunMissing?: boolean
+    simctlFailure?: { code: number; stderr: string }
   } = {},
 ): FakeRunner {
   const calls: Command[] = []
+  const notFound = (program: string) =>
+    Object.assign(new Error(`spawn ${program} ENOENT`), { code: 'ENOENT' })
   const run: CommandRunner = async (command) => {
     calls.push(command)
     const program = path.basename(command[0]).replace(/\.exe$/i, '')
-    if (program !== 'adb' || options.missing) {
-      throw Object.assign(new Error(`spawn ${command[0]} ENOENT`), {
-        code: 'ENOENT',
-      })
+    if (program === 'xcrun') {
+      if (options.xcrunMissing) {
+        throw notFound(command[0])
+      }
+      if (options.simctlFailure) {
+        return { stdout: '', ...options.simctlFailure }
+      }
+      return {
+        code: 0,
+        stdout: JSON.stringify(options.simulators ?? { devices: {} }),
+        stderr: '',
+      }
+    }
+    if (program !== 'adb' || options.adbMissing) {
+      throw notFound(command[0])
     }
     if (command[1] === 'devices') {
-      if (options.failure) {
-        return {
-          code: options.failure.code,
-          stdout: '',
-          stderr: options.failure.stderr,
-        }
+      if (options.adbFailure) {
+        return { stdout: '', ...options.adbFailure }
       }
       return {
         code: 0,

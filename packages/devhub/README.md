@@ -31,7 +31,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub sync --all` | Runs the sync for each project folder that `devhub sync` saw before. |
 | `devhub list` | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
-| `devhub devices` | Lists the Android emulators and devices that adb sees, with their state. |
+| `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
 
 Options of `devhub sync`:
 
@@ -74,6 +74,12 @@ device needs you to accept the USB debugging prompt on it.
 
 A ready emulator shows its AVD name, from `adb emu avd name`. If the
 emulator console does not answer, the emulator shows its model name.
+
+On macOS, `devhub devices` also runs `xcrun simctl list devices --json`. It
+shows only the booted iOS simulators, with their iOS version. tvOS, watchOS,
+and visionOS simulators do not show. If adb or Xcode is missing, DevHub
+writes a warning and lists the devices of the other tool. The exit code is
+`1` only when no tool works.
 
 ### The store
 

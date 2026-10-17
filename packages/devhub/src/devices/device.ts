@@ -22,6 +22,8 @@ export type Device = {
   ready: boolean
   /** Why DevHub cannot install on the device now, and the fix. */
   problem?: string
+  /** The iOS version of a simulator. */
+  osVersion?: string
 }
 
 /** A device tool failed, or a build cannot go on a device. */

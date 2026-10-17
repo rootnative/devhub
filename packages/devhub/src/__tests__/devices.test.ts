@@ -8,8 +8,14 @@ import {
   parseAvdName,
   resolveAdb,
 } from '../devices/android'
+import {
+  XCRUN_MISSING,
+  iosRuntimeVersion,
+  parseSimctlDevices,
+  simctlListCommand,
+} from '../devices/ios'
 import { listDevices } from '../devices/list'
-import { fakeAdb } from './helpers'
+import { fakeDeviceTools } from './helpers'
 
 const ADB_OUTPUT = [
   '* daemon not running; starting now at tcp:5037',
@@ -215,7 +221,7 @@ describe('listDevices', () => {
   }
 
   it('lists the adb devices', async () => {
-    const adb = fakeAdb({ devices: ADB_OUTPUT })
+    const adb = fakeDeviceTools({ devices: ADB_OUTPUT })
 
     const list = await listDevices({ ...options, run: adb.run })
 
@@ -225,7 +231,7 @@ describe('listDevices', () => {
   })
 
   it('reads the AVD name of each ready emulator, and of no other device', async () => {
-    const adb = fakeAdb({
+    const adb = fakeDeviceTools({
       devices: [
         'List of devices attached',
         'emulator-5554  device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64',
@@ -249,7 +255,7 @@ describe('listDevices', () => {
   })
 
   it('keeps the model name when the emulator console does not answer', async () => {
-    const adb = fakeAdb({ devices: ADB_OUTPUT })
+    const adb = fakeDeviceTools({ devices: ADB_OUTPUT })
 
     const list = await listDevices({ ...options, run: adb.run })
 
@@ -260,7 +266,7 @@ describe('listDevices', () => {
   it('gives the install fix when adb is missing', async () => {
     const list = await listDevices({
       ...options,
-      run: fakeAdb({ missing: true }).run,
+      run: fakeDeviceTools({ adbMissing: true }).run,
     })
 
     expect(list.devices).toEqual([])
@@ -268,8 +274,8 @@ describe('listDevices', () => {
   })
 
   it('reports a failed adb with the end of its stderr', async () => {
-    const run = fakeAdb({
-      failure: { code: 1, stderr: 'error: protocol fault' },
+    const run = fakeDeviceTools({
+      adbFailure: { code: 1, stderr: 'error: protocol fault' },
     }).run
 
     const list = await listDevices({ ...options, run })
@@ -277,5 +283,173 @@ describe('listDevices', () => {
     expect(list.sources[0]?.error).toMatch(
       /"adb devices" failed with exit code 1\.\nerror: protocol fault/,
     )
+  })
+})
+
+const SIMCTL_LIST = {
+  devices: {
+    'com.apple.CoreSimulator.SimRuntime.iOS-18-6': [
+      {
+        udid: '188FFDBB-80E1-4C86-A9AC-95A4586ACA33',
+        name: 'iPhone 16 Pro',
+        state: 'Booted',
+        isAvailable: true,
+        deviceTypeIdentifier:
+          'com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro',
+      },
+      { udid: 'SHUTDOWN-1', name: 'iPhone 16', state: 'Shutdown' },
+      {
+        udid: 'UNAVAILABLE-1',
+        name: 'iPhone 15',
+        state: 'Booted',
+        isAvailable: false,
+      },
+      { name: 'No UDID', state: 'Booted' },
+    ],
+    'com.apple.CoreSimulator.SimRuntime.iOS-26-0': [
+      { udid: 'IPAD-1', name: 'iPad Air', state: 'Booted' },
+    ],
+    'com.apple.CoreSimulator.SimRuntime.tvOS-18-4': [
+      { udid: 'TV-1', name: 'Apple TV', state: 'Booted' },
+    ],
+    'com.apple.CoreSimulator.SimRuntime.watchOS-11-4': [
+      { udid: 'WATCH-1', name: 'Apple Watch', state: 'Booted' },
+    ],
+    'com.apple.CoreSimulator.SimRuntime.xrOS-2-4': [
+      { udid: 'VISION-1', name: 'Apple Vision Pro', state: 'Booted' },
+    ],
+  },
+}
+
+describe('simctlListCommand', () => {
+  it('asks for every simulator as JSON', () => {
+    expect(simctlListCommand()).toEqual([
+      'xcrun',
+      'simctl',
+      'list',
+      'devices',
+      '--json',
+    ])
+  })
+})
+
+describe('iosRuntimeVersion', () => {
+  it.each([
+    ['com.apple.CoreSimulator.SimRuntime.iOS-18-6', '18.6'],
+    ['com.apple.CoreSimulator.SimRuntime.iOS-26-0', '26.0'],
+    ['com.apple.CoreSimulator.SimRuntime.iOS-17-0-1', '17.0.1'],
+    ['iOS 12.1', '12.1'],
+    ['com.apple.CoreSimulator.SimRuntime.tvOS-18-4', undefined],
+    ['com.apple.CoreSimulator.SimRuntime.watchOS-11-4', undefined],
+    ['com.apple.CoreSimulator.SimRuntime.xrOS-2-4', undefined],
+    ['tvOS 12.1', undefined],
+  ])('reads %s as %s', (runtime, version) => {
+    expect(iosRuntimeVersion(runtime)).toBe(version)
+  })
+})
+
+describe('parseSimctlDevices', () => {
+  it('keeps only the booted iOS simulators that are available', () => {
+    expect(parseSimctlDevices(JSON.stringify(SIMCTL_LIST))).toEqual([
+      {
+        platform: 'ios',
+        kind: 'simulator',
+        id: '188FFDBB-80E1-4C86-A9AC-95A4586ACA33',
+        name: 'iPhone 16 Pro',
+        state: 'Booted',
+        ready: true,
+        osVersion: '18.6',
+      },
+      {
+        platform: 'ios',
+        kind: 'simulator',
+        id: 'IPAD-1',
+        name: 'iPad Air',
+        state: 'Booted',
+        ready: true,
+        osVersion: '26.0',
+      },
+    ])
+  })
+
+  it.each([['not json'], ['[]'], ['{"devices": []}']])(
+    'rejects the output %j',
+    (stdout) => {
+      expect(() => parseSimctlDevices(stdout)).toThrow(
+        /"xcrun simctl list" printed output that DevHub cannot read/,
+      )
+    },
+  )
+})
+
+describe('listDevices on macOS', () => {
+  const options = {
+    env: {},
+    platform: 'darwin' as const,
+    homedir: '/nowhere',
+    cwd: '/',
+  }
+
+  it('lists the adb devices and then the booted simulators', async () => {
+    const tools = fakeDeviceTools({
+      devices: 'List of devices attached\nemulator-5554  device\n',
+      simulators: SIMCTL_LIST,
+    })
+
+    const list = await listDevices({ ...options, run: tools.run })
+
+    expect(list.devices.map((device) => device.id)).toEqual([
+      'emulator-5554',
+      '188FFDBB-80E1-4C86-A9AC-95A4586ACA33',
+      'IPAD-1',
+    ])
+    expect(list.sources).toEqual([{ platform: 'android' }, { platform: 'ios' }])
+  })
+
+  it('keeps the simulators when adb is missing', async () => {
+    const tools = fakeDeviceTools({ adbMissing: true, simulators: SIMCTL_LIST })
+
+    const list = await listDevices({ ...options, run: tools.run })
+
+    expect(list.devices).toHaveLength(2)
+    expect(list.sources).toEqual([
+      { platform: 'android', error: ADB_MISSING },
+      { platform: 'ios' },
+    ])
+  })
+
+  it('gives the Xcode fix when xcrun is missing', async () => {
+    const tools = fakeDeviceTools({ xcrunMissing: true })
+
+    const list = await listDevices({ ...options, run: tools.run })
+
+    expect(list.sources[1]).toEqual({ platform: 'ios', error: XCRUN_MISSING })
+  })
+
+  it('gives the xcode-select fix when simctl fails', async () => {
+    const tools = fakeDeviceTools({
+      simctlFailure: {
+        code: 72,
+        stderr:
+          'xcrun: error: unable to find utility "simctl", not a developer tool or in PATH',
+      },
+    })
+
+    const list = await listDevices({ ...options, run: tools.run })
+
+    expect(list.sources[1]?.error).toMatch(
+      /^"xcrun simctl list" failed with exit code 72\. Install Xcode, and select it with "sudo xcode-select --switch \/Applications\/Xcode\.app"\.\nxcrun: error: unable to find utility "simctl"/,
+    )
+  })
+
+  it('does not run xcrun on Linux or Windows', async () => {
+    for (const platform of ['linux', 'win32'] as const) {
+      const tools = fakeDeviceTools()
+
+      const list = await listDevices({ ...options, platform, run: tools.run })
+
+      expect(list.sources).toEqual([{ platform: 'android' }])
+      expect(tools.calls.map(([program]) => program)).not.toContain('xcrun')
+    }
   })
 })

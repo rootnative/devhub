@@ -22,7 +22,7 @@ Commands:
   sync        Download the EAS dev client builds of this project.
   list        Show the stored builds.
   where <id>  Print the path of a stored build file.
-  devices     List the Android emulators and devices.
+  devices     List the Android devices and the iOS simulators.
 
 Options:
   -h, --help     Show this help.

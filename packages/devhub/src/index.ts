@@ -29,6 +29,13 @@ export {
   type DevicePlatform,
 } from './devices/device'
 export {
+  XCRUN_MISSING,
+  iosRuntimeVersion,
+  listIosSimulators,
+  parseSimctlDevices,
+  simctlListCommand,
+} from './devices/ios'
+export {
   listDevices,
   type DeviceList,
   type DeviceListOptions,

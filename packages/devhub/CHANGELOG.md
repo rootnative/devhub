@@ -27,7 +27,8 @@ Nothing is on npm yet.
   EAS build ID, or a unique start of it.
 - `devhub devices` lists the Android emulators and devices that adb sees,
   with their state, and the fix for a device that is not ready. A ready
-  emulator shows its AVD name. It accepts `--json`.
+  emulator shows its AVD name. On macOS, it also lists the booted iOS
+  simulators. It accepts `--json`.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`
@@ -35,7 +36,7 @@ Nothing is on npm yet.
   lock stops a second sync while one runs.
 - The core API that the CLI uses: `syncProjects`, `scanStore`, `findBuild`,
   `devClientProfiles`, `resolveHome`, `listDevices`, `resolveAdb`, and the
-  `eas` and `adb` command builders.
+  `eas`, `adb`, and `simctl` command builders.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli

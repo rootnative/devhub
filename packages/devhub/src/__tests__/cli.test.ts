@@ -7,7 +7,7 @@ import { buildFolder } from '../store/builds'
 import {
   capture,
   easBuild,
-  fakeAdb,
+  fakeDeviceTools,
   fakeDownload,
   fakeEas,
   testContext,
@@ -414,7 +414,7 @@ describe('devhub devices', () => {
 
   it('shows each device, and a note for a device that is not ready', async () => {
     const { io, out, err } = capture()
-    const adb = fakeAdb({
+    const adb = fakeDeviceTools({
       devices: ADB_OUTPUT,
       avdNames: { 'emulator-5554': 'Pixel_8_API_35' },
     })
@@ -422,7 +422,7 @@ describe('devhub devices', () => {
     expect(
       await run(
         ['devices'],
-        testContext({ io, home: '/unused', run: adb.run }),
+        testContext({ io, home: '/unused', platform: 'linux', run: adb.run }),
       ),
     ).toBe(EXIT_CODE.ok)
     expect(out.join('\n').split('\n')).toEqual([
@@ -441,12 +441,12 @@ describe('devhub devices', () => {
 
   it('prints the devices as JSON', async () => {
     const { io, out } = capture()
-    const adb = fakeAdb({ devices: ADB_OUTPUT })
+    const adb = fakeDeviceTools({ devices: ADB_OUTPUT })
 
     expect(
       await run(
         ['devices', '--json'],
-        testContext({ io, home: '/unused', run: adb.run }),
+        testContext({ io, home: '/unused', platform: 'linux', run: adb.run }),
       ),
     ).toBe(EXIT_CODE.ok)
     const result = JSON.parse(out.join('\n')) as {
@@ -467,7 +467,12 @@ describe('devhub devices', () => {
     expect(
       await run(
         ['devices'],
-        testContext({ io, home: '/unused', run: fakeAdb().run }),
+        testContext({
+          io,
+          home: '/unused',
+          platform: 'linux',
+          run: fakeDeviceTools().run,
+        }),
       ),
     ).toBe(EXIT_CODE.ok)
     expect(out).toEqual([
@@ -480,12 +485,12 @@ describe('devhub devices', () => {
     'args %j fail with the fix when adb is missing',
     async (args) => {
       const { io, out, err } = capture()
-      const adb = fakeAdb({ missing: true })
+      const adb = fakeDeviceTools({ adbMissing: true })
 
       expect(
         await run(
           ['devices', ...args],
-          testContext({ io, home: '/unused', run: adb.run }),
+          testContext({ io, home: '/unused', platform: 'linux', run: adb.run }),
         ),
       ).toBe(EXIT_CODE.failure)
       expect(err.join('\n')).toContain('Warning: DevHub cannot find adb.')
@@ -499,4 +504,101 @@ describe('devhub devices', () => {
       }
     },
   )
+  const SIMULATORS = {
+    devices: {
+      'com.apple.CoreSimulator.SimRuntime.iOS-18-6': [
+        { udid: 'AAAA-1111', name: 'iPhone 16', state: 'Booted' },
+        { udid: 'BBBB-2222', name: 'iPhone 15', state: 'Shutdown' },
+      ],
+    },
+  }
+
+  it('also shows the booted iOS simulators on macOS', async () => {
+    const { io, out } = capture()
+    const tools = fakeDeviceTools({
+      devices: ADB_OUTPUT,
+      avdNames: { 'emulator-5554': 'Pixel_8_API_35' },
+      simulators: SIMULATORS,
+    })
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({
+          io,
+          home: '/unused',
+          platform: 'darwin',
+          run: tools.run,
+        }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(out.join('\n').split('\n')).toEqual([
+      expect.stringMatching(/^ID\s+PLATFORM\s+KIND\s+NAME\s+STATE$/),
+      expect.stringMatching(/^emulator-5554\s+android\s+emulator\s/),
+      expect.stringMatching(/^R58M12ABCDE\s+android\s+physical\s/),
+      expect.stringMatching(
+        /^AAAA-1111\s+ios\s+simulator\s+iPhone 16 \(iOS 18\.6\)\s+ready$/,
+      ),
+    ])
+  })
+
+  it('lists the simulators with a warning when adb is missing on macOS', async () => {
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({ adbMissing: true, simulators: SIMULATORS })
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({
+          io,
+          home: '/unused',
+          platform: 'darwin',
+          run: tools.run,
+        }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(err.join('\n')).toContain('Warning: DevHub cannot find adb.')
+    expect(out.join('\n')).toContain('iPhone 16 (iOS 18.6)')
+  })
+
+  it('fails on macOS when both adb and xcrun fail', async () => {
+    const { io, out, err } = capture()
+    const tools = fakeDeviceTools({ adbMissing: true, xcrunMissing: true })
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({
+          io,
+          home: '/unused',
+          platform: 'darwin',
+          run: tools.run,
+        }),
+      ),
+    ).toBe(EXIT_CODE.failure)
+    expect(out).toEqual([])
+    expect(err).toEqual([
+      expect.stringContaining('Warning: DevHub cannot find adb.'),
+      expect.stringContaining('Warning: DevHub cannot find xcrun.'),
+    ])
+  })
+
+  it('names a simulator in the message on macOS when no device runs', async () => {
+    const { io, out } = capture()
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({
+          io,
+          home: '/unused',
+          platform: 'darwin',
+          run: fakeDeviceTools().run,
+        }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(out).toEqual([
+      'No device runs now. Start an emulator or a simulator, or connect a device with USB debugging on.',
+    ])
+  })
 })
