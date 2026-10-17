@@ -57,6 +57,7 @@
     "clean": "node -e \"for (const p of ['dist', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
   },
   "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^22.20.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
@@ -64,5 +65,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.6",
+    "json5": "^2.2.3"
   }
 }

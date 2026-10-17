@@ -1,3 +1,61 @@
 import pkg from '../package.json' with { type: 'json' }
 
 export const version: string = pkg.version
+
+export {
+  runCommand,
+  type Command,
+  type CommandOptions,
+  type CommandResult,
+  type CommandRunner,
+} from './command/run-command'
+export {
+  artifactUrl,
+  isExpired,
+  type EasBuild,
+  type EasPlatform,
+} from './eas/build'
+export {
+  BUILD_LIST_PAGE_SIZE,
+  EasCliError,
+  checkEasLogin,
+  easBuildListCommand,
+  easWhoamiCommand,
+  listFinishedBuilds,
+} from './eas/cli'
+export {
+  EasJsonError,
+  devClientProfiles,
+  findEasProject,
+  parseEasJson,
+  readEasJson,
+  withExtraProfiles,
+  type SyncProfile,
+} from './eas/profiles'
+export {
+  findBuild,
+  scanStore,
+  type BuildRecord,
+  type FindResult,
+  type StoreScan,
+  type StoredBuild,
+} from './store/builds'
+export { resolveHome, type HomeOptions } from './store/home'
+export { StoreLockedError } from './store/lock'
+export { readProjects } from './store/projects'
+export {
+  downloadFile,
+  type DownloadResult,
+  type Downloader,
+} from './sync/download'
+export { planSync, type PlanItem, type ProfileBuilds } from './sync/plan'
+export {
+  syncFailed,
+  syncProjects,
+  type BuildOutcome,
+  type BuildStatus,
+  type ProjectSyncResult,
+  type SyncDeps,
+  type SyncOptions,
+  type SyncReport,
+} from './sync/sync'

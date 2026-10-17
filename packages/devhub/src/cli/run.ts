@@ -1,37 +1,57 @@
 import { parseArgs } from 'node:util'
 import { version } from '../index'
+import {
+  EXIT_CODE,
+  processContext,
+  usageError,
+  type CliContext,
+} from './context'
+import { listCommand } from './list'
+import { syncCommand } from './sync'
+import { whereCommand } from './where'
 
-export type Io = {
-  out: (text: string) => void
-  err: (text: string) => void
-}
-
-export const EXIT_CODE = {
-  ok: 0,
-  failure: 1,
-  usage: 2,
-} as const
-
-const processIo: Io = {
-  out: (text) => process.stdout.write(`${text}\n`),
-  err: (text) => process.stderr.write(`${text}\n`),
-}
+export { EXIT_CODE, type CliContext, type Io } from './context'
 
 const HELP = `RootNative DevHub ${version}
 Keep every dev build. Launch any one in one click.
 
-Usage: devhub [options]
+Usage: devhub <command> [options]
+
+Commands:
+  sync        Download the EAS dev client builds of this project.
+  list        Show the stored builds.
+  where <id>  Print the path of a stored build file.
 
 Options:
   -h, --help     Show this help.
   -v, --version  Show the version.
 
-DevHub has no commands yet.`
+Run "devhub <command> --help" to see the options of a command.`
+
+const COMMANDS: Record<
+  string,
+  (argv: readonly string[], context: CliContext) => Promise<number>
+> = {
+  sync: syncCommand,
+  list: listCommand,
+  where: whereCommand,
+}
 
 export async function run(
   argv: readonly string[],
-  io: Io = processIo,
+  context: Partial<CliContext> = {},
 ): Promise<number> {
+  const full: CliContext = { ...processContext(), ...context }
+  const { io } = full
+  const [first, ...rest] = argv
+  if (first !== undefined && !first.startsWith('-')) {
+    const command = Object.hasOwn(COMMANDS, first) ? COMMANDS[first] : undefined
+    if (command === undefined) {
+      return usageError(io, `Unknown command "${first}".`)
+    }
+    return command(rest, full)
+  }
+
   let parsed
   try {
     parsed = parseArgs({
@@ -40,29 +60,18 @@ export async function run(
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
       },
-      allowPositionals: true,
       strict: true,
     })
   } catch (error) {
-    io.err(
-      `${error instanceof Error ? error.message : String(error)}\nRun "devhub --help" to see the options.`,
+    return usageError(
+      io,
+      error instanceof Error ? error.message : String(error),
     )
-    return EXIT_CODE.usage
   }
-
   if (parsed.values.version) {
     io.out(version)
     return EXIT_CODE.ok
   }
-
-  const [command] = parsed.positionals
-  if (command === undefined || parsed.values.help) {
-    io.out(HELP)
-    return EXIT_CODE.ok
-  }
-
-  io.err(
-    `Unknown command "${command}".\nRun "devhub --help" to see the commands.`,
-  )
-  return EXIT_CODE.usage
+  io.out(HELP)
+  return EXIT_CODE.ok
 }

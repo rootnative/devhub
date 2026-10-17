@@ -12,8 +12,10 @@ every development build on your machine, finds the build that matches your
 current code, and starts a simulator or an emulator with that build in one
 action.
 
-> **Status:** repository setup. No feature works yet, and nothing is on npm.
-> This README describes the plan.
+> **Status:** Milestone 1, "Keep". `devhub sync`, `devhub list`, and
+> `devhub where` keep your EAS dev client builds. The other features below
+> are the plan. Nothing is on npm yet. The
+> [package README](packages/devhub/README.md) shows how to use the CLI.
 
 ## Why
 
