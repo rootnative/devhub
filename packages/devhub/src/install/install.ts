@@ -1,8 +1,15 @@
-import type { CommandRunner } from '../command/run-command'
+import { outputTail, type CommandRunner } from '../command/run-command'
 import { ADB_MISSING, adbInstallCommand } from '../devices/android'
-import { DeviceError, runTool, type Device } from '../devices/device'
+import {
+  DeviceError,
+  runTool,
+  type Device,
+  type DevicePlatform,
+} from '../devices/device'
+import { XCRUN_MISSING, simctlInstallCommand } from '../devices/ios'
 import type { StoredBuild } from '../store/builds'
 import { adbInstallFailure } from './adb-failure'
+import { unpackIosBuild } from './unpack'
 
 export type InstallOptions = {
   run: CommandRunner
@@ -11,11 +18,14 @@ export type InstallOptions = {
   cwd: string
   /** The system that DevHub runs on. */
   platform: NodeJS.Platform
+  /** The DevHub home, from `resolveHome`. An iOS build unpacks into it. */
+  home: string
 }
 
 /**
  * Returns why DevHub cannot install the build on this system, with the fix,
- * or `undefined` when it can. DevHub installs only an Android `.apk` now.
+ * or `undefined` when it can: for an Android `.apk`, and on macOS for an iOS
+ * simulator build.
  */
 export function installProblem(
   build: StoredBuild,
@@ -38,8 +48,16 @@ export function installProblem(
     if (name.endsWith('.ipa')) {
       return `The build ${build.id} is an iOS device build (${file}). A simulator cannot run it. ${profileFix(build, '"ios": { "simulator": true }')}`
     }
+    if (eas.isForIosSimulator === true || name.endsWith('.tar.gz')) {
+      return undefined
+    }
   }
-  return `DevHub can install only an Android .apk build now. The build ${build.id} is the file ${file}.`
+  return `DevHub cannot install the build ${build.id}. Its file ${file} is not an Android .apk or an iOS simulator build.`
+}
+
+/** The device platform of a build that `installProblem` accepts. */
+export function installPlatform(build: StoredBuild): DevicePlatform {
+  return build.record.eas.platform === 'IOS' ? 'ios' : 'android'
 }
 
 function profileFix(build: StoredBuild, setting: string): string {
@@ -64,6 +82,10 @@ export async function installBuild(
   if (problem !== undefined) {
     throw new DeviceError(problem)
   }
+  if (installPlatform(build) === 'ios') {
+    await installIosBuild(build, device, options)
+    return
+  }
   if (device.platform !== 'android' || !device.ready) {
     throw new DeviceError(
       `The device ${device.id} is not a ready Android device.`,
@@ -83,5 +105,29 @@ export async function installBuild(
   })
   if (failure !== undefined) {
     throw new DeviceError(failure)
+  }
+}
+
+async function installIosBuild(
+  build: StoredBuild,
+  device: Device,
+  options: InstallOptions,
+): Promise<void> {
+  if (device.platform !== 'ios' || !device.ready) {
+    throw new DeviceError(
+      `The device ${device.id} is not a booted iOS simulator.`,
+    )
+  }
+  const app = await unpackIosBuild(build, options)
+  const result = await runTool(
+    options.run,
+    simctlInstallCommand(device.id, app),
+    options.cwd,
+    XCRUN_MISSING,
+  )
+  if (result.code !== 0) {
+    throw new DeviceError(
+      `"xcrun simctl install" failed with exit code ${result.code}.${outputTail(result.stderr)}`,
+    )
   }
 }

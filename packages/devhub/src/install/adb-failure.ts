@@ -1,10 +1,10 @@
-import path from 'node:path'
 import {
   formatCommand,
   outputTail,
   type CommandResult,
 } from '../command/run-command'
 import { adbUninstallCommand } from '../devices/android'
+import { downloadAgainFix } from '../store/builds'
 
 export type AdbInstallTarget = {
   /** The adb program, from `resolveAdb`. */
@@ -95,5 +95,5 @@ function uninstallFix(target: AdbInstallTarget, output: string): string {
 }
 
 function damagedFileFix(target: AdbInstallTarget): string {
-  return `The device cannot read the file. The stored file can be damaged. Delete the folder ${path.dirname(target.apk)}, and then run devhub sync in the project to download the build again.`
+  return `The device cannot read the file. The stored file can be damaged. ${downloadAgainFix(target.apk)}`
 }

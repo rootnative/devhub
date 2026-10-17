@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Device } from '../devices/device'
 import {
   ADB_MISSING,
   adbAvdNameCommand,
@@ -12,10 +13,11 @@ import {
   XCRUN_MISSING,
   iosRuntimeVersion,
   parseSimctlDevices,
+  simctlInstallCommand,
   simctlListCommand,
 } from '../devices/ios'
 import { listDevices } from '../devices/list'
-import { selectDevice } from '../devices/select'
+import { findDevice, selectDevice } from '../devices/select'
 import { fakeDeviceTools } from './helpers'
 
 const ADB_OUTPUT = [
@@ -322,6 +324,18 @@ const SIMCTL_LIST = {
   },
 }
 
+describe('simctlInstallCommand', () => {
+  it('keeps an app path with a space as one argument', () => {
+    expect(simctlInstallCommand('AAAA-1111', '/My Store/My App.app')).toEqual([
+      'xcrun',
+      'simctl',
+      'install',
+      'AAAA-1111',
+      '/My Store/My App.app',
+    ])
+  })
+})
+
 describe('simctlListCommand', () => {
   it('asks for every simulator as JSON', () => {
     expect(simctlListCommand()).toEqual([
@@ -544,5 +558,65 @@ describe('selectDevice', () => {
       message:
         'The device R58M12ABCDE is not ready. Unlock the device, and accept the USB debugging prompt on it.',
     })
+  })
+
+  it('finds a device by its ID, with or without the same case', () => {
+    expect(findDevice([emulator, phone], phone.id)).toBe(phone)
+    expect(findDevice([emulator, phone], 'EMULATOR-5554')).toBe(emulator)
+    expect(findDevice([emulator, phone], 'emulator-9999')).toBeUndefined()
+  })
+
+  describe('with devices of both platforms', () => {
+    const simulator: Device = {
+      platform: 'ios',
+      kind: 'simulator',
+      id: 'AAAA-1111',
+      name: 'iPhone 16',
+      state: 'Booted',
+      ready: true,
+      osVersion: '18.6',
+    }
+
+    it('selects only from the devices of the platform', () => {
+      expect(selectDevice([emulator, simulator], 'ios')).toEqual({
+        kind: 'selected',
+        device: simulator,
+      })
+      expect(selectDevice([emulator, simulator], 'android')).toEqual({
+        kind: 'selected',
+        device: emulator,
+      })
+    })
+
+    it('says that no device of the platform runs', () => {
+      expect(selectDevice([simulator], 'android')).toEqual({
+        kind: 'error',
+        usage: false,
+        message:
+          'No Android emulator or device runs now. Start an emulator, or connect a device with USB debugging on. Then run the command again.',
+      })
+    })
+
+    it.each([
+      [
+        'android',
+        'aaaa-1111',
+        'The device AAAA-1111 is an iOS simulator, but the build is for an Android emulator or device.',
+      ],
+      [
+        'ios',
+        'emulator-5554',
+        'The device emulator-5554 is an Android emulator or device, but the build is for an iOS simulator.',
+      ],
+    ] as const)(
+      'stops when --device names a device of the other platform (%s)',
+      (platform, wanted, message) => {
+        expect(selectDevice([emulator, simulator], platform, wanted)).toEqual({
+          kind: 'error',
+          usage: false,
+          message,
+        })
+      },
+    )
   })
 })

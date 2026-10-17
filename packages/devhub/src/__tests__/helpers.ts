@@ -117,8 +117,9 @@ export function fakeEas(
  * A fake for the device tools. adb answers `adb devices -l` with `devices`,
  * and `adb -s <serial> emu avd name` from `avdNames`. `xcrun simctl list`
  * answers with `simulators`, and `adb -s <serial> install` with `install`.
- * It finds a tool by the base name, because the runner can get the full
- * path of a real SDK.
+ * `tar -xf <archive> -C <folder>` makes the folders in `archive`, and
+ * `xcrun simctl install` answers with `simctlInstall`. It finds a tool by
+ * the base name, because the runner can get the full path of a real SDK.
  */
 export function fakeDeviceTools(
   options: {
@@ -135,6 +136,11 @@ export function fakeDeviceTools(
     simctlFailure?: { code: number; stderr: string }
     /** The answer to `adb -s <serial> install`. The default is a success. */
     install?: CommandResult
+    /** The folders that `tar` unpacks. The default is one `My App.app`. */
+    archive?: string[]
+    tarFailure?: { code: number; stderr: string }
+    /** The answer to `xcrun simctl install`. The default is a success. */
+    simctlInstall?: CommandResult
   } = {},
 ): FakeRunner {
   const calls: Command[] = []
@@ -143,9 +149,23 @@ export function fakeDeviceTools(
   const run: CommandRunner = async (command) => {
     calls.push(command)
     const program = path.basename(command[0]).replace(/\.exe$/i, '')
+    if (program === 'tar') {
+      if (options.tarFailure) {
+        return { stdout: '', ...options.tarFailure }
+      }
+      const folder = command[command.indexOf('-C') + 1] ?? ''
+      for (const entry of options.archive ?? ['My App.app']) {
+        await mkdir(path.join(folder, entry), { recursive: true })
+        await writeFile(path.join(folder, entry, 'Info.plist'), '')
+      }
+      return { code: 0, stdout: '', stderr: '' }
+    }
     if (program === 'xcrun') {
       if (options.xcrunMissing) {
         throw notFound(command[0])
+      }
+      if (command[2] === 'install') {
+        return options.simctlInstall ?? { code: 0, stdout: '', stderr: '' }
       }
       if (options.simctlFailure) {
         return { stdout: '', ...options.simctlFailure }

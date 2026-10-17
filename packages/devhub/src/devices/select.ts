@@ -17,9 +17,23 @@ const TARGETS: Record<DevicePlatform, { label: string; start: string }> = {
   },
 }
 
+/** Finds the device with the ID `wanted`. Case does not matter. */
+export function findDevice(
+  devices: readonly Device[],
+  wanted: string,
+): Device | undefined {
+  return (
+    devices.find((candidate) => candidate.id === wanted) ??
+    devices.find(
+      (candidate) => candidate.id.toLowerCase() === wanted.toLowerCase(),
+    )
+  )
+}
+
 /**
- * Chooses the device for an install from the devices of one platform.
- * `wanted` is the `--device` value: an adb serial or a simulator UDID.
+ * Chooses the device for an install on `platform`. `wanted` is the
+ * `--device` value: an adb serial or a simulator UDID. A device of the other
+ * platform can only be the `wanted` one, and then it gives an error.
  */
 export function selectDevice(
   devices: readonly Device[],
@@ -28,14 +42,15 @@ export function selectDevice(
 ): DeviceChoice {
   const { label, start } = TARGETS[platform]
   if (wanted !== undefined) {
-    const device =
-      devices.find((candidate) => candidate.id === wanted) ??
-      devices.find(
-        (candidate) => candidate.id.toLowerCase() === wanted.toLowerCase(),
-      )
+    const device = findDevice(devices, wanted)
     if (device === undefined) {
       return failure(
         `No running ${label} has the ID "${wanted}". Run devhub devices to see the devices.`,
+      )
+    }
+    if (device.platform !== platform) {
+      return failure(
+        `The device ${device.id} is an ${TARGETS[device.platform].label}, but the build is for an ${label}.`,
       )
     }
     if (!device.ready) {
@@ -46,7 +61,8 @@ export function selectDevice(
     return { kind: 'selected', device }
   }
 
-  const ready = devices.filter((device) => device.ready)
+  const own = devices.filter((device) => device.platform === platform)
+  const ready = own.filter((device) => device.ready)
   const [only] = ready
   if (ready.length === 1 && only !== undefined) {
     return { kind: 'selected', device: only }
@@ -61,11 +77,11 @@ export function selectDevice(
       ].join('\n'),
     }
   }
-  if (devices.length > 0) {
+  if (own.length > 0) {
     return failure(
       [
         `No ${label} is ready:`,
-        ...deviceLines(devices, (device) => device.problem ?? device.state),
+        ...deviceLines(own, (device) => device.problem ?? device.state),
       ].join('\n'),
     )
   }

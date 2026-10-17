@@ -1,6 +1,10 @@
 import { stat } from 'node:fs/promises'
-import path from 'node:path'
-import { findBuild, scanStore, type StoredBuild } from '../store/builds'
+import {
+  downloadAgainFix,
+  findBuild,
+  scanStore,
+  type StoredBuild,
+} from '../store/builds'
 import { resolveHome } from '../store/home'
 import { errorMessage, type CliContext } from './context'
 
@@ -43,7 +47,7 @@ export async function findStoredBuild(
     await stat(build.path)
   } catch {
     io.err(
-      `The record of the build ${build.id} names the file ${build.path}, but the file does not exist. Delete the folder ${path.dirname(build.path)}, and then run devhub sync in the project to download the build again.`,
+      `The record of the build ${build.id} names the file ${build.path}, but the file does not exist. ${downloadAgainFix(build.path)}`,
     )
     return undefined
   }

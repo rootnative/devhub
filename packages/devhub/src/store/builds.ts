@@ -44,6 +44,11 @@ export function buildFolder(home: string, id: string): string {
   return path.join(buildsRoot(home), id)
 }
 
+/** The fix for a stored build file that is missing or damaged. */
+export function downloadAgainFix(file: string): string {
+  return `Delete the folder ${path.dirname(file)}, and then run devhub sync in the project to download the build again.`
+}
+
 /** An EAS build ID is a UUID. The check keeps a bad ID out of a path. */
 export function isSafeBuildId(id: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9-]*$/.test(id)

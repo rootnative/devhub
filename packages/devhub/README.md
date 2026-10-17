@@ -9,8 +9,9 @@ emulator with that build in one action.
 
 > **Status:** Milestone 2, "Install", is in progress. DevHub downloads your
 > EAS dev client builds before EAS deletes them, and installs a stored
-> Android build on a running emulator or device. Launch comes in a later
-> milestone. The package is not on npm yet.
+> build on a running Android emulator or device, or on a booted iOS
+> simulator. Launch comes in a later milestone. The package is not on npm
+> yet.
 
 Source, design, and roadmap: https://github.com/rootnative/devhub
 
@@ -33,7 +34,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub list` | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
-| `devhub install <id>` | Installs a stored Android build on a ready Android emulator or device. |
+| `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
 
 Options of `devhub sync`:
 
@@ -86,10 +87,16 @@ writes a warning and lists the devices of the other tool. The exit code is
 
 ### Install a build
 
-`devhub install <id>` installs a stored Android `.apk` with
-`adb -s <serial> install -r -d <apk>`. `-r` replaces the installed app, and
-`-d` lets you go back to an older build. It does not start a device, and it
-does not open the app.
+`devhub install <id>` installs a stored build on a device that runs now. It
+does not start a device, and it does not open the app.
+
+- An Android `.apk` installs with `adb -s <serial> install -r -d <apk>`.
+  `-r` replaces the installed app, and `-d` lets you go back to an older
+  build.
+- An iOS simulator build installs with
+  `xcrun simctl install <udid> <app>`, on macOS only. The first install
+  unpacks the archive into the `extracted` folder of the store. The next
+  install of the same build uses that folder again.
 
 DevHub checks the build before it looks for a device. It stops, and gives
 the fix, for these builds:
@@ -119,14 +126,15 @@ For the first two, the fix is to uninstall the app. DevHub prints the
 uninstall deletes the app data. For a code that is not in the table, DevHub
 prints the last lines of the adb output.
 
-When one Android emulator or device is ready, DevHub uses it. When two or
-more are ready, select one with `--device <serial>`. `devhub devices` shows
-the serials. When no device is ready, DevHub gives the reason for each
-device.
+DevHub uses the one ready device of the build's platform: an Android
+emulator or device for an Android build, and a booted simulator for an iOS
+build. When two or more are ready, select one with `--device <id>`, where
+`<id>` is the adb serial or the simulator UDID. `devhub devices` shows the
+IDs. When no device is ready, DevHub gives the reason for each device.
 
 To load the JavaScript of the project, run `npx expo start` in the project
-folder, and press `a`. Expo CLI then opens the installed dev client with the
-URL of Metro.
+folder, and press `a` for Android or `i` for iOS. Expo CLI then opens the
+installed dev client with the URL of Metro.
 
 ### The store
 
@@ -141,6 +149,9 @@ folder.
 
 Set `DEVHUB_HOME` to use a different folder, for example on an external
 disk. A dev client build can be more than 100 MB.
+
+The `extracted` folder in the store holds the unpacked iOS simulator builds.
+You can delete it at any time. The next install unpacks the build again.
 
 ## Sync every day
 

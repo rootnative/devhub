@@ -13,6 +13,10 @@ export function simctlListCommand(): Command {
   return ['xcrun', 'simctl', 'list', 'devices', '--json']
 }
 
+export function simctlInstallCommand(udid: string, app: string): Command {
+  return ['xcrun', 'simctl', 'install', udid, app]
+}
+
 /** Returns the booted iOS simulators. tvOS, watchOS, and visionOS are out. */
 export function parseSimctlDevices(stdout: string): Device[] {
   let value: unknown

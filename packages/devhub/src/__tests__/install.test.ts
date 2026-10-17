@@ -1,14 +1,19 @@
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   adbDevice,
   adbInstallCommand,
   adbUninstallCommand,
 } from '../devices/android'
-import { DeviceError } from '../devices/device'
+import { DeviceError, type Device } from '../devices/device'
 import { adbInstallFailure } from '../install/adb-failure'
-import { installBuild, installProblem } from '../install/install'
+import {
+  installBuild,
+  installPlatform,
+  installProblem,
+} from '../install/install'
 import { BUILD_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
-import { NOW, easBuild, fakeDeviceTools } from './helpers'
+import { NOW, easBuild, fakeDeviceTools, useTempDir } from './helpers'
 
 const EMULATOR = adbDevice({
   serial: 'emulator-5554',
@@ -273,25 +278,53 @@ describe('installProblem', () => {
   )
 
   it.each([
-    ['an iOS simulator build on macOS', 'app.tar.gz', simulator],
+    ['with the simulator flag', 'app.tgz', simulator],
+    [
+      'with no simulator flag and a .tar.gz file',
+      'app.tar.gz',
+      easBuild({ platform: 'IOS' }),
+    ],
+  ])('accepts an iOS simulator build on macOS %s', (_label, file, eas) => {
+    expect(installProblem(storedBuild(file, eas), 'darwin')).toBeUndefined()
+  })
+
+  it.each([
     ['an Android file that is not an .apk or an .aab', 'app.zip', easBuild()],
+    [
+      'an iOS file that is not a simulator archive',
+      'app.zip',
+      easBuild({ platform: 'IOS' }),
+    ],
     [
       'a build of an unknown platform',
       'app.bin',
       easBuild({ platform: 'WEB' }),
     ],
-  ])(
-    'refuses %s, because DevHub cannot install it yet',
-    (_label, file, eas) => {
-      expect(installProblem(storedBuild(file, eas), 'darwin')).toBe(
-        `DevHub can install only an Android .apk build now. The build ${eas.id} is the file ${file}.`,
-      )
-    },
-  )
+  ])('refuses %s', (_label, file, eas) => {
+    expect(installProblem(storedBuild(file, eas), 'darwin')).toBe(
+      `DevHub cannot install the build ${eas.id}. Its file ${file} is not an Android .apk or an iOS simulator build.`,
+    )
+  })
+})
+
+describe('installPlatform', () => {
+  it.each([
+    ['ANDROID', 'android'],
+    ['IOS', 'ios'],
+  ])('gives the device platform of an %s build', (platform, expected) => {
+    expect(installPlatform(storedBuild('app', easBuild({ platform })))).toBe(
+      expected,
+    )
+  })
 })
 
 describe('installBuild', () => {
-  const options = { adb: 'adb', cwd: '/', platform: 'linux' } as const
+  const options = {
+    adb: 'adb',
+    cwd: '/',
+    platform: 'linux',
+    home: '/devhub',
+  } as const
 
   it('runs adb install on the device with the stored file', async () => {
     const tools = fakeDeviceTools()
@@ -359,6 +392,83 @@ describe('installBuild', () => {
     await expect(
       installBuild(storedBuild(), phone, { ...options, run: tools.run }),
     ).rejects.toThrow('is not a ready Android device')
+    expect(tools.calls).toEqual([])
+  })
+})
+
+describe('installBuild for an iOS simulator build', () => {
+  const tempDir = useTempDir()
+  const SIMULATOR: Device = {
+    platform: 'ios',
+    kind: 'simulator',
+    id: 'AAAA-1111',
+    name: 'iPhone 16',
+    state: 'Booted',
+    ready: true,
+    osVersion: '18.6',
+  }
+
+  async function setup(tools = fakeDeviceTools()) {
+    const home = await tempDir()
+    const build = storedBuild(
+      'app.tar.gz',
+      easBuild({ platform: 'IOS', isForIosSimulator: true }),
+    )
+    const options = { run: tools.run, adb: 'adb', cwd: home, home }
+    return {
+      home,
+      build,
+      tools,
+      options: { ...options, platform: 'darwin' as const },
+    }
+  }
+
+  it('unpacks the build, and runs simctl install with the .app', async () => {
+    const { home, build, tools, options } = await setup()
+
+    await installBuild(build, SIMULATOR, options)
+
+    expect(tools.calls.map((command) => command[0])).toEqual(['tar', 'xcrun'])
+    expect(tools.calls.at(-1)).toEqual([
+      'xcrun',
+      'simctl',
+      'install',
+      'AAAA-1111',
+      path.join(home, 'extracted', build.id, 'My App.app'),
+    ])
+  })
+
+  it('throws the failure of simctl install', async () => {
+    const { build, options } = await setup(
+      fakeDeviceTools({
+        simctlInstall: {
+          code: 149,
+          stdout: '',
+          stderr: 'An error was encountered processing the command',
+        },
+      }),
+    )
+
+    await expect(installBuild(build, SIMULATOR, options)).rejects.toThrow(
+      '"xcrun simctl install" failed with exit code 149.\nAn error was encountered processing the command',
+    )
+  })
+
+  it('runs nothing on an Android device', async () => {
+    const { build, tools, options } = await setup()
+
+    await expect(installBuild(build, EMULATOR, options)).rejects.toThrow(
+      'The device emulator-5554 is not a booted iOS simulator.',
+    )
+    expect(tools.calls).toEqual([])
+  })
+
+  it('runs nothing on a system that is not macOS', async () => {
+    const { build, tools, options } = await setup()
+
+    await expect(
+      installBuild(build, SIMULATOR, { ...options, platform: 'linux' }),
+    ).rejects.toThrow('iOS simulators run only on macOS')
     expect(tools.calls).toEqual([])
   })
 })

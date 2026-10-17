@@ -35,6 +35,7 @@ export {
   iosRuntimeVersion,
   listIosSimulators,
   parseSimctlDevices,
+  simctlInstallCommand,
   simctlListCommand,
 } from './devices/ios'
 export {
@@ -43,7 +44,7 @@ export {
   type DeviceListOptions,
   type DeviceSource,
 } from './devices/list'
-export { selectDevice, type DeviceChoice } from './devices/select'
+export { findDevice, selectDevice, type DeviceChoice } from './devices/select'
 export {
   artifactUrl,
   isExpired,
@@ -73,9 +74,16 @@ export {
 export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'
 export {
   installBuild,
+  installPlatform,
   installProblem,
   type InstallOptions,
 } from './install/install'
+export {
+  TAR_MISSING,
+  tarExtractCommand,
+  unpackIosBuild,
+  type UnpackOptions,
+} from './install/unpack'
 export {
   findBuild,
   scanStore,

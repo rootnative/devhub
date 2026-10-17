@@ -3,6 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import pkg from '../../package.json' with { type: 'json' }
 import { EXIT_CODE, run } from '../cli/run'
+import type { EasBuild } from '../eas/build'
 import { buildFolder } from '../store/builds'
 import {
   capture,
@@ -684,7 +685,7 @@ describe('devhub install', () => {
   const onMacos = process.platform === 'darwin'
   const NOT_MACOS = 'iOS simulators run only on macOS'
 
-  it.each([
+  const refused: [string, EasBuild, string, string][] = [
     [
       'an .aab',
       easBuild({ id: ID_B }),
@@ -698,28 +699,147 @@ describe('devhub install', () => {
       onMacos ? 'is an iOS device build (app.ipa)' : NOT_MACOS,
     ],
     [
+      'a file that is not an .apk or a simulator archive',
+      easBuild({ id: ID_B }),
+      'app.zip',
+      'is not an Android .apk or an iOS simulator build',
+    ],
+  ]
+  if (!onMacos) {
+    refused.push([
       'an iOS simulator build',
       easBuild({ id: ID_B, platform: 'IOS', isForIosSimulator: true }),
       'app.tar.gz',
-      onMacos ? 'can install only an Android .apk build now' : NOT_MACOS,
-    ],
-  ])('runs no device tool for %s', async (_label, eas, file, reason) => {
-    const home = await tempDir()
-    await writeStoredBuild(home, eas, file)
-    const { io, err } = capture()
-    const tools = fakeDeviceTools()
+      NOT_MACOS,
+    ])
+  }
 
-    expect(
-      await run(['install', ID_B], testContext({ io, home, run: tools.run })),
-    ).toBe(EXIT_CODE.failure)
-    expect(err).toHaveLength(1)
-    expect(err[0]).toContain(reason)
-    expect(tools.calls).toEqual([])
-  })
+  it.each(refused)(
+    'runs no device tool for %s',
+    async (_label, eas, file, reason) => {
+      const home = await tempDir()
+      await writeStoredBuild(home, eas, file)
+      const { io, err } = capture()
+      const tools = fakeDeviceTools()
+
+      expect(
+        await run(['install', ID_B], testContext({ io, home, run: tools.run })),
+      ).toBe(EXIT_CODE.failure)
+      expect(err).toHaveLength(1)
+      expect(err[0]).toContain(reason)
+      expect(tools.calls).toEqual([])
+    },
+  )
 
   function installCalls(tools: { calls: (readonly string[])[] }) {
     return tools.calls.filter((command) => command[3] === 'install')
   }
+
+  function programs(tools: { calls: (readonly string[])[] }) {
+    return tools.calls.map((command) => path.basename(command[0] ?? ''))
+  }
+
+  describe.runIf(onMacos)('an iOS simulator build on macOS', () => {
+    const BOOTED = {
+      devices: {
+        'com.apple.CoreSimulator.SimRuntime.iOS-18-6': [
+          { udid: 'AAAA-1111', name: 'iPhone 16', state: 'Booted' },
+          { udid: 'BBBB-2222', name: 'iPhone 15', state: 'Shutdown' },
+        ],
+      },
+    }
+
+    async function iosStore() {
+      const home = await tempDir()
+      await writeStoredBuild(
+        home,
+        easBuild({ id: ID_B, platform: 'IOS', isForIosSimulator: true }),
+        'app.tar.gz',
+      )
+      return home
+    }
+
+    it('installs on the one booted simulator, and does not run adb', async () => {
+      const home = await iosStore()
+      const { io, out, err } = capture()
+      const tools = fakeDeviceTools({ simulators: BOOTED })
+
+      expect(
+        await run(
+          ['install', 'bbbb'],
+          testContext({ io, home, run: tools.run }),
+        ),
+      ).toBe(EXIT_CODE.ok)
+      expect(out).toEqual([
+        `Installed the build ${ID_B} on iPhone 16 (AAAA-1111).`,
+      ])
+      expect(err).toEqual([
+        `Installing the build ${ID_B} on iPhone 16 (AAAA-1111).`,
+      ])
+      expect(programs(tools)).toEqual(['xcrun', 'tar', 'xcrun'])
+      expect(tools.calls.at(-1)).toEqual([
+        'xcrun',
+        'simctl',
+        'install',
+        'AAAA-1111',
+        path.join(home, 'extracted', ID_B, 'My App.app'),
+      ])
+    })
+
+    it('says how to boot a simulator when none is booted', async () => {
+      const home = await iosStore()
+      const { io, err } = capture()
+      const tools = fakeDeviceTools()
+
+      expect(
+        await run(['install', ID_B], testContext({ io, home, run: tools.run })),
+      ).toBe(EXIT_CODE.failure)
+      expect(err).toEqual([
+        'No iOS simulator runs now. Boot a simulator, and then run the command again.',
+      ])
+      expect(programs(tools)).toEqual(['xcrun'])
+    })
+
+    it('stops when --device names an Android device', async () => {
+      const home = await iosStore()
+      const { io, err } = capture()
+      const tools = fakeDeviceTools({
+        simulators: BOOTED,
+        devices: adbList(EMULATOR_LINE),
+      })
+
+      expect(
+        await run(
+          ['install', ID_B, '--device', 'emulator-5554'],
+          testContext({ io, home, run: tools.run }),
+        ),
+      ).toBe(EXIT_CODE.failure)
+      expect(err).toEqual([
+        'The device emulator-5554 is an Android emulator or device, but the build is for an iOS simulator.',
+      ])
+      expect(programs(tools)).not.toContain('tar')
+    })
+
+    it('stops when --device names a simulator for an Android build', async () => {
+      const { home } = await store()
+      const { io, err } = capture()
+      const tools = fakeDeviceTools({
+        simulators: BOOTED,
+        devices: adbList(EMULATOR_LINE),
+      })
+
+      expect(
+        await run(
+          ['install', ID_A, '--device', 'AAAA-1111'],
+          testContext({ io, home, run: tools.run }),
+        ),
+      ).toBe(EXIT_CODE.failure)
+      expect(err).toEqual([
+        'The device AAAA-1111 is an iOS simulator, but the build is for an Android emulator or device.',
+      ])
+      expect(installCalls(tools)).toEqual([])
+    })
+  })
 
   it('stops with the reason of each device when no device is ready', async () => {
     const { home } = await store()
@@ -789,6 +909,7 @@ describe('devhub install', () => {
     expect(installCalls(tools).map((command) => command.slice(1))).toEqual([
       ['-s', 'emulator-5556', 'install', '-r', '-d', file],
     ])
+    expect(programs(tools)).not.toContain('xcrun')
   })
 
   it.each([

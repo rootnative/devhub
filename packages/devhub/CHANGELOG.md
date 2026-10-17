@@ -30,8 +30,12 @@ Nothing is on npm yet.
   emulator shows its AVD name. On macOS, it also lists the booted iOS
   simulators. It accepts `--json`.
 - `devhub install <id>` installs a stored Android `.apk` on a ready Android
-  emulator or device, with `adb install -r -d`. `--device <serial>` selects
-  the device when two or more are ready. It accepts `--json`. Before it
+  emulator or device, with `adb install -r -d`. On macOS, it installs an iOS
+  simulator build on a booted simulator, with `xcrun simctl install`. The
+  first install unpacks the archive into `extracted/` in the store, and the
+  next install uses it again. `--device <id>` selects the device by its adb
+  serial or its simulator UDID when two or more are ready. A `--device` of
+  the other platform stops the install. It accepts `--json`. Before it
   looks for a device, it stops for an `.aab`, an iOS device build (`.ipa`),
   or an iOS build on Windows or Linux, and gives the fix. When
   `adb install` fails, it gives the cause and the fix for each common
@@ -44,8 +48,8 @@ Nothing is on npm yet.
   lock stops a second sync while one runs.
 - The core API that the CLI uses: `syncProjects`, `scanStore`, `findBuild`,
   `devClientProfiles`, `resolveHome`, `listDevices`, `selectDevice`,
-  `resolveAdb`, `installBuild`, and the
-  `eas`, `adb`, and `simctl` command builders.
+  `resolveAdb`, `installBuild`, `unpackIosBuild`, and the `eas`, `adb`,
+  `simctl`, and `tar` command builders.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli
