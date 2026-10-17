@@ -48,7 +48,9 @@ describe('downloadFile', () => {
       size: CONTENT.length,
       sha256: createHash('sha256').update(CONTENT).digest('hex'),
     })
-    expect(await readFile(target)).toEqual(CONTENT)
+    // toEqual compares a Buffer one byte at a time: about 0.5 s for 200 kB,
+    // and a parallel run of all tests then hits the 5 s timeout.
+    expect((await readFile(target)).equals(CONTENT)).toBe(true)
     expect(await readdir(dir)).toEqual(['app.apk'])
   })
 
