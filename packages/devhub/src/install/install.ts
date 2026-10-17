@@ -1,11 +1,8 @@
 import type { CommandRunner } from '../command/run-command'
-import {
-  ADB_MISSING,
-  adbInstallCommand,
-  adbInstallFailure,
-} from '../devices/android'
+import { ADB_MISSING, adbInstallCommand } from '../devices/android'
 import { DeviceError, runTool, type Device } from '../devices/device'
 import type { StoredBuild } from '../store/builds'
+import { adbInstallFailure } from './adb-failure'
 
 export type InstallOptions = {
   run: CommandRunner
@@ -78,7 +75,12 @@ export async function installBuild(
     options.cwd,
     ADB_MISSING,
   )
-  const failure = adbInstallFailure(result)
+  const failure = adbInstallFailure(result, {
+    adb: options.adb,
+    serial: device.id,
+    apk: build.path,
+    appId: build.record.eas.appIdentifier,
+  })
   if (failure !== undefined) {
     throw new DeviceError(failure)
   }

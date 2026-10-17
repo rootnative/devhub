@@ -830,7 +830,7 @@ describe('devhub install', () => {
     expect(err.join('\n')).toContain('DevHub cannot find adb.')
   })
 
-  it('reports a failed install with the end of the adb output', async () => {
+  it('reports a failed install with the cause and the fix', async () => {
     const { home } = await store()
     const { io, out, err } = capture()
     const tools = fakeDeviceTools({
@@ -846,8 +846,8 @@ describe('devhub install', () => {
       await run(['install', ID_A], testContext({ io, home, run: tools.run })),
     ).toBe(EXIT_CODE.failure)
     expect(out).toEqual([])
-    expect(err.at(-1)).toMatch(
-      /^"adb install" failed with exit code 1\.\n.*\n.*INSTALL_FAILED_OLDER_SDK/,
+    expect(err.at(-1)).toBe(
+      '"adb install" failed with INSTALL_FAILED_OLDER_SDK. The Android version of the device is older than the minimum Android version of the build. Install it on a device or an emulator with a newer Android version.',
     )
   })
 })

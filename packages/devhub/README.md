@@ -100,6 +100,25 @@ the fix, for these builds:
 | iOS device build (`.ipa`) | A simulator cannot run it. | Set `"ios": { "simulator": true }` in the build profile in `eas.json`, and make a new build. |
 | Any iOS build on Windows or Linux | iOS simulators run only on macOS. | Install the build on a Mac. |
 
+When `adb install` fails, DevHub reads the adb output and gives the cause
+and the fix:
+
+| adb output | Cause |
+| --- | --- |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | The installed app has a different signing key. |
+| `INSTALL_FAILED_VERSION_DOWNGRADE` | The installed app is newer, and the device does not allow a downgrade. This occurs when the installed app is a release build. |
+| `INSTALL_FAILED_NO_MATCHING_ABIS` | The build has no native code for the CPU architecture of the device. |
+| `INSTALL_FAILED_OLDER_SDK` | The Android version of the device is older than the minimum Android version of the build. |
+| `INSTALL_FAILED_INSUFFICIENT_STORAGE` | The device does not have sufficient free space. |
+| `INSTALL_FAILED_USER_RESTRICTED`, `INSTALL_FAILED_ABORTED` | The device did not accept the install. Accept the prompt, or turn on "Install via USB" in the developer options. |
+| `INSTALL_PARSE_FAILED_*`, `INSTALL_FAILED_INVALID_APK` | The device cannot read the file. The stored file can be damaged. |
+| `Can't find service: package` | The device has not finished its start. |
+
+For the first two, the fix is to uninstall the app. DevHub prints the
+`adb uninstall` command and stops. It never uninstalls an app, because an
+uninstall deletes the app data. For a code that is not in the table, DevHub
+prints the last lines of the adb output.
+
 When one Android emulator or device is ready, DevHub uses it. When two or
 more are ready, select one with `--device <serial>`. `devhub devices` shows
 the serials. When no device is ready, DevHub gives the reason for each

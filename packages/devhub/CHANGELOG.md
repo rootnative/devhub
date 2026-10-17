@@ -33,7 +33,10 @@ Nothing is on npm yet.
   emulator or device, with `adb install -r -d`. `--device <serial>` selects
   the device when two or more are ready. It accepts `--json`. Before it
   looks for a device, it stops for an `.aab`, an iOS device build (`.ipa`),
-  or an iOS build on Windows or Linux, and gives the fix.
+  or an iOS build on Windows or Linux, and gives the fix. When
+  `adb install` fails, it gives the cause and the fix for each common
+  failure code. For a signing key conflict or a refused downgrade, it prints
+  the `adb uninstall` command, and does not uninstall the app.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`

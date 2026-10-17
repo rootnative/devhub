@@ -15,7 +15,7 @@ export {
   adbDevice,
   adbDevicesCommand,
   adbInstallCommand,
-  adbInstallFailure,
+  adbUninstallCommand,
   isEmulatorSerial,
   listAndroidDevices,
   parseAdbDevices,
@@ -70,6 +70,7 @@ export {
   withExtraProfiles,
   type SyncProfile,
 } from './eas/profiles'
+export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'
 export {
   installBuild,
   installProblem,

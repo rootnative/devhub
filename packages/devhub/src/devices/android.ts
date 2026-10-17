@@ -3,7 +3,6 @@ import path from 'node:path'
 import {
   outputTail,
   type Command,
-  type CommandResult,
   type CommandRunner,
 } from '../command/run-command'
 import { DeviceError, runTool, type Device } from './device'
@@ -69,20 +68,13 @@ export function adbInstallCommand(
   return [adb, '-s', serial, 'install', '-r', '-d', apk]
 }
 
-/**
- * Returns the reason that `adb install` failed, or `undefined` when it
- * worked. An old adb exits with 0 after a failure, so the output decides
- * too.
- */
-export function adbInstallFailure(result: CommandResult): string | undefined {
-  const output = [result.stdout, result.stderr]
-    .map((text) => text.trim())
-    .filter((text) => text !== '')
-    .join('\n')
-  if (result.code === 0 && !/Failure \[/.test(output)) {
-    return undefined
-  }
-  return `"adb install" failed with exit code ${result.code}.${outputTail(output)}`
+/** DevHub only shows this command. An uninstall deletes the app data. */
+export function adbUninstallCommand(
+  adb: string,
+  serial: string,
+  appId: string,
+): Command {
+  return [adb, '-s', serial, 'uninstall', appId]
 }
 
 export type AdbEntry = {
