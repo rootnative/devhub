@@ -25,13 +25,17 @@ Nothing is on npm yet.
   the path of its file.
 - `devhub where <id>` prints the path of a stored build file. `<id>` is the
   EAS build ID, or a unique start of it.
+- `devhub devices` lists the Android emulators and devices that adb sees,
+  with their state, and the fix for a device that is not ready. It accepts
+  `--json`.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`
   last, so an interrupted sync never leaves a record of a broken file. A
   lock stops a second sync while one runs.
 - The core API that the CLI uses: `syncProjects`, `scanStore`, `findBuild`,
-  `devClientProfiles`, `resolveHome`, and the `eas` command builders.
+  `devClientProfiles`, `resolveHome`, `listDevices`, `resolveAdb`, and the
+  `eas` and `adb` command builders.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli

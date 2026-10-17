@@ -49,3 +49,23 @@ export const runCommand: CommandRunner = (command, options) =>
       }),
     )
   })
+
+/**
+ * The command as text for a message, with an argument in quotes when it has
+ * a space or a special character. DevHub never runs this text.
+ */
+export function formatCommand(command: Command): string {
+  return command
+    .map((arg) =>
+      /^[\w@%+=:,./-]+$/.test(arg)
+        ? arg
+        : `"${arg.replace(/(["\\$`])/g, '\\$1')}"`,
+    )
+    .join(' ')
+}
+
+/** The last lines of a command output, on a new line, or an empty string. */
+export function outputTail(output: string, count = 5): string {
+  const lines = output.trim().split(/\r?\n/).slice(-count).join('\n')
+  return lines ? `\n${lines}` : ''
+}

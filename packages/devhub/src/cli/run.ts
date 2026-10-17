@@ -6,6 +6,7 @@ import {
   usageError,
   type CliContext,
 } from './context'
+import { devicesCommand } from './devices'
 import { listCommand } from './list'
 import { syncCommand } from './sync'
 import { whereCommand } from './where'
@@ -21,6 +22,7 @@ Commands:
   sync        Download the EAS dev client builds of this project.
   list        Show the stored builds.
   where <id>  Print the path of a stored build file.
+  devices     List the Android emulators and devices.
 
 Options:
   -h, --help     Show this help.
@@ -35,6 +37,7 @@ const COMMANDS: Record<
   sync: syncCommand,
   list: listCommand,
   where: whereCommand,
+  devices: devicesCommand,
 }
 
 export async function run(

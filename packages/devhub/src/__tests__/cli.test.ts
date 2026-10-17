@@ -7,6 +7,7 @@ import { buildFolder } from '../store/builds'
 import {
   capture,
   easBuild,
+  fakeAdb,
   fakeDownload,
   fakeEas,
   testContext,
@@ -42,7 +43,7 @@ describe('devhub CLI', () => {
     },
   )
 
-  it.each([['sync'], ['list'], ['where']])(
+  it.each([['sync'], ['list'], ['where'], ['devices']])(
     'devhub %s --help prints the help of the command',
     async (command) => {
       const { io, out } = capture()
@@ -62,6 +63,7 @@ describe('devhub CLI', () => {
     [['sync', '--profile'], '--profile', 'devhub sync --help'],
     [['where'], 'needs a build ID', 'devhub where --help'],
     [['where', 'a', 'b'], 'takes one build ID', 'devhub where --help'],
+    [['devices', 'extra'], 'takes no arguments', 'devhub devices --help'],
   ])('args %j give a usage error', async (argv, message, help) => {
     const { io, out, err } = capture()
 
@@ -400,4 +402,98 @@ describe('devhub sync', () => {
       'Run devhub sync in a project folder first.',
     )
   })
+})
+
+describe('devhub devices', () => {
+  const ADB_OUTPUT = [
+    'List of devices attached',
+    'emulator-5554  device product:sdk_gphone64_arm64 model:sdk_gphone64_arm64 device:emu64a transport_id:1',
+    'R58M12ABCDE    unauthorized usb:1-1 transport_id:2',
+    '',
+  ].join('\n')
+
+  it('shows each device, and a note for a device that is not ready', async () => {
+    const { io, out, err } = capture()
+    const adb = fakeAdb({ devices: ADB_OUTPUT })
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({ io, home: '/unused', run: adb.run }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(out.join('\n').split('\n')).toEqual([
+      expect.stringMatching(/^ID\s+PLATFORM\s+KIND\s+NAME\s+STATE$/),
+      expect.stringMatching(
+        /^emulator-5554\s+android\s+emulator\s+sdk gphone64 arm64\s+ready$/,
+      ),
+      expect.stringMatching(
+        /^R58M12ABCDE\s+android\s+physical\s+R58M12ABCDE\s+unauthorized$/,
+      ),
+    ])
+    expect(err).toEqual([
+      'Note: the device R58M12ABCDE is not ready. Unlock the device, and accept the USB debugging prompt on it.',
+    ])
+  })
+
+  it('prints the devices as JSON', async () => {
+    const { io, out } = capture()
+    const adb = fakeAdb({ devices: ADB_OUTPUT })
+
+    expect(
+      await run(
+        ['devices', '--json'],
+        testContext({ io, home: '/unused', run: adb.run }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    const result = JSON.parse(out.join('\n')) as {
+      devices: { id: string; ready: boolean; problem?: string }[]
+      warnings: string[]
+    }
+    expect(result.warnings).toEqual([])
+    expect(result.devices.map(({ id, ready }) => [id, ready])).toEqual([
+      ['emulator-5554', true],
+      ['R58M12ABCDE', false],
+    ])
+    expect(result.devices[1]?.problem).toContain('USB debugging prompt')
+  })
+
+  it('says so when no device runs', async () => {
+    const { io, out, err } = capture()
+
+    expect(
+      await run(
+        ['devices'],
+        testContext({ io, home: '/unused', run: fakeAdb().run }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+    expect(out).toEqual([
+      'No device runs now. Start an emulator, or connect a device with USB debugging on.',
+    ])
+    expect(err).toEqual([])
+  })
+
+  it.each([[[]], [['--json']]])(
+    'args %j fail with the fix when adb is missing',
+    async (args) => {
+      const { io, out, err } = capture()
+      const adb = fakeAdb({ missing: true })
+
+      expect(
+        await run(
+          ['devices', ...args],
+          testContext({ io, home: '/unused', run: adb.run }),
+        ),
+      ).toBe(EXIT_CODE.failure)
+      expect(err.join('\n')).toContain('Warning: DevHub cannot find adb.')
+      if (args.length === 0) {
+        expect(out).toEqual([])
+      } else {
+        expect(JSON.parse(out.join('\n'))).toEqual({
+          devices: [],
+          warnings: [expect.stringContaining('cannot find adb')],
+        })
+      }
+    },
+  )
 })

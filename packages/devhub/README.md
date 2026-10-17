@@ -31,6 +31,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub sync --all` | Runs the sync for each project folder that `devhub sync` saw before. |
 | `devhub list` | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
+| `devhub devices` | Lists the Android emulators and devices that adb sees, with their state. |
 
 Options of `devhub sync`:
 
@@ -39,7 +40,8 @@ Options of `devhub sync`:
 - `--dry-run` shows what the sync downloads, and downloads nothing.
 - `--json` prints the result as JSON.
 
-`devhub list` and `devhub where` also accept `--json`. Results go to stdout.
+`devhub list`, `devhub where`, and `devhub devices` also accept `--json`.
+Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.
 
@@ -59,6 +61,16 @@ DevHub cannot get it back. A daily sync prevents this.
 
 A dev client is a debug build. Its JavaScript runs in development mode, so it
 does not show the real speed of your app in production.
+
+### Devices
+
+`devhub devices` runs `adb devices -l`. DevHub uses the first
+`platform-tools/adb` in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or the default
+Android SDK folder of your system, and else `adb` from your `PATH`.
+
+A device in the state `ready` can get a build. For a device in another
+state, DevHub writes the fix to stderr. For example, an `unauthorized`
+device needs you to accept the USB debugging prompt on it.
 
 ### The store
 

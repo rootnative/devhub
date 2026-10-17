@@ -67,7 +67,7 @@ export function capture() {
   return { io, out, err }
 }
 
-export type FakeEas = {
+export type FakeRunner = {
   run: CommandRunner
   calls: Command[]
 }
@@ -83,7 +83,7 @@ export function fakeEas(
     /** `false`: `eas` is not on PATH, and only npx starts eas-cli. */
     easOnPath?: boolean
   } = {},
-): FakeEas {
+): FakeRunner {
   const calls: Command[] = []
   const run: CommandRunner = async (command) => {
     calls.push(command)
@@ -105,6 +105,46 @@ export function fakeEas(
       return { code: 0, stdout: JSON.stringify(page, null, 2), stderr: '' }
     }
     return { code: 1, stdout: '', stderr: `unknown command ${subcommand}` }
+  }
+  return { run, calls }
+}
+
+/**
+ * A fake adb that answers `adb devices -l` with `devices`. It finds adb by
+ * the base name, because the runner can get the full path of a real SDK.
+ */
+export function fakeAdb(
+  options: {
+    devices?: string
+    /** `true`: adb does not start. */
+    missing?: boolean
+    failure?: { code: number; stderr: string }
+  } = {},
+): FakeRunner {
+  const calls: Command[] = []
+  const run: CommandRunner = async (command) => {
+    calls.push(command)
+    const program = path.basename(command[0]).replace(/\.exe$/i, '')
+    if (program !== 'adb' || options.missing) {
+      throw Object.assign(new Error(`spawn ${command[0]} ENOENT`), {
+        code: 'ENOENT',
+      })
+    }
+    if (command[1] === 'devices') {
+      if (options.failure) {
+        return {
+          code: options.failure.code,
+          stdout: '',
+          stderr: options.failure.stderr,
+        }
+      }
+      return {
+        code: 0,
+        stdout: options.devices ?? 'List of devices attached\n\n',
+        stderr: '',
+      }
+    }
+    return { code: 1, stdout: '', stderr: `unknown command ${command[1]}` }
   }
   return { run, calls }
 }

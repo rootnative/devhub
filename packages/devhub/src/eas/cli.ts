@@ -1,7 +1,9 @@
-import type {
-  Command,
-  CommandResult,
-  CommandRunner,
+import {
+  formatCommand,
+  outputTail,
+  type Command,
+  type CommandResult,
+  type CommandRunner,
 } from '../command/run-command'
 import { isErrnoException } from '../store/files'
 import { isEasBuild, type EasBuild } from './build'
@@ -78,11 +80,11 @@ export async function checkEasLogin(
   }
   if (/not logged in/i.test(result.stderr)) {
     throw new EasCliError(
-      `eas-cli has no login. Run "${commandText([...eas, 'login'])}", and then run the command again.`,
+      `eas-cli has no login. Run "${formatCommand([...eas, 'login'])}", and then run the command again.`,
     )
   }
   throw new EasCliError(
-    `"${commandText(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${stderrTail(result.stderr)}`,
+    `"${formatCommand(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${outputTail(result.stderr)}`,
   )
 }
 
@@ -103,7 +105,7 @@ export async function listFinishedBuilds(
     const result = await runEas(run, command, cwd)
     if (result.code !== 0) {
       throw new EasCliError(
-        `"${commandText([...eas, 'build:list'])}" failed for the build profile "${profile}" with exit code ${result.code}.${stderrTail(result.stderr)}`,
+        `"${formatCommand([...eas, 'build:list'])}" failed for the build profile "${profile}" with exit code ${result.code}.${outputTail(result.stderr)}`,
       )
     }
     const page = parseBuildList(result.stdout)
@@ -151,13 +153,4 @@ async function runEas(run: CommandRunner, command: Command, cwd: string) {
 
 function isNotFound(error: unknown): boolean {
   return isErrnoException(error) && error.code === 'ENOENT'
-}
-
-function commandText(command: Command): string {
-  return command.join(' ')
-}
-
-function stderrTail(stderr: string): string {
-  const lines = stderr.trim().split(/\r?\n/).slice(-5).join('\n')
-  return lines ? `\n${lines}` : ''
 }
