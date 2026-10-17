@@ -26,8 +26,8 @@ Nothing is on npm yet.
 - `devhub where <id>` prints the path of a stored build file. `<id>` is the
   EAS build ID, or a unique start of it.
 - `devhub devices` lists the Android emulators and devices that adb sees,
-  with their state, and the fix for a device that is not ready. It accepts
-  `--json`.
+  with their state, and the fix for a device that is not ready. A ready
+  emulator shows its AVD name. It accepts `--json`.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`

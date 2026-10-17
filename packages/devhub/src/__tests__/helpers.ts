@@ -110,12 +110,15 @@ export function fakeEas(
 }
 
 /**
- * A fake adb that answers `adb devices -l` with `devices`. It finds adb by
- * the base name, because the runner can get the full path of a real SDK.
+ * A fake adb that answers `adb devices -l` with `devices`, and
+ * `adb -s <serial> emu avd name` from `avdNames`. It finds adb by the base
+ * name, because the runner can get the full path of a real SDK.
  */
 export function fakeAdb(
   options: {
     devices?: string
+    /** The AVD name of each emulator serial. A missing serial fails. */
+    avdNames?: Record<string, string>
     /** `true`: adb does not start. */
     missing?: boolean
     failure?: { code: number; stderr: string }
@@ -143,6 +146,17 @@ export function fakeAdb(
         stdout: options.devices ?? 'List of devices attached\n\n',
         stderr: '',
       }
+    }
+    const [, flag, serial = '', ...rest] = command
+    if (flag === '-s' && rest.join(' ') === 'emu avd name') {
+      const name = options.avdNames?.[serial]
+      return name === undefined
+        ? {
+            code: 1,
+            stdout: '',
+            stderr: `error: could not connect to TCP port ${serial.slice(9)}: Connection refused`,
+          }
+        : { code: 0, stdout: `${name}\r\nOK\r\n`, stderr: '' }
     }
     return { code: 1, stdout: '', stderr: `unknown command ${command[1]}` }
   }

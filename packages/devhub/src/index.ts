@@ -11,11 +11,13 @@ export {
 } from './command/run-command'
 export {
   ADB_MISSING,
+  adbAvdNameCommand,
   adbDevice,
   adbDevicesCommand,
   isEmulatorSerial,
   listAndroidDevices,
   parseAdbDevices,
+  parseAvdName,
   resolveAdb,
   type AdbEntry,
   type AdbOptions,

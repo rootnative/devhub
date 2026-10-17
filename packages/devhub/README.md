@@ -72,6 +72,9 @@ A device in the state `ready` can get a build. For a device in another
 state, DevHub writes the fix to stderr. For example, an `unauthorized`
 device needs you to accept the USB debugging prompt on it.
 
+A ready emulator shows its AVD name, from `adb emu avd name`. If the
+emulator console does not answer, the emulator shows its model name.
+
 ### The store
 
 The store is one folder for all your projects. It is never inside a project

@@ -414,7 +414,10 @@ describe('devhub devices', () => {
 
   it('shows each device, and a note for a device that is not ready', async () => {
     const { io, out, err } = capture()
-    const adb = fakeAdb({ devices: ADB_OUTPUT })
+    const adb = fakeAdb({
+      devices: ADB_OUTPUT,
+      avdNames: { 'emulator-5554': 'Pixel_8_API_35' },
+    })
 
     expect(
       await run(
@@ -425,7 +428,7 @@ describe('devhub devices', () => {
     expect(out.join('\n').split('\n')).toEqual([
       expect.stringMatching(/^ID\s+PLATFORM\s+KIND\s+NAME\s+STATE$/),
       expect.stringMatching(
-        /^emulator-5554\s+android\s+emulator\s+sdk gphone64 arm64\s+ready$/,
+        /^emulator-5554\s+android\s+emulator\s+Pixel_8_API_35\s+ready$/,
       ),
       expect.stringMatching(
         /^R58M12ABCDE\s+android\s+physical\s+R58M12ABCDE\s+unauthorized$/,

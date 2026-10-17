@@ -51,6 +51,10 @@ export function adbDevicesCommand(adb: string): Command {
   return [adb, 'devices', '-l']
 }
 
+export function adbAvdNameCommand(adb: string, serial: string): Command {
+  return [adb, '-s', serial, 'emu', 'avd', 'name']
+}
+
 export type AdbEntry = {
   serial: string
   state: string
@@ -88,24 +92,43 @@ export function parseAdbDevices(stdout: string): AdbEntry[] {
   return entries
 }
 
+/**
+ * The AVD name from `adb emu avd name`, which prints the name and then a line
+ * "OK". The emulator console answers "KO: <reason>" when it fails.
+ */
+export function parseAvdName(stdout: string): string | undefined {
+  const first = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line !== '')
+  if (first === undefined || first === 'OK' || first.startsWith('KO')) {
+    return undefined
+  }
+  return first
+}
+
 export function isEmulatorSerial(serial: string): boolean {
   return /^emulator-\d+$/.test(serial)
 }
 
-export function adbDevice(entry: AdbEntry): Device {
+/** `avdName` replaces the model name of an emulator. */
+export function adbDevice(entry: AdbEntry, avdName?: string): Device {
   const problem = adbStateProblem(entry.state)
   return {
     platform: 'android',
     kind: isEmulatorSerial(entry.serial) ? 'emulator' : 'physical',
     id: entry.serial,
-    name: entry.fields.model?.replace(/_/g, ' ') ?? entry.serial,
+    name: avdName ?? entry.fields.model?.replace(/_/g, ' ') ?? entry.serial,
     state: entry.state,
     ready: problem === undefined,
     ...(problem !== undefined && { problem }),
   }
 }
 
-/** Runs `adb devices -l`. Throws a `DeviceError` when adb fails. */
+/**
+ * Runs `adb devices -l`, and reads the AVD name of each ready emulator.
+ * Throws a `DeviceError` when adb fails.
+ */
 export async function listAndroidDevices(
   run: CommandRunner,
   adb: string,
@@ -118,7 +141,30 @@ export async function listAndroidDevices(
       `"adb devices" failed with exit code ${result.code}.${outputTail(result.stderr)}`,
     )
   }
-  return parseAdbDevices(result.stdout).map(adbDevice)
+  const devices: Device[] = []
+  for (const entry of parseAdbDevices(result.stdout)) {
+    const avdName =
+      entry.state === 'device' && isEmulatorSerial(entry.serial)
+        ? await readAvdName(run, adb, entry.serial, cwd)
+        : undefined
+    devices.push(adbDevice(entry, avdName))
+  }
+  return devices
+}
+
+/** A name is only a label, so a failure gives `undefined`, not an error. */
+async function readAvdName(
+  run: CommandRunner,
+  adb: string,
+  serial: string,
+  cwd: string,
+): Promise<string | undefined> {
+  try {
+    const result = await run(adbAvdNameCommand(adb, serial), { cwd })
+    return result.code === 0 ? parseAvdName(result.stdout) : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function adbStateProblem(state: string): string | undefined {
