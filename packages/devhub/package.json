@@ -1,0 +1,68 @@
+{
+  "name": "@rootnative/devhub",
+  "version": "0.0.0",
+  "private": true,
+  "description": "RootNative DevHub: keep every Expo development build, and launch any one on a simulator or an emulator in one click.",
+  "license": "MIT",
+  "author": "RootNative",
+  "homepage": "https://github.com/rootnative/devhub#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rootnative/devhub.git",
+    "directory": "packages/devhub"
+  },
+  "bugs": {
+    "url": "https://github.com/rootnative/devhub/issues"
+  },
+  "keywords": [
+    "expo",
+    "react-native",
+    "dev-client",
+    "expo-dev-client",
+    "development-build",
+    "fingerprint",
+    "build-cache",
+    "simulator",
+    "emulator",
+    "cli"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "devhub": "./dist/bin.js"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "node -e \"for (const p of ['dist', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
