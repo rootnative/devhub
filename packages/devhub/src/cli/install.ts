@@ -55,7 +55,7 @@ export async function installCommand(
   if (build === undefined) {
     return EXIT_CODE.failure
   }
-  const problem = installProblem(build)
+  const problem = installProblem(build, context.platform)
   if (problem !== undefined) {
     io.err(problem)
     return EXIT_CODE.failure
@@ -82,6 +82,7 @@ export async function installCommand(
       run: context.run,
       adb,
       cwd: context.cwd,
+      platform: context.platform,
     })
   } catch (error) {
     if (!(error instanceof DeviceError)) {

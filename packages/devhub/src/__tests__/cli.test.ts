@@ -679,22 +679,41 @@ describe('devhub install', () => {
     expect(tools.calls).toEqual([])
   })
 
-  it('runs no device tool for a build that is not an Android .apk', async () => {
-    const home = await tempDir()
-    await writeStoredBuild(
-      home,
+  // A fake system breaks the store path, so these tests use the real system.
+  // CI runs them on macOS, Linux, and Windows, which covers each iOS reason.
+  const onMacos = process.platform === 'darwin'
+  const NOT_MACOS = 'iOS simulators run only on macOS'
+
+  it.each([
+    [
+      'an .aab',
+      easBuild({ id: ID_B }),
+      'app.aab',
+      'is an Android App Bundle (app.aab)',
+    ],
+    [
+      'an iOS device build',
+      easBuild({ id: ID_B, platform: 'IOS' }),
+      'app.ipa',
+      onMacos ? 'is an iOS device build (app.ipa)' : NOT_MACOS,
+    ],
+    [
+      'an iOS simulator build',
       easBuild({ id: ID_B, platform: 'IOS', isForIosSimulator: true }),
       'app.tar.gz',
-    )
+      onMacos ? 'can install only an Android .apk build now' : NOT_MACOS,
+    ],
+  ])('runs no device tool for %s', async (_label, eas, file, reason) => {
+    const home = await tempDir()
+    await writeStoredBuild(home, eas, file)
     const { io, err } = capture()
     const tools = fakeDeviceTools()
 
     expect(
       await run(['install', ID_B], testContext({ io, home, run: tools.run })),
     ).toBe(EXIT_CODE.failure)
-    expect(err).toEqual([
-      `DevHub can install only an Android .apk build now. The build ${ID_B} is the file app.tar.gz.`,
-    ])
+    expect(err).toHaveLength(1)
+    expect(err[0]).toContain(reason)
     expect(tools.calls).toEqual([])
   })
 

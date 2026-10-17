@@ -91,6 +91,15 @@ writes a warning and lists the devices of the other tool. The exit code is
 `-d` lets you go back to an older build. It does not start a device, and it
 does not open the app.
 
+DevHub checks the build before it looks for a device. It stops, and gives
+the fix, for these builds:
+
+| Build | Why it cannot install | Fix |
+| --- | --- | --- |
+| Android App Bundle (`.aab`) | adb installs only an APK. | Set `"android": { "buildType": "apk" }` in the build profile in `eas.json`, and make a new build. |
+| iOS device build (`.ipa`) | A simulator cannot run it. | Set `"ios": { "simulator": true }` in the build profile in `eas.json`, and make a new build. |
+| Any iOS build on Windows or Linux | iOS simulators run only on macOS. | Install the build on a Mac. |
+
 When one Android emulator or device is ready, DevHub uses it. When two or
 more are ready, select one with `--device <serial>`. `devhub devices` shows
 the serials. When no device is ready, DevHub gives the reason for each

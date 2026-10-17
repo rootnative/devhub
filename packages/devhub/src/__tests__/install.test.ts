@@ -85,27 +85,72 @@ describe('adbInstallFailure', () => {
 })
 
 describe('installProblem', () => {
-  it('accepts an Android .apk', () => {
-    expect(installProblem(storedBuild('app.APK'))).toBeUndefined()
+  const ios = easBuild({ platform: 'IOS', buildProfile: 'preview' })
+  const simulator = easBuild({ platform: 'IOS', isForIosSimulator: true })
+
+  it.each(['darwin', 'linux', 'win32'] as const)(
+    'accepts an Android .apk on %s',
+    (platform) => {
+      expect(installProblem(storedBuild('app.APK'), platform)).toBeUndefined()
+    },
+  )
+
+  it('refuses an .aab, with the eas.json fix for its profile', () => {
+    const build = storedBuild('app.aab')
+
+    expect(installProblem(build, 'linux')).toBe(
+      `The build ${build.id} is an Android App Bundle (app.aab). adb installs only an APK. Set "android": { "buildType": "apk" } in the build profile "development" in eas.json, and make a new build.`,
+    )
+  })
+
+  it('refuses an iOS device build on macOS, with the eas.json fix', () => {
+    expect(installProblem(storedBuild('app.ipa', ios), 'darwin')).toBe(
+      `The build ${ios.id} is an iOS device build (app.ipa). A simulator cannot run it. Set "ios": { "simulator": true } in the build profile "preview" in eas.json, and make a new build.`,
+    )
+  })
+
+  it('names no profile when the record has none', () => {
+    const { buildProfile: _, ...eas } = easBuild()
+
+    expect(installProblem(storedBuild('app.aab', eas), 'darwin')).toContain(
+      'in the build profile in eas.json',
+    )
   })
 
   it.each([
-    ['an .aab', 'app.aab', easBuild()],
+    ['linux', 'an iOS device build', 'app.ipa', ios],
+    ['win32', 'an iOS device build', 'app.ipa', ios],
+    ['linux', 'an iOS simulator build', 'app.tar.gz', simulator],
+    ['win32', 'an iOS simulator build', 'app.tar.gz', simulator],
+  ] as const)(
+    'refuses on %s %s, because it is not macOS',
+    (platform, _label, file, eas) => {
+      expect(installProblem(storedBuild(file, eas), platform)).toBe(
+        `The build ${eas.id} is an iOS build. iOS simulators run only on macOS, so DevHub installs an iOS build only on macOS.`,
+      )
+    },
+  )
+
+  it.each([
+    ['an iOS simulator build on macOS', 'app.tar.gz', simulator],
+    ['an Android file that is not an .apk or an .aab', 'app.zip', easBuild()],
     [
-      'an iOS simulator build',
-      'app.tar.gz',
-      easBuild({ platform: 'IOS', isForIosSimulator: true }),
+      'a build of an unknown platform',
+      'app.bin',
+      easBuild({ platform: 'WEB' }),
     ],
-    ['an iOS device build', 'app.ipa', easBuild({ platform: 'IOS' })],
-  ])('refuses %s', (_label, file, eas) => {
-    expect(installProblem(storedBuild(file, eas))).toBe(
-      `DevHub can install only an Android .apk build now. The build ${eas.id} is the file ${file}.`,
-    )
-  })
+  ])(
+    'refuses %s, because DevHub cannot install it yet',
+    (_label, file, eas) => {
+      expect(installProblem(storedBuild(file, eas), 'darwin')).toBe(
+        `DevHub can install only an Android .apk build now. The build ${eas.id} is the file ${file}.`,
+      )
+    },
+  )
 })
 
 describe('installBuild', () => {
-  const options = { adb: 'adb', cwd: '/' }
+  const options = { adb: 'adb', cwd: '/', platform: 'linux' } as const
 
   it('runs adb install on the device with the stored file', async () => {
     const tools = fakeDeviceTools()
@@ -140,7 +185,7 @@ describe('installBuild', () => {
         ...options,
         run: tools.run,
       }),
-    ).rejects.toThrow('only an Android .apk')
+    ).rejects.toThrow('adb installs only an APK')
     expect(tools.calls).toEqual([])
   })
 

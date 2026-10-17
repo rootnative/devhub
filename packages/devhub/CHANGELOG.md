@@ -31,7 +31,9 @@ Nothing is on npm yet.
   simulators. It accepts `--json`.
 - `devhub install <id>` installs a stored Android `.apk` on a ready Android
   emulator or device, with `adb install -r -d`. `--device <serial>` selects
-  the device when two or more are ready. It accepts `--json`.
+  the device when two or more are ready. It accepts `--json`. Before it
+  looks for a device, it stops for an `.aab`, an iOS device build (`.ipa`),
+  or an iOS build on Windows or Linux, and gives the fix.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`

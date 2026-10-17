@@ -12,18 +12,46 @@ export type InstallOptions = {
   /** The adb program, from `resolveAdb`. */
   adb: string
   cwd: string
+  /** The system that DevHub runs on. */
+  platform: NodeJS.Platform
 }
 
 /**
- * Returns why DevHub cannot install the build, or `undefined` when it can.
- * DevHub installs only an Android `.apk` now.
+ * Returns why DevHub cannot install the build on this system, with the fix,
+ * or `undefined` when it can. DevHub installs only an Android `.apk` now.
  */
-export function installProblem(build: StoredBuild): string | undefined {
+export function installProblem(
+  build: StoredBuild,
+  platform: NodeJS.Platform,
+): string | undefined {
   const { eas, file } = build.record
-  if (eas.platform === 'ANDROID' && file.toLowerCase().endsWith('.apk')) {
-    return undefined
+  const name = file.toLowerCase()
+  if (eas.platform === 'ANDROID') {
+    if (name.endsWith('.apk')) {
+      return undefined
+    }
+    if (name.endsWith('.aab')) {
+      return `The build ${build.id} is an Android App Bundle (${file}). adb installs only an APK. ${profileFix(build, '"android": { "buildType": "apk" }')}`
+    }
+  }
+  if (eas.platform === 'IOS') {
+    if (platform !== 'darwin') {
+      return `The build ${build.id} is an iOS build. iOS simulators run only on macOS, so DevHub installs an iOS build only on macOS.`
+    }
+    if (name.endsWith('.ipa')) {
+      return `The build ${build.id} is an iOS device build (${file}). A simulator cannot run it. ${profileFix(build, '"ios": { "simulator": true }')}`
+    }
   }
   return `DevHub can install only an Android .apk build now. The build ${build.id} is the file ${file}.`
+}
+
+function profileFix(build: StoredBuild, setting: string): string {
+  const profile = build.record.eas.buildProfile
+  const target =
+    profile === undefined
+      ? 'the build profile'
+      : `the build profile "${profile}"`
+  return `Set ${setting} in ${target} in eas.json, and make a new build.`
 }
 
 /**
@@ -35,7 +63,7 @@ export async function installBuild(
   device: Device,
   options: InstallOptions,
 ): Promise<void> {
-  const problem = installProblem(build)
+  const problem = installProblem(build, options.platform)
   if (problem !== undefined) {
     throw new DeviceError(problem)
   }
