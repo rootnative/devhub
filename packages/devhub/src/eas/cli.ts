@@ -1,4 +1,8 @@
-import type { Command, CommandRunner } from '../command/run-command'
+import type {
+  Command,
+  CommandResult,
+  CommandRunner,
+} from '../command/run-command'
 import { isErrnoException } from '../store/files'
 import { isEasBuild, type EasBuild } from './build'
 
@@ -12,13 +16,30 @@ export class EasCliError extends Error {
   }
 }
 
-export function easWhoamiCommand(): Command {
-  return ['eas', 'whoami']
+/** The program and the arguments that start eas-cli, before its subcommand. */
+export type EasInvocation = Command
+
+export const EAS_ON_PATH: EasInvocation = ['eas']
+
+/**
+ * Most developers run eas-cli with npx, with no global install. npx uses the
+ * eas-cli of the project when the project has one. stdin is not a terminal,
+ * so npm already installs with no question, but `--yes` does not depend on
+ * that rule.
+ */
+export const EAS_WITH_NPX: EasInvocation = ['npx', '--yes', 'eas-cli']
+
+export function easWhoamiCommand(eas: EasInvocation): Command {
+  return [...eas, 'whoami']
 }
 
-export function easBuildListCommand(profile: string, offset: number): Command {
+export function easBuildListCommand(
+  profile: string,
+  offset: number,
+  eas: EasInvocation,
+): Command {
   return [
-    'eas',
+    ...eas,
     'build:list',
     '--json',
     '--non-interactive',
@@ -33,22 +54,35 @@ export function easBuildListCommand(profile: string, offset: number): Command {
   ]
 }
 
-/** Stops with the next step when `eas` is missing or has no login. */
+/**
+ * Finds how to start eas-cli: `eas` on PATH, and else npx. Stops with the
+ * next step when neither starts, or when eas-cli has no login.
+ */
 export async function checkEasLogin(
   run: CommandRunner,
   cwd: string,
-): Promise<void> {
-  const result = await runEas(run, easWhoamiCommand(), cwd)
+): Promise<EasInvocation> {
+  let eas = EAS_ON_PATH
+  let result: CommandResult
+  try {
+    result = await run(easWhoamiCommand(eas), { cwd })
+  } catch (error) {
+    if (!isNotFound(error)) {
+      throw error
+    }
+    eas = EAS_WITH_NPX
+    result = await runEas(run, easWhoamiCommand(eas), cwd)
+  }
   if (result.code === 0) {
-    return
+    return eas
   }
   if (/not logged in/i.test(result.stderr)) {
     throw new EasCliError(
-      'eas-cli has no login. Run "eas login", and then run the command again.',
+      `eas-cli has no login. Run "${commandText([...eas, 'login'])}", and then run the command again.`,
     )
   }
   throw new EasCliError(
-    `"eas whoami" failed with exit code ${result.code}.${stderrTail(result.stderr)}`,
+    `"${commandText(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${stderrTail(result.stderr)}`,
   )
 }
 
@@ -61,14 +95,15 @@ export async function listFinishedBuilds(
   run: CommandRunner,
   cwd: string,
   profile: string,
+  eas: EasInvocation,
 ): Promise<EasBuild[]> {
   const builds = new Map<string, EasBuild>()
   for (let offset = 0; ; offset += BUILD_LIST_PAGE_SIZE) {
-    const command = easBuildListCommand(profile, offset)
+    const command = easBuildListCommand(profile, offset, eas)
     const result = await runEas(run, command, cwd)
     if (result.code !== 0) {
       throw new EasCliError(
-        `"eas build:list" failed for the build profile "${profile}" with exit code ${result.code}.${stderrTail(result.stderr)}`,
+        `"${commandText([...eas, 'build:list'])}" failed for the build profile "${profile}" with exit code ${result.code}.${stderrTail(result.stderr)}`,
       )
     }
     const page = parseBuildList(result.stdout)
@@ -97,7 +132,7 @@ export function parseBuildList(stdout: string): EasBuild[] {
 
 function unreadableOutput(): EasCliError {
   return new EasCliError(
-    '"eas build:list" printed output that DevHub cannot read. Update eas-cli with "npm install --global eas-cli", and then run the command again.',
+    '"eas build:list" printed output that DevHub cannot read. Update eas-cli to the newest version, and then run the command again.',
   )
 }
 
@@ -105,13 +140,21 @@ async function runEas(run: CommandRunner, command: Command, cwd: string) {
   try {
     return await run(command, { cwd })
   } catch (error) {
-    if (isErrnoException(error) && error.code === 'ENOENT') {
+    if (isNotFound(error)) {
       throw new EasCliError(
-        'DevHub cannot find the "eas" command. Install eas-cli with "npm install --global eas-cli", and then run the command again.',
+        `DevHub cannot start "${command[0]}". Put "eas" or "npx" on PATH. npx is in the folder of node. Then run the command again.`,
       )
     }
     throw error
   }
+}
+
+function isNotFound(error: unknown): boolean {
+  return isErrnoException(error) && error.code === 'ENOENT'
+}
+
+function commandText(command: Command): string {
+  return command.join(' ')
 }
 
 function stderrTail(stderr: string): string {

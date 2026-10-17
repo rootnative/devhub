@@ -1,7 +1,11 @@
 import { rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { CommandRunner } from '../command/run-command'
-import { checkEasLogin, listFinishedBuilds } from '../eas/cli'
+import {
+  checkEasLogin,
+  listFinishedBuilds,
+  type EasInvocation,
+} from '../eas/cli'
 import {
   devClientProfiles,
   readEasJson,
@@ -85,12 +89,12 @@ export async function syncProjects(
   options: SyncOptions,
   deps: SyncDeps,
 ): Promise<SyncReport> {
-  await checkEasLogin(deps.run, options.cwd)
+  const eas = await checkEasLogin(deps.run, options.cwd)
   const lock = options.dryRun ? undefined : await acquireSyncLock(deps.home)
   try {
     const projects: ProjectSyncResult[] = []
     for (const project of options.projects) {
-      projects.push(await syncProject(project, options, deps))
+      projects.push(await syncProject(project, eas, options, deps))
     }
     return { dryRun: options.dryRun, projects }
   } finally {
@@ -108,6 +112,7 @@ export function syncFailed(report: SyncReport): boolean {
 
 async function syncProject(
   project: string,
+  eas: EasInvocation,
   options: SyncOptions,
   deps: SyncDeps,
 ): Promise<ProjectSyncResult> {
@@ -140,7 +145,12 @@ async function syncProject(
     const profileBuilds: ProfileBuilds[] = []
     for (const profile of result.profiles) {
       deps.progress(`Reading the EAS builds of the profile "${profile.name}".`)
-      const builds = await listFinishedBuilds(deps.run, project, profile.name)
+      const builds = await listFinishedBuilds(
+        deps.run,
+        project,
+        profile.name,
+        eas,
+      )
       profileBuilds.push({ profile, builds })
     }
     const plan = planSync({

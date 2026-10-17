@@ -16,9 +16,12 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 ## Requirements
 
 - Node 20.19 or later.
-- [eas-cli](https://github.com/expo/eas-cli) on your `PATH`, with a login:
-  `npm install --global eas-cli`, and then `eas login`. DevHub runs `eas` and
-  uses its login. DevHub never reads, asks for, or stores a token.
+- [eas-cli](https://github.com/expo/eas-cli) with a login. DevHub runs `eas`
+  when it is on your `PATH`. If it is not, DevHub runs `npx --yes eas-cli`,
+  which uses the eas-cli of the project when the project has one. A global
+  install is not necessary. Log in one time with `npx eas-cli login` or
+  `eas login`. DevHub uses that login, and never reads, asks for, or stores
+  a token.
 
 ## Commands
 
@@ -78,11 +81,12 @@ each project folder. Then a daily `devhub sync --all` keeps the builds of
 each project, also the projects that you do not work on now.
 
 A scheduled job does not read your shell profile, so it can have a short
-`PATH`. The job must find `node`, `devhub`, and `eas`. Run this command to
-see their folders, and put each folder in the `PATH` of the job:
+`PATH`. The job must find `node`, `devhub`, and `eas` or `npx`. `npx` is in
+the folder of `node`. Run this command to see their folders, and put each
+folder in the `PATH` of the job:
 
 ```bash
-command -v node devhub eas
+command -v node devhub eas npx
 ```
 
 ### cron (macOS and Linux)

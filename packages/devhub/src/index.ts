@@ -17,11 +17,14 @@ export {
 } from './eas/build'
 export {
   BUILD_LIST_PAGE_SIZE,
+  EAS_ON_PATH,
+  EAS_WITH_NPX,
   EasCliError,
   checkEasLogin,
   easBuildListCommand,
   easWhoamiCommand,
   listFinishedBuilds,
+  type EasInvocation,
 } from './eas/cli'
 export {
   EasJsonError,

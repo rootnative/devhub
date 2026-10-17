@@ -222,6 +222,24 @@ describe('syncProjects', () => {
     expect(syncFailed(report)).toBe(false)
   })
 
+  it('reads the builds through npx when eas is not on PATH', async () => {
+    const { home, project } = await setup()
+    const eas = fakeEas(
+      { development: [easBuild({ id: uuid(1) })] },
+      { easOnPath: false },
+    )
+
+    const report = await syncProjects(options([project]), deps(home, eas))
+
+    expect(report.projects[0]?.builds.map((build) => build.status)).toEqual([
+      'downloaded',
+    ])
+    expect(eas.calls.slice(1).map((command) => command.slice(0, 4))).toEqual([
+      ['npx', '--yes', 'eas-cli', 'whoami'],
+      ['npx', '--yes', 'eas-cli', 'build:list'],
+    ])
+  })
+
   it('stops before any project when eas has no login', async () => {
     const { home, project } = await setup()
     const eas = fakeEas({}, { whoami: { code: 1, stderr: 'Not logged in' } })

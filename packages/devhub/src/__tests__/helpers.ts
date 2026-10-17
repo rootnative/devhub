@@ -6,6 +6,7 @@ import { afterEach } from 'vitest'
 import type { CliContext, Io } from '../cli/context'
 import type { Command, CommandRunner } from '../command/run-command'
 import type { EasBuild } from '../eas/build'
+import { EAS_ON_PATH, EAS_WITH_NPX } from '../eas/cli'
 import {
   BUILD_RECORD_SCHEMA_VERSION,
   buildFolder,
@@ -77,12 +78,20 @@ export type FakeEas = {
  */
 export function fakeEas(
   buildsByProfile: Record<string, EasBuild[]>,
-  options: { whoami?: { code: number; stderr: string } } = {},
+  options: {
+    whoami?: { code: number; stderr: string }
+    /** `false`: `eas` is not on PATH, and only npx starts eas-cli. */
+    easOnPath?: boolean
+  } = {},
 ): FakeEas {
   const calls: Command[] = []
   const run: CommandRunner = async (command) => {
     calls.push(command)
-    const [, subcommand, ...args] = command
+    if (command[0] === 'eas' && options.easOnPath === false) {
+      throw Object.assign(new Error('spawn eas ENOENT'), { code: 'ENOENT' })
+    }
+    const prefix = command[0] === 'npx' ? EAS_WITH_NPX : EAS_ON_PATH
+    const [subcommand, ...args] = command.slice(prefix.length)
     if (subcommand === 'whoami') {
       const { code, stderr } = options.whoami ?? { code: 0, stderr: '' }
       return { code, stdout: code === 0 ? 'someone\n' : '', stderr }

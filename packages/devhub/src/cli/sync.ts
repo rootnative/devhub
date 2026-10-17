@@ -30,7 +30,8 @@ export const SYNC_HELP = `Usage: devhub sync [options]
 
 Download each finished EAS dev client build of this project that the store
 does not have. A build profile is a dev client profile when it has
-"developmentClient": true in eas.json. DevHub runs "eas" and uses its login.
+"developmentClient": true in eas.json. DevHub runs "eas", or "npx eas-cli"
+when eas is not on PATH, and uses the eas-cli login.
 
 Options:
   --all             Sync each project folder that devhub sync saw before.

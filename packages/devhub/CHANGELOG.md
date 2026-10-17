@@ -17,6 +17,8 @@ Nothing is on npm yet.
   project that the store does not have. It reads the dev client profiles
   from `eas.json`, with `extends` and the `android` and `ios` blocks, the
   same as eas-cli. It accepts `--profile <name>`, `--dry-run`, and `--json`.
+  It runs `eas` from `PATH`, or `npx --yes eas-cli` when `eas` is not on
+  `PATH`.
 - `devhub sync --all` syncs each project folder that `devhub sync` saw
   before. A project that fails does not stop the others.
 - `devhub list` shows the stored builds. `--json` prints each record with
