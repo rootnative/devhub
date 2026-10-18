@@ -1,5 +1,6 @@
 import type { Device } from '../devices/device'
 import { listDevices } from '../devices/list'
+import { deviceReport } from '../flow/devices'
 import {
   EXIT_CODE,
   parseCommandArgs,
@@ -42,18 +43,17 @@ export async function devicesCommand(
     return usageError(io, 'devhub devices takes no arguments.', 'devices')
   }
 
-  const { devices, sources } = await listDevices(context)
-  const warnings = sources.flatMap((source) =>
-    source.error === undefined ? [] : [source.error],
-  )
+  const list = await listDevices(context)
+  const report = deviceReport(list)
+  const { devices, warnings } = report
   for (const warning of warnings) {
     io.err(`Warning: ${warning}`)
   }
   const exitCode =
-    warnings.length === sources.length ? EXIT_CODE.failure : EXIT_CODE.ok
+    warnings.length === list.sources.length ? EXIT_CODE.failure : EXIT_CODE.ok
 
   if (parsed.values.json) {
-    io.out(JSON.stringify({ devices, warnings }, null, 2))
+    io.out(JSON.stringify(report, null, 2))
     return exitCode
   }
   for (const device of devices) {

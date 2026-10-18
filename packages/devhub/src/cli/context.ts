@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { parseArgs, type ParseArgsConfig } from 'node:util'
 import { runCommand, type CommandRunner } from '../command/run-command'
+import type { FlowError } from '../flow/result'
 import { downloadFile, type Downloader } from '../sync/download'
 
 export type Io = {
@@ -77,6 +78,11 @@ export function usageError(io: Io, message: string, command?: string): number {
   return EXIT_CODE.usage
 }
 
-export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+/** Writes the message of a failed flow, and returns its exit code. */
+export function flowError(io: Io, error: FlowError, command: string): number {
+  if (error.usage) {
+    return usageError(io, error.message, command)
+  }
+  io.err(error.message)
+  return EXIT_CODE.failure
 }

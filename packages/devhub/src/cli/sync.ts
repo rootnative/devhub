@@ -1,5 +1,6 @@
 import { EasCliError } from '../eas/cli'
 import { findEasProject } from '../eas/profiles'
+import { errorMessage } from '../flow/result'
 import { resolveHome } from '../store/home'
 import { StoreLockedError } from '../store/lock'
 import { readProjects } from '../store/projects'
@@ -13,7 +14,6 @@ import {
 } from '../sync/sync'
 import {
   EXIT_CODE,
-  errorMessage,
   parseCommandArgs,
   usageError,
   type CliContext,

@@ -1,5 +1,3 @@
-import type { EasBuild } from '../eas/build'
-
 const SHORT_ID_LENGTH = 8
 
 /**
@@ -29,10 +27,6 @@ export function platformLabel(
     return isForIosSimulator ? 'ios simulator' : 'ios device'
   }
   return platform.toLowerCase()
-}
-
-export function projectName(build: EasBuild): string {
-  return build.app?.slug ?? build.app?.name ?? '-'
 }
 
 /** The date part of an ISO timestamp, in UTC. */

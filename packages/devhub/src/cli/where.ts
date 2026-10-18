@@ -1,10 +1,12 @@
+import { findStoredBuild } from '../flow/find'
+import { resolveHome } from '../store/home'
 import {
   EXIT_CODE,
+  flowError,
   parseCommandArgs,
   usageError,
   type CliContext,
 } from './context'
-import { findStoredBuild } from './find'
 
 export const WHERE_HELP = `Usage: devhub where <id> [options]
 
@@ -41,10 +43,11 @@ export async function whereCommand(
     return usageError(io, 'devhub where takes one build ID.', 'where')
   }
 
-  const build = await findStoredBuild(context, query)
-  if (build === undefined) {
-    return EXIT_CODE.failure
+  const found = await findStoredBuild(resolveHome(context), query)
+  if (found.kind === 'error') {
+    return flowError(io, found, 'where')
   }
+  const build = found.value
   io.out(
     parsed.values.json
       ? JSON.stringify({ id: build.id, path: build.path }, null, 2)

@@ -50,6 +50,10 @@ Nothing is on npm yet.
   `devClientProfiles`, `resolveHome`, `listDevices`, `selectDevice`,
   `resolveAdb`, `installBuild`, `unpackIosBuild`, and the `eas`, `adb`,
   `simctl`, and `tar` command builders.
+- The flows of the CLI commands in the core API: `findStoredBuild`,
+  `listBuilds`, `installStoredBuild`, and `deviceReport`. Each one returns a
+  result with the JSON of its command, or an error message, and writes
+  nothing to stdout or stderr.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli

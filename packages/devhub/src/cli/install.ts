@@ -1,25 +1,11 @@
-import { listAndroidDevices, resolveAdb } from '../devices/android'
-import {
-  DeviceError,
-  type Device,
-  type DevicePlatform,
-} from '../devices/device'
-import { listIosSimulators } from '../devices/ios'
-import { findDevice, selectDevice } from '../devices/select'
-import {
-  installBuild,
-  installPlatform,
-  installProblem,
-} from '../install/install'
-import { resolveHome } from '../store/home'
+import { installStoredBuild } from '../flow/install'
 import {
   EXIT_CODE,
-  errorMessage,
+  flowError,
   parseCommandArgs,
   usageError,
   type CliContext,
 } from './context'
-import { findStoredBuild } from './find'
 
 export const INSTALL_HELP = `Usage: devhub install <id> [options]
 
@@ -62,91 +48,18 @@ export async function installCommand(
     return usageError(io, 'devhub install takes one build ID.', 'install')
   }
 
-  const build = await findStoredBuild(context, query)
-  if (build === undefined) {
-    return EXIT_CODE.failure
+  const result = await installStoredBuild(
+    { id: query, device: parsed.values.device },
+    { ...context, progress: (text) => io.err(text) },
+  )
+  if (result.kind === 'error') {
+    return flowError(io, result, 'install')
   }
-  const problem = installProblem(build, context.platform)
-  if (problem !== undefined) {
-    io.err(problem)
-    return EXIT_CODE.failure
-  }
-
-  const target = installPlatform(build)
-  const wanted = parsed.values.device
-  let device: Device
-  try {
-    const choice = selectDevice(
-      await installDevices(context, target, wanted),
-      target,
-      wanted,
-    )
-    if (choice.kind === 'error') {
-      if (choice.usage) {
-        return usageError(io, choice.message, 'install')
-      }
-      io.err(choice.message)
-      return EXIT_CODE.failure
-    }
-    device = choice.device
-    io.err(`Installing the build ${build.id} on ${device.name} (${device.id}).`)
-    await installBuild(build, device, {
-      run: context.run,
-      adb: resolveAdb(context),
-      cwd: context.cwd,
-      platform: context.platform,
-      home: resolveHome(context),
-    })
-  } catch (error) {
-    if (!(error instanceof DeviceError)) {
-      throw error
-    }
-    io.err(errorMessage(error))
-    return EXIT_CODE.failure
-  }
-
+  const { id, device } = result.value
   io.out(
     parsed.values.json
-      ? JSON.stringify({ id: build.id, path: build.path, device }, null, 2)
-      : `Installed the build ${build.id} on ${device.name} (${device.id}).`,
+      ? JSON.stringify(result.value, null, 2)
+      : `Installed the build ${id} on ${device.name} (${device.id}).`,
   )
   return EXIT_CODE.ok
-}
-
-/**
- * Lists the devices of the build's platform. The other device tool runs only
- * for a `--device` that is not on that list, so an iOS install does not
- * start the adb server.
- */
-async function installDevices(
-  context: CliContext,
-  target: DevicePlatform,
-  wanted: string | undefined,
-): Promise<Device[]> {
-  const devices = await platformDevices(context, target)
-  const other = target === 'ios' ? 'android' : 'ios'
-  if (
-    wanted === undefined ||
-    findDevice(devices, wanted) !== undefined ||
-    (other === 'ios' && context.platform !== 'darwin')
-  ) {
-    return devices
-  }
-  try {
-    return [...devices, ...(await platformDevices(context, other))]
-  } catch (error) {
-    if (!(error instanceof DeviceError)) {
-      throw error
-    }
-    return devices
-  }
-}
-
-function platformDevices(
-  context: CliContext,
-  platform: DevicePlatform,
-): Promise<Device[]> {
-  return platform === 'ios'
-    ? listIosSimulators(context.run, context.cwd)
-    : listAndroidDevices(context.run, resolveAdb(context), context.cwd)
 }

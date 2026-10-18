@@ -71,6 +71,16 @@ export {
   withExtraProfiles,
   type SyncProfile,
 } from './eas/profiles'
+export { deviceReport, type DeviceReport } from './flow/devices'
+export { findStoredBuild } from './flow/find'
+export {
+  installStoredBuild,
+  type InstallDeps,
+  type InstallRequest,
+  type InstalledBuild,
+} from './flow/install'
+export { listBuilds, type BuildList, type ListedBuild } from './flow/list'
+export type { FlowError, FlowResult } from './flow/result'
 export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'
 export {
   installBuild,

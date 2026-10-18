@@ -5,51 +5,44 @@ import {
   scanStore,
   type StoredBuild,
 } from '../store/builds'
-import { resolveHome } from '../store/home'
-import { errorMessage, type CliContext } from './context'
+import { errorMessage, failure, type FlowResult } from './result'
 
 /**
  * Finds the stored build with the ID or the unique ID prefix `query`, and
- * checks that its file exists. On a failure it writes the message and
- * returns `undefined`.
+ * checks that its file exists.
  */
 export async function findStoredBuild(
-  context: CliContext,
+  home: string,
   query: string,
-): Promise<StoredBuild | undefined> {
-  const { io } = context
+): Promise<FlowResult<StoredBuild>> {
   let found
   try {
-    found = findBuild((await scanStore(resolveHome(context))).builds, query)
+    found = findBuild((await scanStore(home)).builds, query)
   } catch (error) {
-    io.err(errorMessage(error))
-    return undefined
+    return failure(errorMessage(error))
   }
   if (found.kind === 'none') {
-    io.err(
+    return failure(
       `The store has no build with an ID that starts with "${query}". Run devhub list to see the stored builds.`,
     )
-    return undefined
   }
   if (found.kind === 'ambiguous') {
-    io.err(
+    return failure(
       [
         `The ID "${query}" matches ${found.matches.length} stored builds:`,
         ...found.matches.map((build) => `  ${build.id}`),
         'Give more characters of the ID.',
       ].join('\n'),
     )
-    return undefined
   }
 
   const { build } = found
   try {
     await stat(build.path)
   } catch {
-    io.err(
+    return failure(
       `The record of the build ${build.id} names the file ${build.path}, but the file does not exist. ${downloadAgainFix(build.path)}`,
     )
-    return undefined
   }
-  return build
+  return { kind: 'ok', value: build }
 }
