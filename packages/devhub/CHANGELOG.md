@@ -41,6 +41,12 @@ Nothing is on npm yet.
   `adb install` fails, it gives the cause and the fix for each common
   failure code. For a signing key conflict or a refused downgrade, it prints
   the `adb uninstall` command, and does not uninstall the app.
+- `devhub ui` starts a local server for the DevHub page, prints its URL,
+  and opens the URL in the browser. The server listens on `127.0.0.1` only.
+  Each run makes a new token, and each API call must send it. The API gives
+  the same JSON as `devhub list`, `devhub devices`, `devhub install`, and
+  `devhub sync --all` with `--json`. It accepts `--port <n>`, `--no-open`,
+  and `--json`. The page itself is not in the package yet.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`
@@ -51,9 +57,9 @@ Nothing is on npm yet.
   `resolveAdb`, `installBuild`, `unpackIosBuild`, and the `eas`, `adb`,
   `simctl`, and `tar` command builders.
 - The flows of the CLI commands in the core API: `findStoredBuild`,
-  `listBuilds`, `installStoredBuild`, and `deviceReport`. Each one returns a
-  result with the JSON of its command, or an error message, and writes
-  nothing to stdout or stderr.
+  `listBuilds`, `installStoredBuild`, `deviceReport`, and `syncBuilds`. Each
+  one returns a result with the JSON of its command, or an error message,
+  and writes nothing to stdout or stderr.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli

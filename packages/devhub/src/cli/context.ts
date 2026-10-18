@@ -1,6 +1,8 @@
 import os from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { parseArgs, type ParseArgsConfig } from 'node:util'
 import { runCommand, type CommandRunner } from '../command/run-command'
+import { startCommand, type CommandStarter } from '../command/start-command'
 import type { FlowError } from '../flow/result'
 import { downloadFile, type Downloader } from '../sync/download'
 
@@ -23,8 +25,13 @@ export type CliContext = {
   platform: NodeJS.Platform
   homedir: string
   run: CommandRunner
+  start: CommandStarter
   download: Downloader
   now: () => Date
+  /** Resolves when the user stops a long command, for example with Ctrl+C. */
+  waitForStop: () => Promise<void>
+  /** The folder of the built `devhub ui` page. */
+  uiFiles: string
 }
 
 export function processContext(): CliContext {
@@ -38,9 +45,31 @@ export function processContext(): CliContext {
     platform: process.platform,
     homedir: os.homedir(),
     run: runCommand,
+    start: startCommand,
     download: downloadFile,
     now: () => new Date(),
+    waitForStop,
+    // tsup bundles this file into dist/, and the build puts the page in
+    // dist/ui/.
+    uiFiles: fileURLToPath(new URL('./ui/', import.meta.url)),
   }
+}
+
+/**
+ * Listens for SIGINT and SIGTERM only while a command waits, because a
+ * listener stops the default exit. After the first signal, the listeners go,
+ * so a second Ctrl+C stops the process at once.
+ */
+function waitForStop(): Promise<void> {
+  return new Promise((resolve) => {
+    const stop = () => {
+      process.off('SIGINT', stop)
+      process.off('SIGTERM', stop)
+      resolve()
+    }
+    process.on('SIGINT', stop)
+    process.on('SIGTERM', stop)
+  })
 }
 
 type Options = NonNullable<ParseArgsConfig['options']>

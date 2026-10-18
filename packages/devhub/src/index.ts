@@ -81,6 +81,7 @@ export {
 } from './flow/install'
 export { listBuilds, type BuildList, type ListedBuild } from './flow/list'
 export type { FlowError, FlowResult } from './flow/result'
+export { syncBuilds, type SyncBuildsDeps, type SyncRequest } from './flow/sync'
 export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'
 export {
   installBuild,

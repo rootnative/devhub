@@ -68,11 +68,12 @@ DevHub grows in small milestones. Each one gives you one useful result.
    of a file.
 2. **Install:** install a stored build on a running emulator, simulator, or
    Android phone.
-3. **Match:** see the stored build that matches your current code.
-4. **Local builds:** `npx expo run:*` stores each build and uses a stored
+3. **Local page:** `devhub ui` opens a page in your browser with the list,
+   the devices, an install button, and a sync button.
+4. **Match:** see the stored build that matches your current code.
+5. **Local builds:** `npx expo run:*` stores each build and uses a stored
    build again.
-5. **Desktop:** a desktop app with the list, a daily sync, and an install
-   button.
+6. **Desktop:** the same page in a desktop app, with a daily sync.
 
 ## License
 

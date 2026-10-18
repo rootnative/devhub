@@ -35,6 +35,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
 | `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
+| `devhub ui` | Starts a local server for the DevHub page, and opens it in the browser. The page is not in the package yet. |
 
 Options of `devhub sync`:
 
@@ -43,8 +44,8 @@ Options of `devhub sync`:
 - `--dry-run` shows what the sync downloads, and downloads nothing.
 - `--json` prints the result as JSON.
 
-`devhub list`, `devhub where`, `devhub devices`, and `devhub install` also
-accept `--json`.
+`devhub list`, `devhub where`, `devhub devices`, `devhub install`, and
+`devhub ui` also accept `--json`.
 Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.
@@ -135,6 +136,25 @@ IDs. When no device is ready, DevHub gives the reason for each device.
 To load the JavaScript of the project, run `npx expo start` in the project
 folder, and press `a` for Android or `i` for iOS. Expo CLI then opens the
 installed dev client with the URL of Metro.
+
+### The local page
+
+`devhub ui` starts a server on your machine, prints its URL, and opens the
+URL in your browser. Press Ctrl+C to stop the server.
+
+- `--port <n>` sets the port. The default is a free port.
+- `--no-open` prints the URL, and does not open the browser.
+- `--json` prints the URL and the port as JSON.
+
+The page is not in the package yet. This version has the server and the API
+that the page uses. The API gives the same JSON as the CLI commands with
+`--json`.
+
+The server listens on `127.0.0.1` only, never on your network. Each run
+makes a new token, and puts it in the URL after `#token=`. Each API call
+must send the token, so a different page in your browser cannot use the
+API. Open the URL that `devhub ui` prints. A URL with `localhost` does not
+work.
 
 ### The store
 

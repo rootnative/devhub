@@ -10,6 +10,7 @@ import { devicesCommand } from './devices'
 import { installCommand } from './install'
 import { listCommand } from './list'
 import { syncCommand } from './sync'
+import { uiCommand } from './ui'
 import { whereCommand } from './where'
 
 export { EXIT_CODE, type CliContext, type Io } from './context'
@@ -25,6 +26,7 @@ Commands:
   where <id>    Print the path of a stored build file.
   devices       List the Android devices and the iOS simulators.
   install <id>  Install a stored Android build on the ready device.
+  ui            Open the DevHub page in the browser.
 
 Options:
   -h, --help     Show this help.
@@ -41,6 +43,7 @@ const COMMANDS: Record<
   where: whereCommand,
   devices: devicesCommand,
   install: installCommand,
+  ui: uiCommand,
 }
 
 export async function run(

@@ -6,11 +6,14 @@ import { deviceReport } from '../flow/devices'
 import { findStoredBuild } from '../flow/find'
 import { installStoredBuild, type InstallDeps } from '../flow/install'
 import { listBuilds } from '../flow/list'
+import { syncBuilds } from '../flow/sync'
 import { buildFolder } from '../store/builds'
 import {
   NOW,
   easBuild,
   fakeDeviceTools,
+  fakeDownload,
+  fakeEas,
   useTempDir,
   writeStoredBuild,
 } from './helpers'
@@ -214,5 +217,53 @@ describe('deviceReport', () => {
         ],
       }),
     ).toEqual({ devices: [], warnings: ['DevHub cannot find adb.'] })
+  })
+})
+
+describe('syncBuilds', () => {
+  const tempDir = useTempDir()
+
+  function syncDeps(home: string, cwd: string, run: CommandRunner) {
+    return {
+      env: { DEVHUB_HOME: home },
+      platform: process.platform,
+      homedir: os.homedir(),
+      cwd,
+      run,
+      download: fakeDownload(),
+      now: () => NOW,
+      progress: () => {},
+    }
+  }
+
+  it('returns a report with no projects, and runs no eas command, when DevHub knows no project', async () => {
+    const root = await tempDir()
+    const eas = fakeEas({})
+
+    const result = await syncBuilds(
+      { all: true, extraProfiles: [], dryRun: false },
+      syncDeps(root, root, eas.run),
+    )
+
+    expect(result).toEqual({
+      kind: 'ok',
+      value: { dryRun: false, projects: [] },
+    })
+    expect(eas.calls).toEqual([])
+  })
+
+  it('returns a failure, not a usage error, for a folder with no eas.json', async () => {
+    const root = await tempDir()
+
+    const result = await syncBuilds(
+      { all: false, extraProfiles: [], dryRun: false },
+      syncDeps(root, root, fakeEas({}).run),
+    )
+
+    expect(result).toEqual({
+      kind: 'error',
+      usage: false,
+      message: `${root} and its parent folders have no eas.json. Run devhub sync in the folder of an EAS project.`,
+    })
   })
 })

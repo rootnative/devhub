@@ -1,12 +1,6 @@
-import { EasCliError } from '../eas/cli'
-import { findEasProject } from '../eas/profiles'
-import { errorMessage } from '../flow/result'
-import { resolveHome } from '../store/home'
-import { StoreLockedError } from '../store/lock'
-import { readProjects } from '../store/projects'
+import { syncBuilds } from '../flow/sync'
 import {
   syncFailed,
-  syncProjects,
   type BuildOutcome,
   type BuildStatus,
   type ProjectSyncResult,
@@ -14,6 +8,7 @@ import {
 } from '../sync/sync'
 import {
   EXIT_CODE,
+  flowError,
   parseCommandArgs,
   usageError,
   type CliContext,
@@ -69,58 +64,22 @@ export async function syncCommand(
   if (positionals.length > 0) {
     return usageError(io, `devhub sync takes no arguments.`, 'sync')
   }
-  const home = resolveHome(context)
-  const dryRun = values['dry-run'] ?? false
-
-  let projects: string[]
-  try {
-    if (values.all) {
-      projects = await readProjects(home)
-    } else {
-      const project = await findEasProject(context.cwd)
-      if (project === undefined) {
-        io.err(
-          `${context.cwd} and its parent folders have no eas.json. Run devhub sync in the folder of an EAS project.`,
-        )
-        return EXIT_CODE.failure
-      }
-      projects = [project]
-    }
-  } catch (error) {
-    io.err(errorMessage(error))
-    return EXIT_CODE.failure
+  const result = await syncBuilds(
+    {
+      all: values.all ?? false,
+      extraProfiles: [...new Set(values.profile ?? [])],
+      dryRun: values['dry-run'] ?? false,
+    },
+    { ...context, progress: (text) => io.err(text) },
+  )
+  if (result.kind === 'error') {
+    return flowError(io, result, 'sync')
   }
-  if (projects.length === 0) {
+  const report = result.value
+  if (report.projects.length === 0) {
     io.err(
       'DevHub knows no project folders. Run devhub sync in a project folder first.',
     )
-    printReport({ dryRun, projects: [] }, values.json ?? false, context)
-    return EXIT_CODE.ok
-  }
-
-  let report: SyncReport
-  try {
-    report = await syncProjects(
-      {
-        projects,
-        extraProfiles: [...new Set(values.profile ?? [])],
-        dryRun,
-        cwd: context.cwd,
-      },
-      {
-        home,
-        run: context.run,
-        download: context.download,
-        now: context.now,
-        progress: (text) => io.err(text),
-      },
-    )
-  } catch (error) {
-    if (error instanceof EasCliError || error instanceof StoreLockedError) {
-      io.err(error.message)
-      return EXIT_CODE.failure
-    }
-    throw error
   }
   for (const project of report.projects) {
     for (const warning of project.warnings) {

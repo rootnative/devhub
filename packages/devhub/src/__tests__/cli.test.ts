@@ -44,7 +44,7 @@ describe('devhub CLI', () => {
     },
   )
 
-  it.each([['sync'], ['list'], ['where'], ['devices'], ['install']])(
+  it.each([['sync'], ['list'], ['where'], ['devices'], ['install'], ['ui']])(
     'devhub %s --help prints the help of the command',
     async (command) => {
       const { io, out } = capture()
@@ -67,6 +67,10 @@ describe('devhub CLI', () => {
     [['devices', 'extra'], 'takes no arguments', 'devhub devices --help'],
     [['install'], 'needs a build ID', 'devhub install --help'],
     [['install', 'a', 'b'], 'takes one build ID', 'devhub install --help'],
+    [['ui', 'extra'], 'takes no arguments', 'devhub ui --help'],
+    [['ui', '--port', 'abc'], 'is not valid', 'devhub ui --help'],
+    [['ui', '--port', '65536'], 'is not valid', 'devhub ui --help'],
+    [['ui', '--port', '1e3'], 'is not valid', 'devhub ui --help'],
   ])('args %j give a usage error', async (argv, message, help) => {
     const { io, out, err } = capture()
 
