@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BuildList, Device, EasBuild, ListedBuild } from '../api/types'
 import { formatBytes, platformLabel, shortIds } from '../logic/format'
+import { installChoice, installedMessage } from '../logic/install'
 import { resolveToken } from '../logic/token'
 import { deviceRow, groupBuilds, storeNotes } from '../logic/view'
 
@@ -114,10 +115,12 @@ describe('groupBuilds', () => {
   })
 
   it('gives each row the fields of devhub list', () => {
-    const [group] = groupBuilds(list([listed('aaaa1111-0000')]), NOW)
+    const build = listed('aaaa1111-0000')
+    const [group] = groupBuilds(list([build]), NOW)
 
     expect(group?.builds[0]).toEqual({
       id: 'aaaa1111-0000',
+      build,
       shortId: 'aaaa1111',
       title: 'Android · development',
       details: 'Version 2.3.2 · commit b44e6ca · created 2026-10-06',
@@ -224,5 +227,75 @@ describe('deviceRow', () => {
       title: 'iPhone 16 Pro (iOS 18.6)',
       details: 'iOS simulator · 188FFDBB',
     })
+  })
+})
+
+describe('installChoice', () => {
+  const device = (overrides: Partial<Device>): Device => ({
+    platform: 'android',
+    kind: 'emulator',
+    id: 'emulator-5554',
+    name: 'Pixel_Light_34',
+    state: 'device',
+    ready: true,
+    ...overrides,
+  })
+  const emulator = device({})
+  const phone = device({ kind: 'physical', id: 'R58M', name: 'Nokia C32' })
+  const unauthorized = device({ id: 'X1', state: 'unauthorized', ready: false })
+  const simulator = device({
+    platform: 'ios',
+    kind: 'simulator',
+    id: '188FFDBB',
+    name: 'iPhone 16 Pro',
+    state: 'Booted',
+    osVersion: '18.6',
+  })
+
+  it('installs on the one ready device of the platform', () => {
+    expect(
+      installChoice(listed('a'), [simulator, unauthorized, emulator]),
+    ).toEqual({ kind: 'one', device: emulator })
+    expect(
+      installChoice(listed('b', { platform: 'IOS', isForIosSimulator: true }), [
+        emulator,
+        simulator,
+      ]),
+    ).toEqual({ kind: 'one', device: simulator })
+  })
+
+  it('lets the user select when two or more devices are ready', () => {
+    expect(installChoice(listed('a'), [emulator, simulator, phone])).toEqual({
+      kind: 'many',
+      devices: [emulator, phone],
+    })
+  })
+
+  it('has no device when none of the platform is ready, or no list is read', () => {
+    expect(installChoice(listed('a'), [simulator, unauthorized])).toEqual({
+      kind: 'no-device',
+    })
+    expect(installChoice(listed('a'), [])).toEqual({ kind: 'no-device' })
+    expect(installChoice(listed('a'), undefined)).toEqual({
+      kind: 'no-device',
+    })
+  })
+
+  it('refuses a build that devhub install refuses, before it looks at a device', () => {
+    const aab = {
+      ...listed('a'),
+      installProblem: 'The build a is an Android App Bundle (app.aab).',
+    }
+
+    expect(installChoice(aab, [emulator])).toEqual({
+      kind: 'refused',
+      reason: 'The build a is an Android App Bundle (app.aab).',
+    })
+  })
+
+  it('names the device in the success message', () => {
+    expect(installedMessage('aaaa1111', simulator)).toBe(
+      'Installed the build aaaa1111 on iPhone 16 Pro (iOS 18.6).',
+    )
   })
 })

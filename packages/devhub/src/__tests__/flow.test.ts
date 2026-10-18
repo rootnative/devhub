@@ -95,7 +95,7 @@ describe('listBuilds', () => {
     const incomplete = 'dddd4444-0000-4000-8000-000000000004'
     await mkdir(buildFolder(home, incomplete), { recursive: true })
 
-    const result = await listBuilds(home)
+    const result = await listBuilds(home, process.platform)
 
     expect(result.kind).toBe('ok')
     if (result.kind !== 'ok') {
@@ -116,6 +116,27 @@ describe('listBuilds', () => {
     })
     expect(result.value.incomplete).toEqual([incomplete])
     expect(result.value.unreadable).toEqual([])
+  })
+
+  it('gives the install problem of each build that devhub install refuses', async () => {
+    const home = await tempDir()
+    await writeStoredBuild(home, easBuild({ id: ID_A }))
+    await writeStoredBuild(home, easBuild({ id: ID_B }), 'app.aab')
+    await writeStoredBuild(home, easBuild({ id: ID_C, platform: 'IOS' }))
+
+    const onLinux = await listBuilds(home, 'linux')
+
+    expect(onLinux.kind).toBe('ok')
+    if (onLinux.kind !== 'ok') {
+      return
+    }
+    const problems = Object.fromEntries(
+      onLinux.value.builds.map((build) => [build.id, build.installProblem]),
+    )
+    const apk = onLinux.value.builds.find((build) => build.id === ID_A)
+    expect(apk === undefined || 'installProblem' in apk).toBe(false)
+    expect(problems[ID_B]).toContain('adb installs only an APK.')
+    expect(problems[ID_C]).toContain('iOS simulators run only on macOS')
   })
 })
 

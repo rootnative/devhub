@@ -63,7 +63,7 @@ export async function listCommand(
     return usageError(io, 'devhub list takes no arguments.', 'list')
   }
 
-  const result = await listBuilds(resolveHome(context))
+  const result = await listBuilds(resolveHome(context), context.platform)
   if (result.kind === 'error') {
     return flowError(io, result, 'list')
   }

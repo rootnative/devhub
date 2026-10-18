@@ -10,22 +10,58 @@ export const TOKEN_REFUSED =
 export const NO_ANSWER =
   'DevHub does not answer. Run devhub ui again, and open the URL that it prints.'
 
+export type FetchInit = {
+  method?: 'POST'
+  headers: Record<string, string>
+  body?: string
+}
+
 export type Fetcher = (
   input: string,
-  init: { headers: Record<string, string> },
+  init: FetchInit,
 ) => Promise<Pick<Response, 'ok' | 'status' | 'json'>>
 
 /** Reads one API route with the token of this devhub ui run. */
-export async function getJson<T>(
+export function getJson<T>(
   route: string,
   token: string,
   fetcher: Fetcher = fetch,
 ): Promise<ApiResult<T>> {
+  return call(route, { headers: { Authorization: `Bearer ${token}` } }, fetcher)
+}
+
+/**
+ * Sends `body` as JSON to one API route. The browser adds the `Origin`
+ * header that the server checks.
+ */
+export function postJson<T>(
+  route: string,
+  token: string,
+  body: unknown,
+  fetcher: Fetcher = fetch,
+): Promise<ApiResult<T>> {
+  return call(
+    route,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    },
+    fetcher,
+  )
+}
+
+async function call<T>(
+  route: string,
+  init: FetchInit,
+  fetcher: Fetcher,
+): Promise<ApiResult<T>> {
   let response
   try {
-    response = await fetcher(route, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    response = await fetcher(route, init)
   } catch {
     return { kind: 'error', message: NO_ANSWER }
   }

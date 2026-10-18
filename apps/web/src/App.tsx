@@ -1,43 +1,68 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
+import { Dialog } from '@rootnative/components/dialog'
 import { Container, Grid, Layout } from '@rootnative/components/layout'
-import { ThemeProvider, darkTheme, lightTheme } from '@rootnative/core'
+import { PortalHost } from '@rootnative/components/portal'
+import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
+import { Typography } from '@rootnative/components/typography'
+import {
+  ThemeProvider,
+  darkTheme,
+  lightTheme,
+  useTheme,
+} from '@rootnative/core'
 import { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native'
-import { NO_TOKEN } from './api/client'
-import type { BuildList, DeviceReport } from './api/types'
+import { NO_TOKEN, postJson } from './api/client'
+import type {
+  BuildList,
+  Device,
+  DeviceReport,
+  InstalledBuild,
+} from './api/types'
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
 import { Notice } from './components/Notice'
+import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
+import type { BuildRow } from './logic/view'
 
-const TITLE = 'RootNative DevHub'
+const TITLE = 'DevHub by Root Native'
 
 export function App() {
   const [token] = useState(takeToken)
   return (
     <ThemeProvider theme={{ light: lightTheme, dark: darkTheme }}>
-      <Layout>
-        {token === undefined ? (
-          <>
-            <AppBar title={TITLE} />
-            <Container width="large" p="lg">
-              <Notice tone="error">{NO_TOKEN}</Notice>
-            </Container>
-          </>
-        ) : (
-          <Dashboard token={token} />
-        )}
-      </Layout>
+      <PortalHost>
+        <SnackbarProvider>
+          <Layout>
+            {token === undefined ? (
+              <>
+                <AppBar title={TITLE} />
+                <Container width="large" p="lg">
+                  <Notice tone="error">{NO_TOKEN}</Notice>
+                </Container>
+              </>
+            ) : (
+              <Dashboard token={token} />
+            )}
+          </Layout>
+        </SnackbarProvider>
+      </PortalHost>
     </ThemeProvider>
   )
 }
 
 function Dashboard({ token }: { token: string }) {
+  const { colors } = useTheme()
+  const snackbar = useSnackbar()
   const builds = useApi<BuildList>('/api/builds', token)
   const devices = useApi<DeviceReport>('/api/devices', token)
   const reloadDevices = devices.reload
+  const [installing, setInstalling] = useState<string>()
+  // The message stays while the dialog runs its exit animation.
+  const [failure, setFailure] = useState({ visible: false, message: '' })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -50,6 +75,21 @@ function Dashboard({ token }: { token: string }) {
   const refresh = () => {
     void builds.reload()
     void devices.reload()
+  }
+
+  const install = async (row: BuildRow, device: Device) => {
+    setInstalling(row.id)
+    const result = await postJson<InstalledBuild>('/api/install', token, {
+      id: row.id,
+      device: device.id,
+    })
+    setInstalling(undefined)
+    void devices.reload()
+    if (result.kind === 'ok') {
+      snackbar.show({ message: installedMessage(row.shortId, device) })
+    } else {
+      setFailure({ visible: true, message: result.message })
+    }
   }
 
   return (
@@ -74,11 +114,45 @@ function Dashboard({ token }: { token: string }) {
               <DevicesSection state={devices.state} />
             </Grid.Cell>
             <Grid.Cell span={{ compact: 1, expanded: 2 }}>
-              <BuildsSection state={builds.state} now={new Date()} />
+              <BuildsSection
+                state={builds.state}
+                now={new Date()}
+                devices={
+                  devices.state.kind === 'ok'
+                    ? devices.state.value.devices
+                    : undefined
+                }
+                installing={installing}
+                onInstall={(row, device) => void install(row, device)}
+              />
             </Grid.Cell>
           </Grid>
         </Container>
       </ScrollView>
+      <Dialog
+        visible={failure.visible}
+        onDismiss={() => setFailure({ ...failure, visible: false })}
+        role="alertdialog"
+      >
+        <Dialog.Title>The install failed</Dialog.Title>
+        <Dialog.Content>
+          <Typography
+            variant="bodyMedium"
+            color={colors.onSurfaceVariant}
+            selectable
+          >
+            {failure.message}
+          </Typography>
+        </Dialog.Content>
+        <Dialog.Actions>
+          <Button
+            variant="text"
+            onPress={() => setFailure({ ...failure, visible: false })}
+          >
+            Close
+          </Button>
+        </Dialog.Actions>
+      </Dialog>
     </>
   )
 }

@@ -15,7 +15,7 @@ import { whereCommand } from './where'
 
 export { EXIT_CODE, type CliContext, type Io } from './context'
 
-const HELP = `RootNative DevHub ${version}
+const HELP = `DevHub by Root Native ${version}
 Keep every dev build. Launch any one in one click.
 
 Usage: devhub <command> [options]

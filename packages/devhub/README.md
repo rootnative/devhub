@@ -1,4 +1,4 @@
-# RootNative DevHub
+# DevHub by Root Native
 
 **Keep every dev build. Launch any one in one click.**
 
@@ -35,7 +35,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
 | `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
-| `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices. |
+| `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices, and installs a build with one click. |
 
 Options of `devhub sync`:
 
@@ -148,8 +148,14 @@ URL in your browser. Press Ctrl+C to stop the server.
 
 The page shows the stored builds of each project and the devices that run
 now. It reads the devices again when you return to the window, and when
-you click Refresh. In this version the page only shows. Install and sync
-from the page come in a later version.
+you click Refresh.
+
+Click Install on a build to install it on the ready device of its platform.
+When two or more devices are ready, select the device in the menu. The
+button is off when no device of the platform is ready. A build that
+`devhub install` refuses has no button, and shows the reason and the fix.
+When an install fails, the page shows the same message as the CLI. Sync
+from the page comes in a later version.
 
 The server listens on `127.0.0.1` only, never on your network. Each run
 makes a new token, and puts it in the URL after `#token=`. Each API call
@@ -262,13 +268,13 @@ $action = New-ScheduledTaskAction -Execute 'cmd.exe' `
   -Argument '/c devhub sync --all >> "%LOCALAPPDATA%\devhub-sync.log" 2>&1'
 $trigger = New-ScheduledTaskTrigger -Daily -At 9am
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
-Register-ScheduledTask -TaskName 'RootNative DevHub sync' `
+Register-ScheduledTask -TaskName 'DevHub by Root Native sync' `
   -Action $action -Trigger $trigger -Settings $settings
 ```
 
-To test the task, run `Start-ScheduledTask -TaskName 'RootNative DevHub sync'`.
+To test the task, run `Start-ScheduledTask -TaskName 'DevHub by Root Native sync'`.
 To remove it, run
-`Unregister-ScheduledTask -TaskName 'RootNative DevHub sync'`.
+`Unregister-ScheduledTask -TaskName 'DevHub by Root Native sync'`.
 
 Two syncs cannot run at the same time. If a scheduled sync starts while
 another sync runs, it stops with a message and exit code `1`.

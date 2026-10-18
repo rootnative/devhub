@@ -1,8 +1,10 @@
-import type { BuildList, Device, EasBuild } from '../api/types'
+import type { BuildList, Device, EasBuild, ListedBuild } from '../api/types'
 import { formatBytes, formatDate, platformLabel, shortIds } from './format'
+import { deviceLabel } from './install'
 
 export type BuildRow = {
   id: string
+  build: ListedBuild
   shortId: string
   /** For example "Android · development". */
   title: string
@@ -32,6 +34,7 @@ export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
     }
     group.builds.push({
       id: build.id,
+      build,
       shortId: shortId(build.id),
       title: [
         platformLabel(build.eas.platform, build.eas.isForIosSimulator),
@@ -97,10 +100,7 @@ export function deviceRow(device: Device): DeviceRow {
   const platform = device.platform === 'ios' ? 'iOS' : 'Android'
   return {
     id: device.id,
-    title:
-      device.osVersion === undefined
-        ? device.name
-        : `${device.name} (iOS ${device.osVersion})`,
+    title: deviceLabel(device),
     details: `${platform} ${KIND_LABEL[device.kind]} · ${device.id}`,
     status: device.ready ? 'Ready' : device.state,
     ready: device.ready,

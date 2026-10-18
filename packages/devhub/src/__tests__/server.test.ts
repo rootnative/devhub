@@ -134,7 +134,7 @@ async function startUi(
   const json = line.startsWith('{')
   const url = json
     ? (JSON.parse(line) as { url: string }).url
-    : line.replace('RootNative DevHub runs at ', '')
+    : line.replace('DevHub by Root Native runs at ', '')
   const port = Number(new URL(url).port)
   const token = new URL(url).hash.replace('#token=', '')
   let exitCode: Promise<number> | undefined
@@ -185,7 +185,7 @@ describe('devhub ui', () => {
     const home = await tempDir()
     const ui = await startUi({ home, uiFiles: home }, { argv: ['--no-open'] })
 
-    expect(ui.out).toEqual([`RootNative DevHub runs at ${ui.url}`])
+    expect(ui.out).toEqual([`DevHub by Root Native runs at ${ui.url}`])
     expect(ui.url).toMatch(
       /^http:\/\/127\.0\.0\.1:\d+\/#token=[A-Za-z0-9_-]{43}$/,
     )

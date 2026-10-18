@@ -2,7 +2,7 @@
   "name": "@rootnative/devhub",
   "version": "0.0.0",
   "private": true,
-  "description": "RootNative DevHub: keep every Expo development build, and launch any one on a simulator or an emulator in one click.",
+  "description": "DevHub by Root Native: keep every Expo development build, and launch any one on a simulator or an emulator in one click.",
   "license": "MIT",
   "author": "RootNative",
   "homepage": "https://github.com/rootnative/devhub#readme",

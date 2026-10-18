@@ -22,7 +22,8 @@ Nothing is on npm yet.
 - `devhub sync --all` syncs each project folder that `devhub sync` saw
   before. A project that fails does not stop the others.
 - `devhub list` shows the stored builds. `--json` prints each record with
-  the path of its file.
+  the path of its file. A build that `devhub install` refuses on this
+  system also gets `installProblem`: the reason and the fix.
 - `devhub where <id>` prints the path of a stored build file. `<id>` is the
   EAS build ID, or a unique start of it.
 - `devhub devices` lists the Android emulators and devices that adb sees,
@@ -44,6 +45,9 @@ Nothing is on npm yet.
 - `devhub ui` starts a local server, prints its URL, and opens the DevHub
   page in the browser. The page shows the stored builds of each project
   and the devices that run now, in the light or dark scheme of the system.
+  The Install button of a build installs it on the ready device of its
+  platform. With two or more ready devices, a menu lists them first. A
+  build that `devhub install` refuses shows the reason and the fix.
   The server listens on `127.0.0.1` only. Each run makes a new token, and
   each API call must send it. The API gives the same JSON as `devhub list`,
   `devhub devices`, `devhub install`, and `devhub sync --all` with

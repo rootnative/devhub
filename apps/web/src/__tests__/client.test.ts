@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { NO_ANSWER, TOKEN_REFUSED, getJson, type Fetcher } from '../api/client'
+import {
+  NO_ANSWER,
+  TOKEN_REFUSED,
+  getJson,
+  postJson,
+  type Fetcher,
+} from '../api/client'
 
 function answer(status: number, body: unknown): Fetcher {
   return async () => ({
@@ -62,5 +68,46 @@ describe('getJson', () => {
       kind: 'error',
       message: NO_ANSWER,
     })
+  })
+})
+
+describe('postJson', () => {
+  it('sends the token and the body as JSON', async () => {
+    const calls: unknown[] = []
+    const fetcher: Fetcher = async (input, init) => {
+      calls.push([input, init])
+      return answer(200, { id: 'a' })(input, init)
+    }
+
+    expect(
+      await postJson('/api/install', 'abc', { id: 'a', device: 'd' }, fetcher),
+    ).toEqual({ kind: 'ok', value: { id: 'a' } })
+    expect(calls).toEqual([
+      [
+        '/api/install',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer abc',
+            'Content-Type': 'application/json',
+          },
+          body: '{"id":"a","device":"d"}',
+        },
+      ],
+    ])
+  })
+
+  it('shows the message of the CLI when the install fails', async () => {
+    const message =
+      '"adb install" failed with INSTALL_FAILED_UPDATE_INCOMPATIBLE.'
+
+    expect(
+      await postJson(
+        '/api/install',
+        'abc',
+        { id: 'a', device: 'd' },
+        answer(422, { error: message }),
+      ),
+    ).toEqual({ kind: 'error', message })
   })
 })

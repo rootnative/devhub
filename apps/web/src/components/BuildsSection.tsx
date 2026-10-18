@@ -1,12 +1,13 @@
 import { Card } from '@rootnative/components/card'
-import { Column } from '@rootnative/components/layout'
+import { Box, Column } from '@rootnative/components/layout'
 import { List, ListDivider, ListItem } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Fragment } from 'react'
-import type { BuildList } from '../api/types'
+import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
-import { groupBuilds, storeNotes } from '../logic/view'
+import { groupBuilds, storeNotes, type BuildRow } from '../logic/view'
+import { InstallButton } from './InstallButton'
 import { Notice } from './Notice'
 
 const NO_BUILD = 'The store has no builds. Run devhub sync in a project folder.'
@@ -14,9 +15,17 @@ const NO_BUILD = 'The store has no builds. Run devhub sync in a project folder.'
 export function BuildsSection({
   state,
   now,
+  devices,
+  installing,
+  onInstall,
 }: {
   state: ApiState<BuildList>
   now: Date
+  /** `undefined` while the page has no device list. */
+  devices: readonly Device[] | undefined
+  /** The ID of the build that installs now. */
+  installing: string | undefined
+  onInstall: (row: BuildRow, device: Device) => void
 }) {
   const { colors } = useTheme()
   return (
@@ -39,20 +48,43 @@ export function BuildsSection({
           {groupBuilds(state.value, now).map((group) => (
             <Card key={group.project} variant="outlined">
               <List headline={group.project} headingLevel={3}>
-                {group.builds.map((build, index) => (
-                  <Fragment key={build.id}>
+                {group.builds.map((row, index) => (
+                  <Fragment key={row.id}>
                     {index > 0 && <ListDivider />}
                     <ListItem
-                      overlineText={build.shortId}
-                      headlineText={build.title}
+                      overlineText={row.shortId}
+                      headlineText={row.title}
                       supportingText={
-                        build.expiry === ''
-                          ? build.details
-                          : `${build.details}\n${build.expiry}`
+                        row.expiry === ''
+                          ? row.details
+                          : `${row.details}\n${row.expiry}`
                       }
                       supportingTextNumberOfLines={4}
-                      trailingSupportingText={build.size}
+                      trailingSupportingText={row.size}
+                      trailingContent={
+                        <InstallButton
+                          build={row.build}
+                          shortId={row.shortId}
+                          devices={devices}
+                          installing={installing === row.id}
+                          locked={
+                            installing !== undefined && installing !== row.id
+                          }
+                          onInstall={(device) => onInstall(row, device)}
+                        />
+                      }
                     />
+                    {row.build.installProblem !== undefined && (
+                      <Box px="md" pb="md">
+                        <Typography
+                          variant="bodySmall"
+                          color={colors.error}
+                          selectable
+                        >
+                          {row.build.installProblem}
+                        </Typography>
+                      </Box>
+                    )}
                   </Fragment>
                 ))}
               </List>

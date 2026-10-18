@@ -20,7 +20,7 @@ export const API_ROUTES: Readonly<Record<string, ApiRoute>> = {
   '/api/builds': {
     method: 'GET',
     handle: async (_body, context) =>
-      fromFlow(await listBuilds(resolveHome(context))),
+      fromFlow(await listBuilds(resolveHome(context), context.platform)),
   },
   '/api/devices': {
     method: 'GET',

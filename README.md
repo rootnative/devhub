@@ -1,4 +1,4 @@
-# RootNative DevHub
+# DevHub by Root Native
 
 [![Node >=20.19](https://img.shields.io/badge/node-%3E%3D20.19-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![pnpm 10](https://img.shields.io/badge/pnpm-10.x-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
@@ -7,7 +7,7 @@
 
 **Keep every dev build. Launch any one in one click.**
 
-RootNative DevHub is a desktop app and a CLI for Expo developers. It keeps
+DevHub by Root Native is a desktop app and a CLI for Expo developers. It keeps
 every development build on your machine, finds the build that matches your
 current code, and starts a simulator or an emulator with that build in one
 action.

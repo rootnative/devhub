@@ -22,6 +22,8 @@ export type ListedBuild = {
   size: number
   storedAt: string
   eas: EasBuild
+  /** Why `devhub install` refuses the build on this system, with the fix. */
+  installProblem?: string
 }
 
 /** `devhub list --json`. The builds are by project, and then newest first. */
@@ -46,4 +48,11 @@ export type Device = {
 export type DeviceReport = {
   devices: Device[]
   warnings: string[]
+}
+
+/** `devhub install <id> --device <id> --json`. */
+export type InstalledBuild = {
+  id: string
+  path: string
+  device: Device
 }

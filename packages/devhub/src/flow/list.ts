@@ -1,4 +1,5 @@
 import type { EasBuild } from '../eas/build'
+import { installProblem } from '../install/install'
 import {
   scanStore,
   type StoredBuild,
@@ -16,6 +17,11 @@ export type ListedBuild = {
   sha256: string
   storedAt: string
   eas: EasBuild
+  /**
+   * Why `devhub install` refuses the build on this system, with the fix.
+   * Absent when it can install the build.
+   */
+  installProblem?: string
 }
 
 /** The JSON of `devhub list --json`. */
@@ -27,7 +33,11 @@ export type BuildList = {
   unreadable: UnreadableBuild[]
 }
 
-export async function listBuilds(home: string): Promise<FlowResult<BuildList>> {
+/** `platform`: the system that would run `devhub install`. */
+export async function listBuilds(
+  home: string,
+  platform: NodeJS.Platform,
+): Promise<FlowResult<BuildList>> {
   let scan: StoreScan
   try {
     scan = await scanStore(home)
@@ -37,7 +47,9 @@ export async function listBuilds(home: string): Promise<FlowResult<BuildList>> {
   return {
     kind: 'ok',
     value: {
-      builds: scan.builds.map(listedBuild).sort(compareBuilds),
+      builds: scan.builds
+        .map((build) => listedBuild(build, platform))
+        .sort(compareBuilds),
       incomplete: scan.incomplete,
       unreadable: scan.unreadable,
     },
@@ -48,7 +60,12 @@ export function projectName(build: EasBuild): string {
   return build.app?.slug ?? build.app?.name ?? '-'
 }
 
-function listedBuild({ id, path, record }: StoredBuild): ListedBuild {
+function listedBuild(
+  build: StoredBuild,
+  platform: NodeJS.Platform,
+): ListedBuild {
+  const { id, path, record } = build
+  const problem = installProblem(build, platform)
   return {
     id,
     path,
@@ -56,6 +73,7 @@ function listedBuild({ id, path, record }: StoredBuild): ListedBuild {
     sha256: record.sha256,
     storedAt: record.storedAt,
     eas: record.eas,
+    ...(problem === undefined ? {} : { installProblem: problem }),
   }
 }
 

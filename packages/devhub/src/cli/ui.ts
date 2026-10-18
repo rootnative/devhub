@@ -73,7 +73,7 @@ export async function uiCommand(
   io.out(
     values.json
       ? JSON.stringify({ url: server.url, port: server.port }, null, 2)
-      : `RootNative DevHub runs at ${server.url}`,
+      : `DevHub by Root Native runs at ${server.url}`,
   )
   const index = path.join(context.uiFiles, 'index.html')
   if (!(await isFile(index))) {
