@@ -50,6 +50,42 @@ export type DeviceReport = {
   warnings: string[]
 }
 
+export type BuildStatus =
+  | 'downloaded'
+  | 'would-download'
+  | 'stored'
+  | 'expired'
+  | 'no-artifact'
+  | 'invalid-id'
+  | 'failed'
+
+export type BuildOutcome = {
+  id: string
+  status: BuildStatus
+  profile: string
+  platform: string
+  isForIosSimulator?: boolean
+  appVersion?: string
+  size?: number
+  error?: string
+}
+
+export type ProjectSyncResult = {
+  /** The project folder. */
+  project: string
+  status: 'ok' | 'failed' | 'missing'
+  profiles: { name: string; platforms: string[] }[]
+  builds: BuildOutcome[]
+  warnings: string[]
+  error?: string
+}
+
+/** `devhub sync --all --json`. */
+export type SyncReport = {
+  dryRun: boolean
+  projects: ProjectSyncResult[]
+}
+
 /** `devhub install <id> --device <id> --json`. */
 export type InstalledBuild = {
   id: string

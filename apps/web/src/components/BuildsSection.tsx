@@ -1,9 +1,10 @@
+import { Button } from '@rootnative/components/button'
 import { Card } from '@rootnative/components/card'
-import { Box, Column } from '@rootnative/components/layout'
+import { Box, Column, Row } from '@rootnative/components/layout'
 import { List, ListDivider, ListItem } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import { groupBuilds, storeNotes, type BuildRow } from '../logic/view'
@@ -18,6 +19,9 @@ export function BuildsSection({
   devices,
   installing,
   onInstall,
+  syncing,
+  onSync,
+  syncResult,
 }: {
   state: ApiState<BuildList>
   now: Date
@@ -26,13 +30,28 @@ export function BuildsSection({
   /** The ID of the build that installs now. */
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
+  syncing: boolean
+  onSync: () => void
+  /** The state of the last sync, above the builds. */
+  syncResult: ReactNode
 }) {
   const { colors } = useTheme()
   return (
     <Column gap="md">
-      <Typography variant="titleLarge" level={2}>
-        Builds
-      </Typography>
+      <Row justify="space-between" align="center">
+        <Typography variant="titleLarge" level={2}>
+          Builds
+        </Typography>
+        <Button
+          variant="tonal"
+          loading={syncing}
+          onPress={onSync}
+          accessibilityLabel="Sync the EAS builds of each project"
+        >
+          Sync
+        </Button>
+      </Row>
+      {syncResult}
       {state.kind === 'loading' && (
         <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
           Reading the store.

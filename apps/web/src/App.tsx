@@ -19,11 +19,13 @@ import type {
   Device,
   DeviceReport,
   InstalledBuild,
+  SyncReport,
 } from './api/types'
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
 import { Notice } from './components/Notice'
+import { SyncCard, type SyncState } from './components/SyncCard'
 import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import type { BuildRow } from './logic/view'
@@ -63,6 +65,7 @@ function Dashboard({ token }: { token: string }) {
   const [installing, setInstalling] = useState<string>()
   // The message stays while the dialog runs its exit animation.
   const [failure, setFailure] = useState({ visible: false, message: '' })
+  const [sync, setSync] = useState<SyncState>({ kind: 'idle' })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -75,6 +78,16 @@ function Dashboard({ token }: { token: string }) {
   const refresh = () => {
     void builds.reload()
     void devices.reload()
+  }
+
+  // The request returns when the sync ends, which can take minutes. The
+  // server holds the sync lock, so a sync from the CLI or from a second tab
+  // gets the lock message.
+  const runSync = async () => {
+    setSync({ kind: 'running' })
+    const result = await postJson<SyncReport>('/api/sync', token, {})
+    setSync({ kind: 'done', result })
+    void builds.reload()
   }
 
   const install = async (row: BuildRow, device: Device) => {
@@ -124,6 +137,14 @@ function Dashboard({ token }: { token: string }) {
                 }
                 installing={installing}
                 onInstall={(row, device) => void install(row, device)}
+                syncing={sync.kind === 'running'}
+                onSync={() => void runSync()}
+                syncResult={
+                  <SyncCard
+                    state={sync}
+                    onClose={() => setSync({ kind: 'idle' })}
+                  />
+                }
               />
             </Grid.Cell>
           </Grid>

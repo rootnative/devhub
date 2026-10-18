@@ -47,7 +47,10 @@ Nothing is on npm yet.
   and the devices that run now, in the light or dark scheme of the system.
   The Install button of a build installs it on the ready device of its
   platform. With two or more ready devices, a menu lists them first. A
-  build that `devhub install` refuses shows the reason and the fix.
+  build that `devhub install` refuses shows the reason and the fix. The
+  Sync button runs `devhub sync --all`, shows the result of each project,
+  and reads the builds again. While another sync runs, it shows the lock
+  message.
   The server listens on `127.0.0.1` only. Each run makes a new token, and
   each API call must send it. The API gives the same JSON as `devhub list`,
   `devhub devices`, `devhub install`, and `devhub sync --all` with
