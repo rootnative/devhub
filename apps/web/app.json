@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "RootNative DevHub",
+    "slug": "devhub",
+    "version": "0.0.0",
+    "platforms": ["web"],
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
+  }
+}

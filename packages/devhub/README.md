@@ -35,7 +35,7 @@ Source, design, and roadmap: https://github.com/rootnative/devhub
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
 | `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
-| `devhub ui` | Starts a local server for the DevHub page, and opens it in the browser. The page is not in the package yet. |
+| `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices. |
 
 Options of `devhub sync`:
 
@@ -146,9 +146,10 @@ URL in your browser. Press Ctrl+C to stop the server.
 - `--no-open` prints the URL, and does not open the browser.
 - `--json` prints the URL and the port as JSON.
 
-The page is not in the package yet. This version has the server and the API
-that the page uses. The API gives the same JSON as the CLI commands with
-`--json`.
+The page shows the stored builds of each project and the devices that run
+now. It reads the devices again when you return to the window, and when
+you click Refresh. In this version the page only shows. Install and sync
+from the page come in a later version.
 
 The server listens on `127.0.0.1` only, never on your network. Each run
 makes a new token, and puts it in the URL after `#token=`. Each API call

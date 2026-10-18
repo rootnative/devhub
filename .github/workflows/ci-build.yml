@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - "packages/**"
+      - "apps/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -21,6 +22,7 @@ on:
   pull_request:
     paths:
       - "packages/**"
+      - "apps/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -79,3 +81,8 @@ jobs:
 
       - name: Run the built CLI
         run: node packages/devhub/dist/bin.js --version
+
+      # `devhub ui` serves the page from dist/ui/. Without it, the package
+      # has only the API.
+      - name: Check the page in the package
+        run: node -e "require('node:fs').statSync('packages/devhub/dist/ui/index.html')"

@@ -41,12 +41,13 @@ Nothing is on npm yet.
   `adb install` fails, it gives the cause and the fix for each common
   failure code. For a signing key conflict or a refused downgrade, it prints
   the `adb uninstall` command, and does not uninstall the app.
-- `devhub ui` starts a local server for the DevHub page, prints its URL,
-  and opens the URL in the browser. The server listens on `127.0.0.1` only.
-  Each run makes a new token, and each API call must send it. The API gives
-  the same JSON as `devhub list`, `devhub devices`, `devhub install`, and
-  `devhub sync --all` with `--json`. It accepts `--port <n>`, `--no-open`,
-  and `--json`. The page itself is not in the package yet.
+- `devhub ui` starts a local server, prints its URL, and opens the DevHub
+  page in the browser. The page shows the stored builds of each project
+  and the devices that run now, in the light or dark scheme of the system.
+  The server listens on `127.0.0.1` only. Each run makes a new token, and
+  each API call must send it. The API gives the same JSON as `devhub list`,
+  `devhub devices`, `devhub install`, and `devhub sync --all` with
+  `--json`. It accepts `--port <n>`, `--no-open`, and `--json`.
 - The store: one folder for all projects, in the data folder of the OS, or
   in `DEVHUB_HOME`. Each build has a folder with its file and a `build.json`
   that keeps the EAS record without changes. A sync writes `build.json`

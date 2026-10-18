@@ -10,13 +10,14 @@ export default [
       '**/dist/**',
       '**/out/**',
       '**/.turbo/**',
+      '**/.expo/**',
       '**/node_modules/**',
       '**/coverage/**',
     ],
   },
   js.configs.recommended,
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

@@ -8,6 +8,29 @@
       "outputs": ["dist/**"],
       "inputs": ["src/**", "tsconfig.json", "tsup.config.ts", "package.json"]
     },
+    "@rootnative/devhub#build": {
+      "dependsOn": ["^build", "@rootnative/devhub-web#build"],
+      "outputs": ["dist/**"],
+      "inputs": [
+        "src/**",
+        "scripts/**",
+        "tsconfig.json",
+        "tsup.config.ts",
+        "package.json"
+      ]
+    },
+    "@rootnative/devhub-web#build": {
+      "outputs": ["dist/**"],
+      "inputs": [
+        "index.ts",
+        "src/**",
+        "!src/__tests__/**",
+        "app.json",
+        "metro.config.js",
+        "tsconfig.json",
+        "package.json"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true

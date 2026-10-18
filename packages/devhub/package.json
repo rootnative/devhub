@@ -49,7 +49,7 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node scripts/copy-ui.mjs",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

@@ -680,7 +680,7 @@ describe('devhub ui guard', () => {
       await send(ui.port, { path: '/' }),
     ]) {
       expect(reply.headers['content-security-policy']).toBe(
-        "default-src 'self'; frame-ancestors 'none'",
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'",
       )
       expect(reply.headers['x-content-type-options']).toBe('nosniff')
       expect(
