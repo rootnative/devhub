@@ -10,6 +10,7 @@ on:
     paths:
       - "packages/**"
       - "apps/**"
+      - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -23,6 +24,7 @@ on:
     paths:
       - "packages/**"
       - "apps/**"
+      - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -82,7 +84,12 @@ jobs:
       - name: Run the built CLI
         run: node packages/devhub/dist/bin.js --version
 
-      # `devhub ui` serves the page from dist/ui/. Without it, the package
-      # has only the API.
-      - name: Check the page in the package
-        run: node -e "require('node:fs').statSync('packages/devhub/dist/ui/index.html')"
+      # llms.txt holds the help and the JSON types of the build. A change to
+      # a command or a type without `pnpm run build:llms` fails here.
+      - name: Check llms.txt
+        run: pnpm run check:llms
+
+      # Reads the files of the tarball: the bin, the page and its script,
+      # and llms.txt. Both release workflows run the same script.
+      - name: Check the package artifact
+        run: pnpm run check:artifact

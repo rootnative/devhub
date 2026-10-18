@@ -25,7 +25,7 @@ Commands:
   list          Show the stored builds.
   where <id>    Print the path of a stored build file.
   devices       List the Android devices and the iOS simulators.
-  install <id>  Install a stored Android build on the ready device.
+  install <id>  Install a stored build on the ready device.
   ui            Open the DevHub page in the browser.
 
 Options:

@@ -1,0 +1,166 @@
+name: Release (manual)
+
+# **This filename is part of the release credentials. Do not rename it.**
+#
+# npm binds a trusted publisher to an exact repository and an exact workflow
+# filename. This file is the second publisher of @rootnative/devhub, and
+# npmjs.com must have it as its own entry. The release.yml entry does not
+# cover it.
+#
+# release.yml is the normal path: it publishes the ref that it runs from.
+# Use this file only to publish an exact commit. `workflow_dispatch` can run
+# from a branch or a tag, but not from a commit SHA. This file takes one.
+#
+# It is not a faster path. It runs the same check-release.mjs and
+# `pnpm run preflight` as release.yml, and no input skips them.
+#
+# It has no input that skips the tag. check-release.mjs stops when the tag
+# exists, so a run with an existing tag cannot pass. To run again after a
+# failed publish, delete the tag first. check-release.mjs gives the command.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or full commit SHA to publish from."
+        required: true
+        type: string
+      version:
+        description: "Version to release. It must be the version in packages/devhub/package.json at that ref."
+        required: true
+        type: string
+      tag:
+        description: "npm dist-tag."
+        required: true
+        default: latest
+        type: choice
+        options:
+          - latest
+          - alpha
+          - beta
+          - rc
+      dry_run:
+        description: "Run each gate and check the tarball, but publish nothing and push no tag."
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+
+# The same group as release.yml, so two publishes never run at the same
+# time.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release @rootnative/devhub from a named ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the named ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          # check-release.mjs reads the tags to see if the version exists.
+          fetch-depth: 0
+
+      # A SHA in the input box is easy to get wrong, so the summary shows
+      # the commit before any gate runs.
+      - name: Report what is checked out
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          {
+            echo "### Publishing from \`$REF\`"
+            echo ""
+            echo "- Commit: \`$(git rev-parse HEAD)\`"
+            echo "- Subject: $(git log -1 --pretty=%s)"
+            echo "- Author: $(git log -1 --pretty=%an), $(git log -1 --pretty=%ad --date=short)"
+            echo "- On main: $(git merge-base --is-ancestor HEAD origin/main 2>/dev/null && echo yes || echo '**no**: this commit is not on main')"
+          } >> "$GITHUB_STEP_SUMMARY"
+          git log -1 --pretty=fuller
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+          # Necessary also with trusted publishing: npm exchanges the OIDC
+          # token at this registry.
+          registry-url: https://registry.npmjs.org
+
+      # An exact version, not a range, and the same pin as release.yml.
+      - name: Install npm (staged publishing requires >=11.15.0)
+        run: npm install -g npm@11.19.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the release
+        run: node scripts/check-release.mjs --version "${{ inputs.version }}" --dist-tag "${{ inputs.tag }}"
+
+      - name: Preflight
+        run: pnpm run preflight
+
+      # The tag goes before the publish, for the reason in release.yml.
+      - name: Tag the release
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG: devhub@${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      # OIDC only, and staged, for the reasons in release.yml.
+      - name: Stage the publish on npm
+        if: ${{ !inputs.dry_run }}
+        working-directory: packages/devhub
+        run: npm stage publish --provenance --access public --tag "${{ inputs.tag }}"
+
+      - name: Explain a publish failure
+        if: ${{ failure() && !inputs.dry_run }}
+        run: |
+          echo "::error::A 404 on PUT /@rootnative%2fdevhub is almost always an authentication fault, not a missing package."
+          echo "Check these, in this order:"
+          echo "  1. Is '.github/workflows/release-manual.yml' a trusted publisher of @rootnative/devhub on npmjs.com? npm binds to the exact filename. The release.yml entry does not cover this file."
+          echo "  2. Is this the first publish of the package? npm cannot register a trusted publisher before the package exists. Publish the first version from a laptop, and then register both workflows."
+          echo "  3. Does the job still have 'id-token: write'?"
+          echo "  4. Did the step run 'npm publish'? Both publishers are stage-only, so the step must run 'npm stage publish'."
+
+      - name: Create the GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: devhub@${{ inputs.version }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          prerelease=""
+          case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$TAG" --title "$VERSION" --generate-notes $prerelease
+
+      - name: Summary
+        env:
+          VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.tag }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          {
+            echo ""
+            if [ "$DRY" = "true" ]; then
+              echo "### Dry run: nothing was published"
+              echo ""
+              echo "Each gate passed. \`$VERSION\` was **not** staged, and no tag was pushed."
+            else
+              echo "### Staged \`$VERSION\`: not installable yet"
+              echo ""
+              echo "- npm: \`@rootnative/devhub@$VERSION\` is staged for the dist-tag \`$DIST_TAG\`. Approve it with 2FA on npmjs.com (Staged Packages), or with \`npm stage approve\`."
+              echo "- Tag: \`devhub@$VERSION\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

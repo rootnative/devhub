@@ -68,6 +68,9 @@ Nothing is on npm yet.
   `listBuilds`, `installStoredBuild`, `deviceReport`, and `syncBuilds`. Each
   one returns a result with the JSON of its command, or an error message,
   and writes nothing to stdout or stderr.
+- `llms.txt` in the package, for AI agents. It gives the help of each
+  command, the type of each `--json` output, and the names of the core API
+  of the installed version.
 - The runtime dependencies `cross-spawn` and `json5`. On Windows, `eas` is a
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli

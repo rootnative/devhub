@@ -50,6 +50,10 @@ Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.
 
+An AI agent can read `llms.txt` in the package. It gives the help of each
+command, the type of each `--json` output, and the core API of the installed
+version.
+
 ### Which builds DevHub keeps
 
 DevHub reads `eas.json` and syncs each build profile with

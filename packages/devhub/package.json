@@ -41,6 +41,7 @@
   },
   "files": [
     "dist",
+    "llms.txt",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -50,6 +51,7 @@
   },
   "scripts": {
     "build": "tsup && node scripts/copy-ui.mjs",
+    "prepack": "turbo run build --filter=@rootnative/devhub",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

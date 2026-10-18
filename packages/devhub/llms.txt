@@ -1,0 +1,402 @@
+# DevHub by Root Native (@rootnative/devhub)
+
+> A CLI and a core library for Expo developers. DevHub keeps every Expo
+> development build (dev client) on the machine, and installs a stored build
+> on a running Android emulator or device, or on a booted iOS simulator.
+
+Version: 0.0.0. This file describes this version only.
+
+Source: https://github.com/rootnative/devhub
+
+## What ships
+
+- `devhub sync` downloads the EAS dev client builds of a project into the
+  store, before EAS deletes them. `devhub sync --all` does this for each
+  project that `devhub sync` saw before.
+- `devhub list` shows the stored builds. `devhub where` gives the path of a
+  build file.
+- `devhub devices` lists the Android emulators and devices, and on macOS the
+  booted iOS simulators.
+- `devhub install` installs a stored build on a device that runs now.
+- `devhub ui` serves a local page with the same functions, on 127.0.0.1.
+
+NOT IMPLEMENTED, do not call: the fingerprint match, the Expo build cache
+provider (`@rootnative/devhub/cache-provider`), the import of a build file,
+the launch (boot a device, open the app), launch profiles, prune, and the
+desktop app. They are the plan only.
+
+## Requirements
+
+- Node 20.19 or later. Run `npx @rootnative/devhub <command>`, or install
+  the package globally to get the `devhub` command.
+- For `devhub sync`: eas-cli with a login (`eas login` or
+  `npx eas-cli login`). DevHub runs `eas` from `PATH`, or `npx --yes eas-cli`
+  when `eas` is not on `PATH`. DevHub never reads, asks for, or stores a
+  token.
+- For Android: adb from the Android SDK Platform-Tools. DevHub uses the
+  first `platform-tools/adb` in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, or the
+  default SDK folder of the system, and else `adb` from `PATH`.
+- For iOS: Xcode, on macOS only.
+
+## Rules for an agent
+
+- Add `--json` to each command. Then stdout holds one JSON value and nothing
+  else. Progress and warnings go to stderr.
+- The exit code is `0` for success, `1` for a failure, and `2` for a usage
+  error. After a failure, stdout is empty and stderr holds the message, with
+  two exceptions. `devhub devices --json` prints its JSON and exits with `1`
+  when each device tool fails. `devhub sync --json` prints its JSON and
+  exits with `1` when a project fails.
+- `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
+  gives each full ID.
+- `devhub install` does not start a device, and does not open the app.
+  Start the emulator or the simulator first. Then run `npx expo start` in
+  the project folder, and press `a` or `i`, to load the JavaScript.
+- When two or more devices of the build's platform are ready,
+  `devhub install` stops with exit code `2`. Give `--device <id>` with an ID
+  from `devhub devices --json`.
+- DevHub never uninstalls an app. For a signing key conflict, it prints the
+  `adb uninstall` command and stops. An uninstall deletes the app data, so
+  ask the user before you run that command.
+- `devhub install` refuses an Android App Bundle (`.aab`), an iOS device
+  build (`.ipa`), and each iOS build on Windows or Linux. `installProblem`
+  in `devhub list --json` gives the reason and the fix before you try.
+- `devhub ui` runs until Ctrl+C. To read data, use the commands with
+  `--json`, not the page.
+- Only one sync runs at a time. A second sync stops with exit code `1` and
+  a message that names the process of the first one.
+- A dev client is a debug build. Its JavaScript runs in development mode, so
+  it does not show the speed of the app in production.
+
+## CLI
+
+### devhub
+
+```text
+DevHub by Root Native 0.0.0
+Keep every dev build. Launch any one in one click.
+
+Usage: devhub <command> [options]
+
+Commands:
+  sync          Download the EAS dev client builds of this project.
+  list          Show the stored builds.
+  where <id>    Print the path of a stored build file.
+  devices       List the Android devices and the iOS simulators.
+  install <id>  Install a stored build on the ready device.
+  ui            Open the DevHub page in the browser.
+
+Options:
+  -h, --help     Show this help.
+  -v, --version  Show the version.
+
+Run "devhub <command> --help" to see the options of a command.
+```
+
+### devhub sync
+
+```text
+Usage: devhub sync [options]
+
+Download each finished EAS dev client build of this project that the store
+does not have. A build profile is a dev client profile when it has
+"developmentClient": true in eas.json. DevHub runs "eas", or "npx eas-cli"
+when eas is not on PATH, and uses the eas-cli login.
+
+Options:
+  --all             Sync each project folder that devhub sync saw before.
+  --profile <name>  Also sync this build profile. Give it again for each
+                    other profile.
+  --dry-run         Show what the sync downloads. Download nothing.
+  --json            Print the result as JSON.
+  -h, --help        Show this help.
+
+The store is in the data folder of the OS. Set DEVHUB_HOME to use a
+different folder.
+```
+
+### devhub list
+
+```text
+Usage: devhub list [options]
+
+Show the builds in the store, sorted by project and then newest first.
+EAS EXPIRY is the date on which EAS deletes its copy. The copy in the store
+stays.
+
+Options:
+  --json      Print the builds as JSON.
+  -h, --help  Show this help.
+```
+
+### devhub where
+
+```text
+Usage: devhub where <id> [options]
+
+Print the path of a stored build file. <id> is the EAS build ID, or the
+start of it. "devhub list" shows a start of each ID that is unique.
+
+Options:
+  --json      Print the ID and the path as JSON.
+  -h, --help  Show this help.
+```
+
+### devhub devices
+
+```text
+Usage: devhub devices [options]
+
+List the Android emulators and devices that adb sees, and on macOS the iOS
+simulators that run now. DevHub can install a build on a device in the state
+"ready".
+
+Options:
+  --json      Print the devices as JSON.
+  -h, --help  Show this help.
+```
+
+### devhub install
+
+```text
+Usage: devhub install <id> [options]
+
+Install a stored build on a device that is ready: an Android build on an
+emulator or a device, or an iOS simulator build on a booted simulator (macOS
+only). <id> is the EAS build ID, or the start of it. "devhub list" shows the
+builds, and "devhub devices" shows the devices. DevHub does not start a
+device, and does not open the app.
+
+Options:
+  --device <id>  The adb serial or the simulator UDID of the device.
+                 Necessary when two or more devices are ready.
+  --json         Print the build and the device as JSON.
+  -h, --help     Show this help.
+```
+
+### devhub ui
+
+```text
+Usage: devhub ui [options]
+
+Start a local server for the DevHub page, and open the page in the browser.
+The server listens on 127.0.0.1 only, and each run has a new token in the
+URL. Press Ctrl+C to stop the server.
+
+Options:
+  --port <n>  The port of the server. The default is a free port.
+  --no-open   Print the URL, and do not open the browser.
+  --json      Print the URL and the port as JSON.
+  -h, --help  Show this help.
+```
+
+## JSON output
+
+- `devhub sync --json` prints `SyncReport`.
+- `devhub list --json` prints `BuildList`.
+- `devhub devices --json` prints `DeviceReport`.
+- `devhub install <id> --json` prints `InstalledBuild`.
+
+```ts
+type SyncReport = {
+    dryRun: boolean;
+    projects: ProjectSyncResult[];
+};
+
+type ProjectSyncResult = {
+    project: string;
+    /** `missing`: the project folder does not exist. DevHub skipped it. */
+    status: 'ok' | 'failed' | 'missing';
+    profiles: SyncProfile[];
+    builds: BuildOutcome[];
+    warnings: string[];
+    error?: string;
+};
+
+/** A build profile to sync, and the platforms whose builds DevHub keeps. */
+type SyncProfile = {
+    name: string;
+    platforms: EasPlatform[];
+};
+
+type BuildOutcome = {
+    id: string;
+    status: BuildStatus;
+    profile: string;
+    platform: string;
+    isForIosSimulator?: boolean;
+    appVersion?: string;
+    expirationDate?: string;
+    /** Set when the status is `downloaded`. */
+    path?: string;
+    size?: number;
+    /** Set when the status is `failed`. */
+    error?: string;
+};
+
+type EasPlatform = 'ANDROID' | 'IOS';
+
+type BuildStatus = 'downloaded' | 'would-download' | 'stored' | 'expired' | 'no-artifact' | 'invalid-id' | 'failed';
+
+/** The JSON of `devhub list --json`. */
+type BuildList = {
+    /** Sorted by project, and then newest first. */
+    builds: ListedBuild[];
+    /** Build folders with no build.json. The next sync replaces them. */
+    incomplete: string[];
+    unreadable: UnreadableBuild[];
+};
+
+/** A build in the JSON of `devhub list --json`. */
+type ListedBuild = {
+    id: string;
+    /** The absolute path of the build file. */
+    path: string;
+    size: number;
+    sha256: string;
+    storedAt: string;
+    eas: EasBuild;
+    /**
+     * Why `devhub install` refuses the build on this system, with the fix.
+     * Absent when it can install the build.
+     */
+    installProblem?: string;
+};
+
+type UnreadableBuild = {
+    id: string;
+    reason: string;
+};
+
+/**
+ * One build as `eas build:list --json` prints it. eas-cli drops each field
+ * with a `null` value, so an absent field means "no value". DevHub stores
+ * the record without changes, so the type keeps the fields it does not know.
+ */
+type EasBuild = {
+    id: string;
+    platform: string;
+    buildProfile?: string;
+    distribution?: string;
+    isForIosSimulator?: boolean;
+    appIdentifier?: string;
+    appVersion?: string;
+    appBuildVersion?: string;
+    sdkVersion?: string;
+    runtime?: {
+        version?: string;
+    };
+    fingerprint?: {
+        hash?: string;
+    };
+    gitCommitHash?: string;
+    gitCommitMessage?: string;
+    app?: {
+        id?: string;
+        slug?: string;
+        name?: string;
+    };
+    createdAt?: string;
+    completedAt?: string;
+    expirationDate?: string;
+    artifacts?: {
+        applicationArchiveUrl?: string;
+        buildUrl?: string;
+    };
+    [field: string]: unknown;
+};
+
+/** The JSON of `devhub devices --json`. */
+type DeviceReport = {
+    devices: Device[];
+    /** The error of each device tool that failed, with the fix. */
+    warnings: string[];
+};
+
+type Device = {
+    platform: DevicePlatform;
+    kind: DeviceKind;
+    /** The adb serial, or the simulator UDID. */
+    id: string;
+    name: string;
+    /** The state as the device tool prints it. */
+    state: string;
+    /** DevHub can install a build on the device now. */
+    ready: boolean;
+    /** Why DevHub cannot install on the device now, and the fix. */
+    problem?: string;
+    /** The iOS version of a simulator. */
+    osVersion?: string;
+};
+
+type DevicePlatform = 'android' | 'ios';
+
+/** `physical`: a phone or a tablet that adb sees over USB or Wi-Fi. */
+type DeviceKind = 'emulator' | 'physical' | 'simulator';
+
+/** The JSON of `devhub install --json`. */
+type InstalledBuild = {
+    id: string;
+    /** The absolute path of the build file. */
+    path: string;
+    device: Device;
+};
+```
+
+- `devhub where <id> --json` prints `{ "id": string, "path": string }`.
+- `devhub ui --json` prints `{ "url": string, "port": number }`, and the
+  server then runs until Ctrl+C.
+
+Each path is absolute. Each date is an ISO 8601 string. `eas` is the record
+of `eas build:list --json` without changes, so it can have more fields than
+the type names. eas-cli drops each field with a `null` value, so an absent
+field means "no value".
+
+## The store
+
+One folder holds the builds of all projects. It is never inside a project
+folder. Read it with the CLI. Do not write into it.
+
+```text
+<DEVHUB_HOME>/
+  projects.json            each project folder that devhub sync saw
+  sync.lock                the process ID of the sync that runs now
+  builds/<easBuildId>/
+    build.json             the record. A folder without it is incomplete.
+    <file>                 .apk, .aab, .tar.gz (iOS simulator), or .ipa
+  extracted/<easBuildId>/  the unpacked iOS simulator build, a cache
+```
+
+`DEVHUB_HOME` sets the folder. The default is
+`~/Library/Application Support/devhub` on macOS, `%LOCALAPPDATA%\devhub` on
+Windows, and `$XDG_DATA_HOME/devhub` or `~/.local/share/devhub` on Linux.
+
+## Core API
+
+`import { listBuilds } from '@rootnative/devhub'`. The package is ESM only,
+for Node. The types are in `dist/index.d.ts`. The API can change in each
+version before `1.0.0`.
+
+Functions, classes, and constants: ADB_MISSING, BUILD_LIST_PAGE_SIZE,
+DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError, EasJsonError,
+StoreLockedError, TAR_MISSING, XCRUN_MISSING, adbAvdNameCommand, adbDevice,
+adbDevicesCommand, adbInstallCommand, adbInstallFailure, adbUninstallCommand,
+artifactUrl, checkEasLogin, devClientProfiles, deviceReport, downloadFile,
+easBuildListCommand, easWhoamiCommand, findBuild, findDevice, findEasProject,
+findStoredBuild, installBuild, installPlatform, installProblem,
+installStoredBuild, iosRuntimeVersion, isEmulatorSerial, isExpired,
+listAndroidDevices, listBuilds, listDevices, listFinishedBuilds,
+listIosSimulators, parseAdbDevices, parseAvdName, parseEasJson,
+parseSimctlDevices, planSync, readEasJson, readProjects, resolveAdb,
+resolveHome, runCommand, scanStore, selectDevice, simctlInstallCommand,
+simctlListCommand, syncBuilds, syncFailed, syncProjects, tarExtractCommand,
+unpackIosBuild, version, withExtraProfiles.
+
+Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
+BuildRecord, BuildStatus, Command, CommandOptions, CommandResult, CommandRunner,
+Device, DeviceChoice, DeviceKind, DeviceList, DeviceListOptions, DevicePlatform,
+DeviceReport, DeviceSource, DownloadResult, Downloader, EasBuild, EasInvocation,
+EasPlatform, FindResult, FlowError, FlowResult, HomeOptions, InstallDeps,
+InstallOptions, InstallRequest, InstalledBuild, ListedBuild, PlanItem,
+ProfileBuilds, ProjectSyncResult, StoreScan, StoredBuild, SyncBuildsDeps,
+SyncDeps, SyncOptions, SyncProfile, SyncReport, SyncRequest, UnpackOptions.

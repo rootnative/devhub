@@ -16,7 +16,11 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "build:llms": "node scripts/build-llms.mjs",
+    "check:llms": "node scripts/build-llms.mjs --check",
+    "check:artifact": "node scripts/check-artifact.mjs",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build && pnpm run check:llms && pnpm run check:artifact"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
