@@ -1,4 +1,5 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import {
   access,
   readFile,
@@ -43,6 +44,19 @@ export async function readJsonFile(file: string): Promise<unknown> {
     throw error
   }
   return JSON.parse(text) as unknown
+}
+
+/** The size and the SHA-256 of a file, read as a stream. */
+export async function hashFile(
+  file: string,
+): Promise<{ size: number; sha256: string }> {
+  const hash = createHash('sha256')
+  let size = 0
+  for await (const chunk of createReadStream(file)) {
+    hash.update(chunk as Buffer)
+    size += (chunk as Buffer).length
+  }
+  return { size, sha256: hash.digest('hex') }
 }
 
 /**

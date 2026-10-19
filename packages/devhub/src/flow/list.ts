@@ -1,28 +1,41 @@
 import type { EasBuild } from '../eas/build'
 import { installProblem } from '../install/install'
 import {
+  isLocalRecord,
   scanStore,
+  type LocalBuild,
   type StoredBuild,
   type StoreScan,
   type UnreadableBuild,
 } from '../store/builds'
+import { buildSummary } from '../store/summary'
 import { errorMessage, failure, type FlowResult } from './result'
 
-/** A build in the JSON of `devhub list --json`. */
-export type ListedBuild = {
+type ListedFields = {
   id: string
   /** The absolute path of the build file. */
   path: string
   size: number
   sha256: string
   storedAt: string
-  eas: EasBuild
   /**
    * Why `devhub install` refuses the build on this system, with the fix.
    * Absent when it can install the build.
    */
   installProblem?: string
 }
+
+/** A build that `devhub sync` downloaded from EAS. */
+export type ListedEasBuild = ListedFields & { source: 'eas'; eas: EasBuild }
+
+/** A build that `npx expo run:*` made, and the cache provider stored. */
+export type ListedLocalBuild = ListedFields & {
+  source: 'local'
+  local: LocalBuild
+}
+
+/** A build in the JSON of `devhub list --json`. */
+export type ListedBuild = ListedEasBuild | ListedLocalBuild
 
 /** The JSON of `devhub list --json`. */
 export type BuildList = {
@@ -56,31 +69,34 @@ export async function listBuilds(
   }
 }
 
-export function projectName(build: EasBuild): string {
-  return build.app?.slug ?? build.app?.name ?? '-'
-}
-
 function listedBuild(
   build: StoredBuild,
   platform: NodeJS.Platform,
 ): ListedBuild {
   const { id, path, record } = build
   const problem = installProblem(build, platform)
-  return {
-    id,
+  const fields = {
     path,
     size: record.size,
     sha256: record.sha256,
     storedAt: record.storedAt,
-    eas: record.eas,
-    ...(problem === undefined ? {} : { installProblem: problem }),
   }
+  const listed: ListedBuild = isLocalRecord(record)
+    ? { id, source: 'local', ...fields, local: record.local }
+    : { id, source: 'eas', ...fields, eas: record.eas }
+  return problem === undefined ? listed : { ...listed, installProblem: problem }
+}
+
+/** Newest first, by the EAS creation date or the local store date. */
+export function newestFirst(a: ListedBuild, b: ListedBuild): number {
+  return (buildSummary(b).createdAt ?? '').localeCompare(
+    buildSummary(a).createdAt ?? '',
+  )
 }
 
 function compareBuilds(a: ListedBuild, b: ListedBuild): number {
-  const byProject = projectName(a.eas).localeCompare(projectName(b.eas))
-  if (byProject !== 0) {
-    return byProject
-  }
-  return (b.eas.createdAt ?? '').localeCompare(a.eas.createdAt ?? '')
+  const byProject = buildSummary(a).project.localeCompare(
+    buildSummary(b).project,
+  )
+  return byProject !== 0 ? byProject : newestFirst(a, b)
 }

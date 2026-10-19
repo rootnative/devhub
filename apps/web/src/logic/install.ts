@@ -1,4 +1,5 @@
 import type { Device, ListedBuild } from '../api/types'
+import { buildSummary } from './summary'
 
 /**
  * What the install button of a build does. `refused`: `devhub install`
@@ -23,7 +24,7 @@ export function installChoice(
   if (build.installProblem !== undefined) {
     return { kind: 'refused', reason: build.installProblem }
   }
-  const platform = build.eas.platform === 'IOS' ? 'ios' : 'android'
+  const platform = buildSummary(build).platform === 'IOS' ? 'ios' : 'android'
   const ready = (devices ?? []).filter(
     (device) => device.platform === platform && device.ready,
   )

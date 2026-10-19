@@ -108,6 +108,7 @@ describe('listBuilds', () => {
     ])
     expect(result.value.builds[1]).toEqual({
       id: ID_B,
+      source: 'eas',
       path: files[ID_B],
       size: 6,
       sha256: expect.stringMatching(/^[0-9a-f]{64}$/),

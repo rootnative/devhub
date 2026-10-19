@@ -15,16 +15,32 @@ export type EasBuild = {
   app?: { slug?: string; name?: string }
 }
 
-/** `devhub list --json`, one build. */
-export type ListedBuild = {
+/** A build that `npx expo run:*` made, and the cache provider stored. */
+export type LocalBuild = {
+  platform: string
+  fingerprintHash: string
+  /** The Android variant or the iOS configuration. */
+  variant: string
+  /** The project folder. */
+  project: string
+  slug?: string
+  appVersion?: string
+  gitCommitHash?: string
+}
+
+type ListedFields = {
   id: string
   path: string
   size: number
   storedAt: string
-  eas: EasBuild
   /** Why `devhub install` refuses the build on this system, with the fix. */
   installProblem?: string
 }
+
+/** `devhub list --json`, one build. */
+export type ListedBuild =
+  | (ListedFields & { source: 'eas'; eas: EasBuild })
+  | (ListedFields & { source: 'local'; local: LocalBuild })
 
 /** `devhub list --json`. The builds are by project, and then newest first. */
 export type BuildList = {

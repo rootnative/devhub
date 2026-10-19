@@ -3,6 +3,7 @@ import {
   type FingerprintPlatform,
 } from '../fingerprint/fingerprint'
 import { hasMatch, matchBuilds, type MatchReport } from '../flow/match'
+import { buildSummary } from '../store/summary'
 import {
   EXIT_CODE,
   flowError,
@@ -110,15 +111,18 @@ function reportText(report: MatchReport): string[] {
       lines.push('  No stored build matches this fingerprint.')
       continue
     }
-    const rows = matches.map(({ id, eas }) => [
-      shortId(id),
-      platformLabel(eas.platform, eas.isForIosSimulator),
-      eas.buildProfile ?? '-',
-      eas.appVersion ?? '-',
-      eas.gitCommitHash?.slice(0, 7) ?? '-',
-      formatDate(eas.createdAt),
-      formatDate(eas.expirationDate),
-    ])
+    const rows = matches.map((build) => {
+      const summary = buildSummary(build)
+      return [
+        shortId(build.id),
+        platformLabel(summary.platform, summary.isForIosSimulator),
+        summary.profile ?? '-',
+        summary.appVersion ?? '-',
+        summary.gitCommitHash?.slice(0, 7) ?? '-',
+        formatDate(summary.createdAt),
+        formatDate(summary.expirationDate),
+      ]
+    })
     lines.push(...formatTable([HEADER, ...rows]).map((row) => `  ${row}`))
   }
   if (!hasMatch(report)) {

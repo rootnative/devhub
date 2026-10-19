@@ -94,10 +94,15 @@ desktop app. They are the plan only.
 - `devhub ui --json` prints `{ "url": string, "port": number }`, and the
   server then runs until Ctrl+C.
 
-Each path is absolute. Each date is an ISO 8601 string. `eas` is the record
-of `eas build:list --json` without changes, so it can have more fields than
-the type names. eas-cli drops each field with a `null` value, so an absent
-field means "no value".
+Each path is absolute. Each date is an ISO 8601 string. A build in
+`devhub list --json` has `source`: `"eas"` for a build that `devhub sync`
+downloaded, and `"local"` for a build that `npx expo run:*` made. An EAS
+build has `eas`, the record of `eas build:list --json` without changes, so
+it can have more fields than the type names. eas-cli drops each field with
+a `null` value, so an absent field means "no value". A local build has
+`local` in place of `eas`. The `id` of a local build is a UUID that DevHub
+made, and `devhub where` and `devhub install` accept it the same as an EAS
+build ID.
 
 ## The store
 
@@ -108,10 +113,10 @@ folder. Read it with the CLI. Do not write into it.
 <DEVHUB_HOME>/
   projects.json            each project folder that devhub sync saw
   sync.lock                the process ID of the sync that runs now
-  builds/<easBuildId>/
+  builds/<id>/             the EAS build ID, or a UUID for a local build
     build.json             the record. A folder without it is incomplete.
     <file>                 .apk, .aab, .tar.gz (iOS simulator), or .ipa
-  extracted/<easBuildId>/  the unpacked iOS simulator build, a cache
+  extracted/<id>/          the unpacked iOS simulator build, a cache
 ```
 
 `DEVHUB_HOME` sets the folder. The default is

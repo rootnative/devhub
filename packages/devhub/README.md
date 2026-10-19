@@ -236,6 +236,13 @@ disk. A dev client build can be more than 100 MB.
 The `extracted` folder in the store holds the unpacked iOS simulator builds.
 You can delete it at any time. The next install unpacks the build again.
 
+The store can also hold local builds: builds that `npx expo run:android`
+and `npx expo run:ios` made on your machine. `devhub list` shows the
+profile of a local build as `local` and its variant, for example
+`local debug`, and no EAS expiry date. Its ID is a UUID that DevHub makes.
+`devhub where`, `devhub install`, and `devhub match` accept a local build
+the same as an EAS build.
+
 ## Sync every day
 
 EAS deletes a build after its retention period. Run `devhub sync` once in

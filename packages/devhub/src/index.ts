@@ -2,6 +2,7 @@ import pkg from '../package.json' with { type: 'json' }
 
 export const version: string = pkg.version
 
+export { apkAbis } from './binary/apk'
 export {
   runCommand,
   type Command,
@@ -88,7 +89,13 @@ export {
   type InstallRequest,
   type InstalledBuild,
 } from './flow/install'
-export { listBuilds, type BuildList, type ListedBuild } from './flow/list'
+export {
+  listBuilds,
+  type BuildList,
+  type ListedBuild,
+  type ListedEasBuild,
+  type ListedLocalBuild,
+} from './flow/list'
 export {
   hasMatch,
   matchBuilds,
@@ -109,19 +116,35 @@ export {
 } from './install/install'
 export {
   TAR_MISSING,
+  tarCreateCommand,
   tarExtractCommand,
   unpackIosBuild,
   type UnpackOptions,
 } from './install/unpack'
 export {
+  TAR_PACK_MISSING,
+  storeLocalBuild,
+  type LocalBuildInput,
+  type StoreLocalOptions,
+} from './local/store-local'
+export {
   findBuild,
+  isLocalRecord,
   scanStore,
   type BuildRecord,
+  type EasBuildRecord,
   type FindResult,
+  type LocalBuild,
+  type LocalBuildRecord,
   type StoreScan,
   type StoredBuild,
 } from './store/builds'
 export { resolveHome, type HomeOptions } from './store/home'
+export {
+  buildSummary,
+  type BuildSource,
+  type BuildSummary,
+} from './store/summary'
 export { StoreLockedError } from './store/lock'
 export { readProjects } from './store/projects'
 export {

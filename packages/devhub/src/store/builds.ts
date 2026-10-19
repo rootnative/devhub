@@ -1,6 +1,11 @@
 import { mkdir, readdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { isEasBuild, type EasBuild } from '../eas/build'
+import {
+  EAS_PLATFORMS,
+  isEasBuild,
+  type EasBuild,
+  type EasPlatform,
+} from '../eas/build'
 import {
   isErrnoException,
   isRecord,
@@ -8,16 +13,59 @@ import {
   writeJsonAtomic,
 } from './files'
 
-export const BUILD_RECORD_SCHEMA_VERSION = 1
+/**
+ * An EAS record keeps version 1, so DevHub 0.0.0-alpha.0 still reads it. A
+ * local record has version 2, which that DevHub calls "written by a newer
+ * DevHub".
+ */
+export const EAS_RECORD_SCHEMA_VERSION = 1
+export const LOCAL_RECORD_SCHEMA_VERSION = 2
 export const BUILD_RECORD_FILE = 'build.json'
 
-export type BuildRecord = {
-  schemaVersion: typeof BUILD_RECORD_SCHEMA_VERSION
+export type EasBuildRecord = {
+  schemaVersion: typeof EAS_RECORD_SCHEMA_VERSION
   storedAt: string
   file: string
   size: number
   sha256: string
   eas: EasBuild
+}
+
+/** A build that `npx expo run:*` made on this machine. */
+export type LocalBuild = {
+  platform: EasPlatform
+  /** The fingerprint of the project for this platform, the same kind as EAS. */
+  fingerprintHash: string
+  /** Android: the Gradle variant, for example `debug`. iOS: the Xcode configuration, for example `Debug`. */
+  variant: string
+  /** The real path of the project folder. */
+  project: string
+  /** The `slug` of the app config. */
+  slug?: string
+  appIdentifier?: string
+  appVersion?: string
+  sdkVersion?: string
+  gitCommitHash?: string
+  /** Android: the ABIs of the native code in the APK. */
+  abis?: string[]
+  /** iOS: `process.arch` of the Mac that made the build. */
+  hostArch?: string
+}
+
+export type LocalBuildRecord = {
+  schemaVersion: typeof LOCAL_RECORD_SCHEMA_VERSION
+  source: 'local'
+  storedAt: string
+  file: string
+  size: number
+  sha256: string
+  local: LocalBuild
+}
+
+export type BuildRecord = EasBuildRecord | LocalBuildRecord
+
+export function isLocalRecord(record: BuildRecord): record is LocalBuildRecord {
+  return record.schemaVersion === LOCAL_RECORD_SCHEMA_VERSION
 }
 
 export type StoredBuild = {
@@ -182,17 +230,24 @@ function recordProblem(value: unknown, id: string): string | undefined {
   const { schemaVersion } = value
   if (
     typeof schemaVersion === 'number' &&
-    schemaVersion > BUILD_RECORD_SCHEMA_VERSION
+    schemaVersion > LOCAL_RECORD_SCHEMA_VERSION
   ) {
     return `build.json has schema version ${schemaVersion}. A newer DevHub wrote it. Update DevHub.`
   }
+  const fields =
+    typeof value.storedAt === 'string' &&
+    typeof value.file === 'string' &&
+    isSafeFileName(value.file) &&
+    typeof value.size === 'number' &&
+    typeof value.sha256 === 'string'
+  if (schemaVersion === LOCAL_RECORD_SCHEMA_VERSION) {
+    return fields && value.source === 'local' && isLocalBuild(value.local)
+      ? undefined
+      : 'build.json does not have the fields of a local build record.'
+  }
   if (
-    schemaVersion !== BUILD_RECORD_SCHEMA_VERSION ||
-    typeof value.storedAt !== 'string' ||
-    typeof value.file !== 'string' ||
-    !isSafeFileName(value.file) ||
-    typeof value.size !== 'number' ||
-    typeof value.sha256 !== 'string' ||
+    schemaVersion !== EAS_RECORD_SCHEMA_VERSION ||
+    !fields ||
     !isEasBuild(value.eas)
   ) {
     return 'build.json does not have the fields of a build record.'
@@ -201,6 +256,34 @@ function recordProblem(value: unknown, id: string): string | undefined {
     return `build.json is for the build ${value.eas.id}, not for ${id}.`
   }
   return undefined
+}
+
+const LOCAL_STRING_FIELDS = [
+  'slug',
+  'appIdentifier',
+  'appVersion',
+  'sdkVersion',
+  'gitCommitHash',
+  'hostArch',
+] as const
+
+function isLocalBuild(value: unknown): value is LocalBuild {
+  if (!isRecord(value)) {
+    return false
+  }
+  return (
+    EAS_PLATFORMS.includes(value.platform as EasPlatform) &&
+    typeof value.fingerprintHash === 'string' &&
+    value.fingerprintHash !== '' &&
+    typeof value.variant === 'string' &&
+    typeof value.project === 'string' &&
+    LOCAL_STRING_FIELDS.every(
+      (field) => value[field] === undefined || typeof value[field] === 'string',
+    ) &&
+    (value.abis === undefined ||
+      (Array.isArray(value.abis) &&
+        value.abis.every((abi) => typeof abi === 'string')))
+  )
 }
 
 async function exists(file: string): Promise<boolean> {

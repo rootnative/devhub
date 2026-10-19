@@ -131,7 +131,8 @@ Usage: devhub list [options]
 
 Show the builds in the store, sorted by project and then newest first.
 EAS EXPIRY is the date on which EAS deletes its copy. The copy in the store
-stays.
+stays. A build that "npx expo run" made shows the profile "local" and its
+variant, and CREATED is the date on which DevHub stored it.
 
 Options:
   --json      Print the builds as JSON.
@@ -278,24 +279,37 @@ type BuildList = {
 };
 
 /** A build in the JSON of `devhub list --json`. */
-type ListedBuild = {
+type ListedBuild = ListedEasBuild | ListedLocalBuild;
+
+type UnreadableBuild = {
+    id: string;
+    reason: string;
+};
+
+/** A build that `devhub sync` downloaded from EAS. */
+type ListedEasBuild = ListedFields & {
+    source: 'eas';
+    eas: EasBuild;
+};
+
+/** A build that `npx expo run:*` made, and the cache provider stored. */
+type ListedLocalBuild = ListedFields & {
+    source: 'local';
+    local: LocalBuild;
+};
+
+type ListedFields = {
     id: string;
     /** The absolute path of the build file. */
     path: string;
     size: number;
     sha256: string;
     storedAt: string;
-    eas: EasBuild;
     /**
      * Why `devhub install` refuses the build on this system, with the fix.
      * Absent when it can install the build.
      */
     installProblem?: string;
-};
-
-type UnreadableBuild = {
-    id: string;
-    reason: string;
 };
 
 /**
@@ -334,6 +348,27 @@ type EasBuild = {
         buildUrl?: string;
     };
     [field: string]: unknown;
+};
+
+/** A build that `npx expo run:*` made on this machine. */
+type LocalBuild = {
+    platform: EasPlatform;
+    /** The fingerprint of the project for this platform, the same kind as EAS. */
+    fingerprintHash: string;
+    /** Android: the Gradle variant, for example `debug`. iOS: the Xcode configuration, for example `Debug`. */
+    variant: string;
+    /** The real path of the project folder. */
+    project: string;
+    /** The `slug` of the app config. */
+    slug?: string;
+    appIdentifier?: string;
+    appVersion?: string;
+    sdkVersion?: string;
+    gitCommitHash?: string;
+    /** Android: the ABIs of the native code in the APK. */
+    abis?: string[];
+    /** iOS: `process.arch` of the Mac that made the build. */
+    hostArch?: string;
 };
 
 /** The JSON of `devhub devices --json`. */
@@ -396,10 +431,15 @@ type FingerprintPlatform = 'android' | 'ios';
 - `devhub ui --json` prints `{ "url": string, "port": number }`, and the
   server then runs until Ctrl+C.
 
-Each path is absolute. Each date is an ISO 8601 string. `eas` is the record
-of `eas build:list --json` without changes, so it can have more fields than
-the type names. eas-cli drops each field with a `null` value, so an absent
-field means "no value".
+Each path is absolute. Each date is an ISO 8601 string. A build in
+`devhub list --json` has `source`: `"eas"` for a build that `devhub sync`
+downloaded, and `"local"` for a build that `npx expo run:*` made. An EAS
+build has `eas`, the record of `eas build:list --json` without changes, so
+it can have more fields than the type names. eas-cli drops each field with
+a `null` value, so an absent field means "no value". A local build has
+`local` in place of `eas`. The `id` of a local build is a UUID that DevHub
+made, and `devhub where` and `devhub install` accept it the same as an EAS
+build ID.
 
 ## The store
 
@@ -410,10 +450,10 @@ folder. Read it with the CLI. Do not write into it.
 <DEVHUB_HOME>/
   projects.json            each project folder that devhub sync saw
   sync.lock                the process ID of the sync that runs now
-  builds/<easBuildId>/
+  builds/<id>/             the EAS build ID, or a UUID for a local build
     build.json             the record. A folder without it is incomplete.
     <file>                 .apk, .aab, .tar.gz (iOS simulator), or .ipa
-  extracted/<easBuildId>/  the unpacked iOS simulator build, a cache
+  extracted/<id>/          the unpacked iOS simulator build, a cache
 ```
 
 `DEVHUB_HOME` sets the folder. The default is
@@ -429,27 +469,29 @@ version before `1.0.0`.
 Functions, classes, and constants: ADB_MISSING, BUILD_LIST_PAGE_SIZE,
 DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError, EasJsonError,
 FINGERPRINT_PLATFORMS, FingerprintError, StoreLockedError, TAR_MISSING,
-XCRUN_MISSING, adbAvdNameCommand, adbDevice, adbDevicesCommand,
-adbInstallCommand, adbInstallFailure, adbUninstallCommand, artifactUrl,
-checkEasLogin, devClientProfiles, deviceReport, downloadFile,
-easBuildListCommand, easWhoamiCommand, findBuild, findDevice, findEasProject,
-findProjectRoot, findStoredBuild, hasMatch, installBuild, installPlatform,
-installProblem, installStoredBuild, iosRuntimeVersion, isEmulatorSerial,
-isExpired, listAndroidDevices, listBuilds, listDevices, listFinishedBuilds,
+TAR_PACK_MISSING, XCRUN_MISSING, adbAvdNameCommand, adbDevice,
+adbDevicesCommand, adbInstallCommand, adbInstallFailure, adbUninstallCommand,
+apkAbis, artifactUrl, buildSummary, checkEasLogin, devClientProfiles,
+deviceReport, downloadFile, easBuildListCommand, easWhoamiCommand, findBuild,
+findDevice, findEasProject, findProjectRoot, findStoredBuild, hasMatch,
+installBuild, installPlatform, installProblem, installStoredBuild,
+iosRuntimeVersion, isEmulatorSerial, isExpired, isLocalRecord,
+listAndroidDevices, listBuilds, listDevices, listFinishedBuilds,
 listIosSimulators, matchBuilds, matchesFingerprint, parseAdbDevices,
 parseAvdName, parseEasJson, parseSimctlDevices, planSync, projectFingerprint,
 readEasJson, readProjects, resolveAdb, resolveFingerprintModule, resolveHome,
 runCommand, scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
-syncBuilds, syncFailed, syncProjects, tarExtractCommand, unpackIosBuild,
-version, withExtraProfiles.
+storeLocalBuild, syncBuilds, syncFailed, syncProjects, tarCreateCommand,
+tarExtractCommand, unpackIosBuild, version, withExtraProfiles.
 
 Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
-BuildRecord, BuildStatus, Command, CommandOptions, CommandResult, CommandRunner,
-Device, DeviceChoice, DeviceKind, DeviceList, DeviceListOptions, DevicePlatform,
-DeviceReport, DeviceSource, DownloadResult, Downloader, EasBuild, EasInvocation,
-EasPlatform, FindResult, FingerprintModule, FingerprintPlatform, FlowError,
-FlowResult, HomeOptions, InstallDeps, InstallOptions, InstallRequest,
-InstalledBuild, ListedBuild, MatchDeps, MatchReport, MatchRequest, PlanItem,
-PlatformMatch, ProfileBuilds, ProjectSyncResult, StoreScan, StoredBuild,
-SyncBuildsDeps, SyncDeps, SyncOptions, SyncProfile, SyncReport, SyncRequest,
-UnpackOptions.
+BuildRecord, BuildSource, BuildStatus, BuildSummary, Command, CommandOptions,
+CommandResult, CommandRunner, Device, DeviceChoice, DeviceKind, DeviceList,
+DeviceListOptions, DevicePlatform, DeviceReport, DeviceSource, DownloadResult,
+Downloader, EasBuild, EasBuildRecord, EasInvocation, EasPlatform, FindResult,
+FingerprintModule, FingerprintPlatform, FlowError, FlowResult, HomeOptions,
+InstallDeps, InstallOptions, InstallRequest, InstalledBuild, ListedBuild,
+ListedEasBuild, ListedLocalBuild, LocalBuild, LocalBuildInput, LocalBuildRecord,
+MatchDeps, MatchReport, MatchRequest, PlanItem, PlatformMatch, ProfileBuilds,
+ProjectSyncResult, StoreLocalOptions, StoreScan, StoredBuild, SyncBuildsDeps,
+SyncDeps, SyncOptions, SyncProfile, SyncReport, SyncRequest, UnpackOptions.

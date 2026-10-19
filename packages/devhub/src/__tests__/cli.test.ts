@@ -14,7 +14,9 @@ import {
   fakeEas,
   testContext,
   useTempDir,
+  localBuild,
   writeFingerprintProject,
+  writeLocalBuild,
   writeProject,
   writeStoredBuild,
 } from './helpers'
@@ -147,6 +149,7 @@ describe('devhub list', () => {
       builds: [
         {
           id: ID_A,
+          source: 'eas',
           path: file,
           size: 6,
           sha256: expect.any(String),
@@ -190,6 +193,45 @@ describe('devhub list', () => {
       .slice(1)
       .map((line) => line.split(' ')[0])
     expect(ids.sort()).toEqual(['abcd1234-567', 'abcd1234-569'])
+  })
+})
+
+describe('devhub list with local builds', () => {
+  const tempDir = useTempDir()
+
+  it('shows a local build with its variant and no EAS expiry', async () => {
+    const home = await tempDir()
+    await writeStoredBuild(home, easBuild({ id: ID_A }))
+    await writeLocalBuild(home, ID_B, localBuild())
+    await writeLocalBuild(
+      home,
+      ID_C,
+      localBuild({ platform: 'IOS', variant: 'Debug', slug: undefined }),
+      'app.tar.gz',
+    )
+    const { io, out } = capture()
+
+    expect(await run(['list'], testContext({ io, home }))).toBe(EXIT_CODE.ok)
+
+    expect(out.join('\n')).toBe(
+      [
+        'ID        PROJECT  PLATFORM       PROFILE      VERSION  COMMIT   CREATED     EAS EXPIRY',
+        'bbbb2222  my-app   android        local debug  1.2.0    89abcde  2026-10-17  -',
+        'cccc3333  my-app   ios simulator  local Debug  1.2.0    89abcde  2026-10-17  -',
+        'aaaa1111  my-app   android        development  1.0.0    0123456  2026-10-01  2026-10-31',
+      ].join('\n'),
+    )
+  })
+
+  it('finds the file of a local build with where', async () => {
+    const home = await tempDir()
+    const file = await writeLocalBuild(home, ID_B, localBuild())
+    const { io, out } = capture()
+
+    expect(await run(['where', 'bbbb'], testContext({ io, home }))).toBe(
+      EXIT_CODE.ok,
+    )
+    expect(out).toEqual([file])
   })
 })
 
@@ -678,6 +720,30 @@ describe('devhub match', () => {
       platforms: [{ platform: 'android', hash: ANDROID_HASH, matches: [] }],
     })
     expect(await fingerprintCalls(project)).toHaveLength(1)
+  })
+
+  it('shows a local build with the same hash as a match', async () => {
+    const home = await tempDir()
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { android: ANDROID_HASH },
+    })
+    await writeLocalBuild(
+      home,
+      ID_B,
+      localBuild({ fingerprintHash: ANDROID_HASH }),
+    )
+    const { io, out } = capture()
+
+    expect(
+      await run(
+        ['match', '--platform', 'android'],
+        testContext({ io, home, cwd: project }),
+      ),
+    ).toBe(EXIT_CODE.ok)
+
+    expect(out.join('\n')).toContain(
+      '  bbbb2222  android   local debug  1.2.0    89abcde  2026-10-17  -',
+    )
   })
 
   it('gives the hint when no platform matches', async () => {

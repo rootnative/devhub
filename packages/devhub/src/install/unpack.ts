@@ -32,6 +32,15 @@ export function tarExtractCommand(archive: string, folder: string): Command {
   return ['tar', '-xf', archive, '-C', folder]
 }
 
+/** Packs `name` in `folder` into a gzip archive, with `name` at the top. */
+export function tarCreateCommand(
+  archive: string,
+  folder: string,
+  name: string,
+): Command {
+  return ['tar', '-czf', archive, '-C', folder, name]
+}
+
 /**
  * Returns the path of the one `.app` in an iOS simulator build. The first
  * call unpacks the archive into `extracted/<id>/`. It unpacks into a

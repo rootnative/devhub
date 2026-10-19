@@ -1,10 +1,6 @@
-import {
-  listBuilds,
-  projectName,
-  type BuildList,
-  type ListedBuild,
-} from '../flow/list'
+import { listBuilds, type BuildList, type ListedBuild } from '../flow/list'
 import { resolveHome } from '../store/home'
+import { buildSummary } from '../store/summary'
 import {
   EXIT_CODE,
   flowError,
@@ -24,7 +20,8 @@ export const LIST_HELP = `Usage: devhub list [options]
 
 Show the builds in the store, sorted by project and then newest first.
 EAS EXPIRY is the date on which EAS deletes its copy. The copy in the store
-stays.
+stays. A build that "npx expo run" made shows the profile "local" and its
+variant, and CREATED is the date on which DevHub stored it.
 
 Options:
   --json      Print the builds as JSON.
@@ -89,18 +86,19 @@ export async function listCommand(
 }
 
 function buildRow(
-  { id, eas }: ListedBuild,
+  build: ListedBuild,
   shortId: (id: string) => string,
 ): string[] {
+  const summary = buildSummary(build)
   return [
-    shortId(id),
-    projectName(eas),
-    platformLabel(eas.platform, eas.isForIosSimulator),
-    eas.buildProfile ?? '-',
-    eas.appVersion ?? '-',
-    eas.gitCommitHash?.slice(0, 7) ?? '-',
-    formatDate(eas.createdAt),
-    formatDate(eas.expirationDate),
+    shortId(build.id),
+    summary.project,
+    platformLabel(summary.platform, summary.isForIosSimulator),
+    summary.profile ?? '-',
+    summary.appVersion ?? '-',
+    summary.gitCommitHash?.slice(0, 7) ?? '-',
+    formatDate(summary.createdAt),
+    formatDate(summary.expirationDate),
   ]
 }
 

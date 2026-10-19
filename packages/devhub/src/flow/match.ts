@@ -1,4 +1,3 @@
-import type { EasBuild } from '../eas/build'
 import {
   FingerprintError,
   projectFingerprint,
@@ -8,7 +7,8 @@ import {
 } from '../fingerprint/fingerprint'
 import { findProjectRoot } from '../fingerprint/project'
 import { resolveHome, type HomeOptions } from '../store/home'
-import { listBuilds, type ListedBuild } from './list'
+import { buildSummary } from '../store/summary'
+import { listBuilds, newestFirst, type ListedBuild } from './list'
 import { failure, type FlowResult } from './result'
 
 export type MatchRequest = {
@@ -76,7 +76,7 @@ export async function matchBuilds(
       platform,
       hash,
       matches: list.value.builds
-        .filter((build) => matchesFingerprint(build.eas, platform, hash))
+        .filter((build) => matchesFingerprint(build, platform, hash))
         .sort(newestFirst),
     })
   }
@@ -92,23 +92,24 @@ export async function matchBuilds(
   }
 }
 
-/** A build matches when its platform and its EAS fingerprint are the same. */
+/**
+ * A build matches when its platform and its fingerprint are the same: the
+ * EAS fingerprint of an EAS build, or the stored hash of a local build.
+ */
 export function matchesFingerprint(
-  eas: EasBuild,
+  build: ListedBuild,
   platform: FingerprintPlatform,
   hash: string,
 ): boolean {
+  const summary = buildSummary(build)
   return (
-    eas.platform === platform.toUpperCase() && eas.fingerprint?.hash === hash
+    summary.platform === platform.toUpperCase() &&
+    summary.fingerprintHash === hash
   )
 }
 
 export function hasMatch(report: MatchReport): boolean {
   return report.platforms.some((platform) => platform.matches.length > 0)
-}
-
-function newestFirst(a: ListedBuild, b: ListedBuild): number {
-  return (b.eas.createdAt ?? '').localeCompare(a.eas.createdAt ?? '')
 }
 
 function fingerprintFailure(error: unknown): FlowResult<never> {

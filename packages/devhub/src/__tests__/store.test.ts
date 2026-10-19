@@ -11,7 +11,14 @@ import {
 import { resolveHome } from '../store/home'
 import { StoreLockedError, acquireSyncLock } from '../store/lock'
 import { addProject, projectsFile, readProjects } from '../store/projects'
-import { easBuild, useTempDir, uuid, writeStoredBuild } from './helpers'
+import {
+  easBuild,
+  localBuild,
+  useTempDir,
+  uuid,
+  writeLocalBuild,
+  writeStoredBuild,
+} from './helpers'
 
 describe('resolveHome', () => {
   const base = { env: {}, homedir: '/home/dev', cwd: '/work' }
@@ -107,7 +114,7 @@ describe('build folders', () => {
     await mkdir(folder, { recursive: true })
     await writeFile(
       path.join(folder, 'build.json'),
-      JSON.stringify({ schemaVersion: 2 }),
+      JSON.stringify({ schemaVersion: 3 }),
     )
 
     expect(await storedBuildIds(home)).toEqual(new Set([uuid(1)]))
@@ -128,6 +135,30 @@ describe('build folders', () => {
         size: 1,
         sha256: '',
         eas: easBuild({ id: uuid(1) }),
+      }),
+    ],
+    [
+      'a local record with no fingerprint',
+      JSON.stringify({
+        schemaVersion: 2,
+        source: 'local',
+        storedAt: '',
+        file: 'app.apk',
+        size: 1,
+        sha256: '',
+        local: { ...localBuild(), fingerprintHash: '' },
+      }),
+    ],
+    [
+      'a local record with a bad ABI list',
+      JSON.stringify({
+        schemaVersion: 2,
+        source: 'local',
+        storedAt: '',
+        file: 'app.apk',
+        size: 1,
+        sha256: '',
+        local: { ...localBuild(), abis: 'x86_64' },
       }),
     ],
     [
@@ -161,7 +192,37 @@ describe('build folders', () => {
 
     expect(scan.builds).toHaveLength(1)
     expect(scan.builds[0]?.path).toBe(file)
-    expect(scan.builds[0]?.record.eas.id).toBe(uuid(1))
+    expect(scan.builds[0]?.record).toMatchObject({ eas: { id: uuid(1) } })
+  })
+
+  it('reads a local build record', async () => {
+    const home = await tempDir()
+    const local = localBuild()
+    const file = await writeLocalBuild(home, uuid(1), local)
+
+    const scan = await scanStore(home)
+
+    expect(scan.unreadable).toEqual([])
+    expect(scan.builds).toEqual([
+      {
+        id: uuid(1),
+        path: file,
+        record: expect.objectContaining({ schemaVersion: 2, local }),
+      },
+    ])
+  })
+
+  it('skips a temporary folder of a local build that is not complete', async () => {
+    const home = await tempDir()
+    await mkdir(path.join(home, 'builds', `.tmp-${uuid(1)}`), {
+      recursive: true,
+    })
+
+    expect(await scanStore(home)).toEqual({
+      builds: [],
+      incomplete: [],
+      unreadable: [],
+    })
   })
 
   it('reads an empty store when the folder does not exist', async () => {

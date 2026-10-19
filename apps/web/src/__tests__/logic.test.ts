@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { BuildList, Device, EasBuild, ListedBuild } from '../api/types'
+import type {
+  BuildList,
+  Device,
+  EasBuild,
+  ListedBuild,
+  LocalBuild,
+} from '../api/types'
 import { formatBytes, platformLabel, shortIds } from '../logic/format'
 import { installChoice, installedMessage } from '../logic/install'
 import { resolveToken } from '../logic/token'
@@ -10,6 +16,7 @@ const NOW = new Date('2026-10-18T12:00:00.000Z')
 function listed(id: string, eas: Partial<EasBuild> = {}): ListedBuild {
   return {
     id,
+    source: 'eas',
     path: `/store/builds/${id}/app.apk`,
     size: 214_795_512,
     storedAt: '2026-10-17T10:00:00.000Z',
@@ -23,6 +30,25 @@ function listed(id: string, eas: Partial<EasBuild> = {}): ListedBuild {
       expirationDate: '2026-10-20T08:00:00.000Z',
       app: { slug: 'fargo' },
       ...eas,
+    },
+  }
+}
+
+function listedLocal(id: string, local: Partial<LocalBuild> = {}): ListedBuild {
+  return {
+    id,
+    source: 'local',
+    path: `/store/builds/${id}/app.apk`,
+    size: 98_500_000,
+    storedAt: '2026-10-17T10:00:00.000Z',
+    local: {
+      platform: 'ANDROID',
+      fingerprintHash: '3333333333333333333333333333333333333333',
+      variant: 'debug',
+      project: '/work/my-app',
+      appVersion: '2.4.0',
+      gitCommitHash: '89abcdef0123',
+      ...local,
     },
   }
 }
@@ -153,6 +179,43 @@ describe('groupBuilds', () => {
   })
 })
 
+describe('groupBuilds with local builds', () => {
+  it('shows a local build in the group of its project, with no expiry', () => {
+    const groups = groupBuilds(
+      list([
+        listed('aaaa1111-0000', { app: { slug: 'my-app' } }),
+        listedLocal('bbbb2222-0000'),
+        listedLocal('cccc3333-0000', {
+          platform: 'IOS',
+          variant: 'Debug',
+          project: 'C:\\work\\other-app\\',
+        }),
+      ]),
+      NOW,
+    )
+
+    expect(groups.map((group) => group.project)).toEqual([
+      'my-app',
+      'other-app',
+    ])
+    expect(groups[0]?.builds[1]).toMatchObject({
+      title: 'Android · local debug',
+      details: 'Version 2.4.0 · commit 89abcde · stored 2026-10-17',
+      expiry: '',
+    })
+    expect(groups[1]?.builds[0]?.title).toBe('iOS simulator · local Debug')
+  })
+
+  it('uses the slug of the app config when the build has one', () => {
+    const [group] = groupBuilds(
+      list([listedLocal('aaaa1111-0000', { slug: 'expense-app' })]),
+      NOW,
+    )
+
+    expect(group?.project).toBe('expense-app')
+  })
+})
+
 describe('storeNotes', () => {
   it('gives the notes of devhub list', () => {
     expect(storeNotes(list([]))).toEqual([])
@@ -258,6 +321,15 @@ describe('installChoice', () => {
     ).toEqual({ kind: 'one', device: emulator })
     expect(
       installChoice(listed('b', { platform: 'IOS', isForIosSimulator: true }), [
+        emulator,
+        simulator,
+      ]),
+    ).toEqual({ kind: 'one', device: simulator })
+  })
+
+  it('reads the platform of a local build', () => {
+    expect(
+      installChoice(listedLocal('c', { platform: 'IOS' }), [
         emulator,
         simulator,
       ]),

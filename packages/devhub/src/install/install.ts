@@ -7,7 +7,8 @@ import {
   type DevicePlatform,
 } from '../devices/device'
 import { XCRUN_MISSING, simctlInstallCommand } from '../devices/ios'
-import type { StoredBuild } from '../store/builds'
+import { isLocalRecord, type StoredBuild } from '../store/builds'
+import { buildSummary } from '../store/summary'
 import { adbInstallFailure } from './adb-failure'
 import { unpackIosBuild } from './unpack'
 
@@ -31,9 +32,10 @@ export function installProblem(
   build: StoredBuild,
   platform: NodeJS.Platform,
 ): string | undefined {
-  const { eas, file } = build.record
+  const { file } = build.record
+  const summary = buildSummary(build.record)
   const name = file.toLowerCase()
-  if (eas.platform === 'ANDROID') {
+  if (summary.platform === 'ANDROID') {
     if (name.endsWith('.apk')) {
       return undefined
     }
@@ -41,14 +43,14 @@ export function installProblem(
       return `The build ${build.id} is an Android App Bundle (${file}). adb installs only an APK. ${profileFix(build, '"android": { "buildType": "apk" }')}`
     }
   }
-  if (eas.platform === 'IOS') {
+  if (summary.platform === 'IOS') {
     if (platform !== 'darwin') {
       return `The build ${build.id} is an iOS build. iOS simulators run only on macOS, so DevHub installs an iOS build only on macOS.`
     }
     if (name.endsWith('.ipa')) {
       return `The build ${build.id} is an iOS device build (${file}). A simulator cannot run it. ${profileFix(build, '"ios": { "simulator": true }')}`
     }
-    if (eas.isForIosSimulator === true || name.endsWith('.tar.gz')) {
+    if (summary.isForIosSimulator || name.endsWith('.tar.gz')) {
       return undefined
     }
   }
@@ -57,11 +59,13 @@ export function installProblem(
 
 /** The device platform of a build that `installProblem` accepts. */
 export function installPlatform(build: StoredBuild): DevicePlatform {
-  return build.record.eas.platform === 'IOS' ? 'ios' : 'android'
+  return buildSummary(build.record).platform === 'IOS' ? 'ios' : 'android'
 }
 
 function profileFix(build: StoredBuild, setting: string): string {
-  const profile = build.record.eas.buildProfile
+  const profile = isLocalRecord(build.record)
+    ? undefined
+    : build.record.eas.buildProfile
   const target =
     profile === undefined
       ? 'the build profile'
@@ -101,7 +105,7 @@ export async function installBuild(
     adb: options.adb,
     serial: device.id,
     apk: build.path,
-    appId: build.record.eas.appIdentifier,
+    appId: buildSummary(build.record).appIdentifier,
   })
   if (failure !== undefined) {
     throw new DeviceError(failure)

@@ -13,7 +13,7 @@ import {
   type SyncProfile,
 } from '../eas/profiles'
 import {
-  BUILD_RECORD_SCHEMA_VERSION,
+  EAS_RECORD_SCHEMA_VERSION,
   prepareBuildFolder,
   storedBuildIds,
   writeBuildRecord,
@@ -201,7 +201,7 @@ async function carryOut(
     const target = path.join(folder, file)
     const { size, sha256 } = await deps.download(item.url, target)
     await writeBuildRecord(folder, {
-      schemaVersion: BUILD_RECORD_SCHEMA_VERSION,
+      schemaVersion: EAS_RECORD_SCHEMA_VERSION,
       storedAt: deps.now().toISOString(),
       file,
       size,

@@ -12,8 +12,14 @@ import {
   installPlatform,
   installProblem,
 } from '../install/install'
-import { BUILD_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
-import { NOW, easBuild, fakeDeviceTools, useTempDir } from './helpers'
+import { EAS_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
+import {
+  NOW,
+  easBuild,
+  fakeDeviceTools,
+  localBuild,
+  useTempDir,
+} from './helpers'
 
 const EMULATOR = adbDevice({
   serial: 'emulator-5554',
@@ -29,7 +35,7 @@ function storedBuild(
     id: eas.id,
     path: `/store/builds/${eas.id}/${file}`,
     record: {
-      schemaVersion: BUILD_RECORD_SCHEMA_VERSION,
+      schemaVersion: EAS_RECORD_SCHEMA_VERSION,
       storedAt: NOW.toISOString(),
       file,
       size: 6,
@@ -227,6 +233,59 @@ describe('adbInstallFailure', () => {
     expect(failure('', 0, 'Failure [UNKNOWN_REASON]\n')).toBe(
       '"adb install" failed with exit code 0.\nFailure [UNKNOWN_REASON]',
     )
+  })
+})
+
+function storedLocalBuild(file: string, local = localBuild()): StoredBuild {
+  const id = 'bbbb2222-0000-4000-8000-000000000002'
+  return {
+    id,
+    path: `/store/builds/${id}/${file}`,
+    record: {
+      schemaVersion: 2,
+      source: 'local',
+      storedAt: NOW.toISOString(),
+      file,
+      size: 6,
+      sha256: '0'.repeat(64),
+      local,
+    },
+  }
+}
+
+describe('installProblem of a local build', () => {
+  const ios = localBuild({ platform: 'IOS', variant: 'Debug' })
+
+  it('accepts a local APK, and a local iOS build on macOS only', () => {
+    expect(installProblem(storedLocalBuild('app.apk'), 'linux')).toBeUndefined()
+    expect(
+      installProblem(storedLocalBuild('app.tar.gz', ios), 'darwin'),
+    ).toBeUndefined()
+    expect(
+      installProblem(storedLocalBuild('app.tar.gz', ios), 'win32'),
+    ).toContain('iOS simulators run only on macOS')
+    expect(installPlatform(storedLocalBuild('app.tar.gz', ios))).toBe('ios')
+  })
+
+  it('gives the uninstall command with the app ID of the local record', async () => {
+    const tools = fakeDeviceTools({
+      install: {
+        code: 1,
+        stdout: '',
+        stderr:
+          'adb: failed to install app.apk: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match]',
+      },
+    })
+
+    await expect(
+      installBuild(storedLocalBuild('app.apk'), EMULATOR, {
+        run: tools.run,
+        adb: 'adb',
+        cwd: '/',
+        platform: 'linux',
+        home: '/store',
+      }),
+    ).rejects.toThrow('adb -s emulator-5554 uninstall com.example.myapp')
   })
 })
 

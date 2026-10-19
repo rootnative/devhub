@@ -17,6 +17,22 @@ notes name each one.
   stored build matches.
 - The core exports `findProjectRoot`, `resolveFingerprintModule`,
   `projectFingerprint`, `matchBuilds`, `matchesFingerprint`, and `hasMatch`.
+- The store holds local builds: builds that `npx expo run:*` made.
+  `storeLocalBuild` copies an APK with the ABIs of its native code, or packs
+  a `.app` folder into a `.tar.gz`, and gives the build a new UUID. `list`,
+  `where`, `install`, `match`, and the `devhub ui` page show a local build
+  with the profile `local` and its variant. The core also exports
+  `apkAbis`, `buildSummary`, `isLocalRecord`, and `tarCreateCommand`.
+
+### Changed
+
+- Each build in `devhub list --json` has `source`, `"eas"` or `"local"`. A
+  local build has `local` in place of `eas`.
+- `matchesFingerprint` takes a build of `devhub list --json`, not an EAS
+  record, so it also matches a local build.
+- A local build record has `schemaVersion` 2. DevHub `0.0.0-alpha.0` does
+  not read it, and `devhub list` of that version says that a newer DevHub
+  wrote it. EAS build records keep `schemaVersion` 1.
 
 ## [0.0.0-alpha.0] - 2026-10-19
 

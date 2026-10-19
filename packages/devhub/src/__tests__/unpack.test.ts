@@ -10,7 +10,7 @@ import {
   tarExtractCommand,
   unpackIosBuild,
 } from '../install/unpack'
-import { BUILD_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
+import { EAS_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
 import { NOW, easBuild, fakeDeviceTools, useTempDir } from './helpers'
 
 const ID = 'aaaa1111-0000-4000-8000-000000000001'
@@ -21,7 +21,7 @@ function simulatorBuild(home: string): StoredBuild {
     id: ID,
     path: path.join(home, 'builds', ID, file),
     record: {
-      schemaVersion: BUILD_RECORD_SCHEMA_VERSION,
+      schemaVersion: EAS_RECORD_SCHEMA_VERSION,
       storedAt: NOW.toISOString(),
       file,
       size: 6,

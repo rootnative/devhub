@@ -1,6 +1,7 @@
-import type { BuildList, Device, EasBuild, ListedBuild } from '../api/types'
+import type { BuildList, Device, ListedBuild } from '../api/types'
 import { formatBytes, formatDate, platformLabel, shortIds } from './format'
 import { deviceLabel } from './install'
+import { buildSummary } from './summary'
 
 export type BuildRow = {
   id: string
@@ -17,16 +18,13 @@ export type BuildRow = {
 
 export type ProjectGroup = { project: string; builds: BuildRow[] }
 
-export function projectName(build: EasBuild): string {
-  return build.app?.slug ?? build.app?.name ?? '-'
-}
-
 /** Groups the builds by project, in the order of `devhub list`. */
 export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
   const shortId = shortIds(list.builds.map((build) => build.id))
   const groups: ProjectGroup[] = []
   for (const build of list.builds) {
-    const project = projectName(build.eas)
+    const summary = buildSummary(build)
+    const project = summary.project
     let group = groups.find((candidate) => candidate.project === project)
     if (group === undefined) {
       group = { project, builds: [] }
@@ -37,15 +35,15 @@ export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
       build,
       shortId: shortId(build.id),
       title: [
-        platformLabel(build.eas.platform, build.eas.isForIosSimulator),
-        build.eas.buildProfile ?? '-',
+        platformLabel(summary.platform, summary.isForIosSimulator),
+        summary.profile ?? '-',
       ].join(' · '),
       details: [
-        `Version ${build.eas.appVersion ?? '-'}`,
-        `commit ${build.eas.gitCommitHash?.slice(0, 7) ?? '-'}`,
-        `created ${formatDate(build.eas.createdAt)}`,
+        `Version ${summary.appVersion ?? '-'}`,
+        `commit ${summary.gitCommitHash?.slice(0, 7) ?? '-'}`,
+        `${build.source === 'local' ? 'stored' : 'created'} ${formatDate(summary.createdAt)}`,
       ].join(' · '),
-      expiry: expiryText(build.eas.expirationDate, now),
+      expiry: expiryText(summary.expirationDate, now),
       size: formatBytes(build.size),
     })
   }

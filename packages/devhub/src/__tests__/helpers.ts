@@ -19,9 +19,12 @@ import type {
 import type { EasBuild } from '../eas/build'
 import { EAS_ON_PATH, EAS_WITH_NPX } from '../eas/cli'
 import {
-  BUILD_RECORD_SCHEMA_VERSION,
+  EAS_RECORD_SCHEMA_VERSION,
+  LOCAL_RECORD_SCHEMA_VERSION,
   buildFolder,
   type BuildRecord,
+  type LocalBuild,
+  type LocalBuildRecord,
 } from '../store/builds'
 import type { Downloader } from '../sync/download'
 
@@ -160,6 +163,10 @@ export function fakeDeviceTools(
       if (options.tarFailure) {
         return { stdout: '', ...options.tarFailure }
       }
+      if (command[1] === '-czf') {
+        await writeFile(command[2] ?? '', `packed ${command.at(-1) ?? ''}`)
+        return { code: 0, stdout: '', stderr: '' }
+      }
       const folder = command[command.indexOf('-C') + 1] ?? ''
       for (const entry of options.archive ?? ['My App.app']) {
         await mkdir(path.join(folder, entry), { recursive: true })
@@ -249,7 +256,7 @@ export async function writeStoredBuild(
   await mkdir(folder, { recursive: true })
   await writeFile(path.join(folder, file), 'binary')
   const record: BuildRecord = {
-    schemaVersion: BUILD_RECORD_SCHEMA_VERSION,
+    schemaVersion: EAS_RECORD_SCHEMA_VERSION,
     storedAt: NOW.toISOString(),
     file,
     size: 6,
@@ -366,4 +373,78 @@ export async function fingerprintCalls(
 ): Promise<{ projectRoot: string; options: unknown }[]> {
   const text = await readFile(path.join(dir, FINGERPRINT_CALLS_FILE), 'utf8')
   return JSON.parse(text) as { projectRoot: string; options: unknown }[]
+}
+
+export function localBuild(overrides: Partial<LocalBuild> = {}): LocalBuild {
+  return {
+    platform: 'ANDROID',
+    fingerprintHash: '3333333333333333333333333333333333333333',
+    variant: 'debug',
+    project: '/work/my-app',
+    slug: 'my-app',
+    appIdentifier: 'com.example.myapp',
+    appVersion: '1.2.0',
+    gitCommitHash: '89abcdef0123456789abcdef0123456789abcdef',
+    abis: ['x86_64'],
+    ...overrides,
+  }
+}
+
+/** Writes a local build record, the same as `storeLocalBuild` writes it. */
+export async function writeLocalBuild(
+  home: string,
+  id: string,
+  local: LocalBuild,
+  file = 'app.apk',
+): Promise<string> {
+  const folder = buildFolder(home, id)
+  await mkdir(folder, { recursive: true })
+  await writeFile(path.join(folder, file), 'binary')
+  const record: LocalBuildRecord = {
+    schemaVersion: LOCAL_RECORD_SCHEMA_VERSION,
+    source: 'local',
+    storedAt: NOW.toISOString(),
+    file,
+    size: 6,
+    sha256: createHash('sha256').update('binary').digest('hex'),
+    local,
+  }
+  await writeFile(path.join(folder, 'build.json'), JSON.stringify(record))
+  return path.join(folder, file)
+}
+
+/**
+ * A ZIP file with an empty entry for each name: enough for the APK ABI
+ * reader. Each entry has a local header, the same as a real ZIP file.
+ */
+export function zipFile(names: readonly string[], comment = ''): Buffer {
+  const parts: Buffer[] = []
+  const entries: Buffer[] = []
+  let offset = 0
+  for (const name of names) {
+    const bytes = Buffer.from(name, 'utf8')
+    const header = Buffer.alloc(30)
+    header.writeUInt32LE(0x04034b50, 0)
+    header.writeUInt16LE(20, 4)
+    header.writeUInt16LE(bytes.length, 26)
+    parts.push(header, bytes)
+    const entry = Buffer.alloc(46)
+    entry.writeUInt32LE(0x02014b50, 0)
+    entry.writeUInt16LE(20, 4)
+    entry.writeUInt16LE(20, 6)
+    entry.writeUInt16LE(bytes.length, 28)
+    entry.writeUInt32LE(offset, 42)
+    entries.push(entry, bytes)
+    offset += header.length + bytes.length
+  }
+  const directory = Buffer.concat(entries)
+  const commentBytes = Buffer.from(comment, 'utf8')
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(names.length, 8)
+  end.writeUInt16LE(names.length, 10)
+  end.writeUInt32LE(directory.length, 12)
+  end.writeUInt32LE(offset, 16)
+  end.writeUInt16LE(commentBytes.length, 20)
+  return Buffer.concat([...parts, directory, end, commentBytes])
 }
