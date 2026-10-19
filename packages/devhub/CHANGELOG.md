@@ -8,7 +8,16 @@ notes name each one.
 
 ## [Unreleased]
 
-Nothing is on npm yet.
+## [0.0.0-alpha.0] - 2026-10-19
+
+The first alpha. DevHub keeps your EAS dev client builds, installs a stored
+build on a device that runs now, and shows the builds and the devices on a
+local page. The fingerprint match, the store of local `npx expo run:*`
+builds, and the launch of an app are not in this version.
+
+On Windows, no manual run has confirmed that `devhub ui` gives the browser
+its token. If the page asks for the token, open the URL that `devhub ui`
+prints.
 
 ### Added
 
@@ -75,3 +84,6 @@ Nothing is on npm yet.
   `.cmd` file, and cross-spawn runs it with each argument escaped, with no
   shell string. json5 reads an `eas.json` with comments, which eas-cli
   accepts.
+
+[unreleased]: https://github.com/rootnative/devhub/compare/devhub@0.0.0-alpha.0...HEAD
+[0.0.0-alpha.0]: https://github.com/rootnative/devhub/releases/tag/devhub@0.0.0-alpha.0

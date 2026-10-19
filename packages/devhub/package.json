@@ -1,7 +1,6 @@
 {
   "name": "@rootnative/devhub",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.0.0-alpha.0",
   "description": "DevHub by Root Native: keep every Expo development build, and launch any one on a simulator or an emulator in one click.",
   "license": "MIT",
   "author": "RootNative",

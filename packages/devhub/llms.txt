@@ -4,7 +4,7 @@
 > development build (dev client) on the machine, and installs a stored build
 > on a running Android emulator or device, or on a booted iOS simulator.
 
-Version: 0.0.0. This file describes this version only.
+Version: 0.0.0-alpha.0. This file describes this version only.
 
 Source: https://github.com/rootnative/devhub
 
@@ -73,7 +73,7 @@ desktop app. They are the plan only.
 ### devhub
 
 ```text
-DevHub by Root Native 0.0.0
+DevHub by Root Native 0.0.0-alpha.0
 Keep every dev build. Launch any one in one click.
 
 Usage: devhub <command> [options]

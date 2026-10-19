@@ -9,8 +9,6 @@ DevHub is before `1.0.0`. Only the latest release gets security fixes.
 | `@rootnative/devhub`, latest release | Yes |
 | Older releases | No |
 
-Nothing is on npm yet, so no release is supported today.
-
 ## Report a vulnerability
 
 Do not open a public issue for a security problem.

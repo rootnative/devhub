@@ -12,10 +12,20 @@ every development build on your machine, finds the build that matches your
 current code, and starts a simulator or an emulator with that build in one
 action.
 
-> **Status:** Milestone 1, "Keep". `devhub sync`, `devhub list`, and
-> `devhub where` keep your EAS dev client builds. The other features below
-> are the plan. Nothing is on npm yet. The
-> [package README](packages/devhub/README.md) shows how to use the CLI.
+> **Status:** `0.0.0-alpha.0`, the first alpha. The milestones "Keep",
+> "Install", and "Local page" are done: `devhub sync`, `list`, `where`,
+> `devices`, `install`, and `ui` work. The other features below are the
+> plan. The [package README](packages/devhub/README.md) shows how to use
+> the CLI.
+
+## Install
+
+```bash
+npm install --global @rootnative/devhub
+devhub --help
+```
+
+To run one command with no install, use `npx @rootnative/devhub <command>`.
 
 ## Why
 

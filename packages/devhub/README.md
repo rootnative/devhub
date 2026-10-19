@@ -7,13 +7,25 @@ keeps every development build on your machine, finds the build that matches
 your current code by its native fingerprint, and starts a simulator or an
 emulator with that build in one action.
 
-> **Status:** Milestone 2, "Install", is in progress. DevHub downloads your
-> EAS dev client builds before EAS deletes them, and installs a stored
-> build on a running Android emulator or device, or on a booted iOS
-> simulator. Launch comes in a later milestone. The package is not on npm
-> yet.
+> **Status:** `0.0.0-alpha.0`, the first alpha. DevHub downloads your EAS
+> dev client builds before EAS deletes them. It installs a stored build on
+> a running Android emulator or device, or on a booted iOS simulator.
+> `devhub ui` shows your builds and devices on a local page. The
+> fingerprint match and the launch come in later milestones. See the
+> [CHANGELOG](https://github.com/rootnative/devhub/blob/main/packages/devhub/CHANGELOG.md).
 
 Source, design, and roadmap: https://github.com/rootnative/devhub
+
+## Install
+
+```bash
+npm install --global @rootnative/devhub
+devhub --help
+```
+
+To run one command with no install, use `npx @rootnative/devhub <command>`,
+for example `npx @rootnative/devhub list`. The daily sync below runs
+`devhub`, so it needs the global install.
 
 ## Requirements
 
