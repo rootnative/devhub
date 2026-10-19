@@ -81,6 +81,16 @@ export function resolveFingerprintModule(
   }
 }
 
+/** The hash of one platform, and what it reads. */
+export type PlatformFingerprint = {
+  hash: string
+  /**
+   * False when the hash skips the `android` or `ios` folder: the folder is
+   * missing, or the project is managed and git ignores the folder.
+   */
+  readsNativeFolder: boolean
+}
+
 /**
  * Calculates the hash of the project for one platform. eas-cli 25.2.0 passes
  * these options when it records the hash of a build. A different option
@@ -91,6 +101,15 @@ export async function projectFingerprint(
   platform: FingerprintPlatform,
   module: FingerprintModule,
 ): Promise<string> {
+  return (await platformFingerprint(projectDir, platform, module)).hash
+}
+
+/** `projectFingerprint`, and if the hash reads the native folder. */
+export async function platformFingerprint(
+  projectDir: string,
+  platform: FingerprintPlatform,
+  module: FingerprintModule,
+): Promise<PlatformFingerprint> {
   let result: unknown
   try {
     result = await module.createFingerprintAsync(projectDir, {
@@ -118,7 +137,18 @@ export async function projectFingerprint(
       `@expo/fingerprint found no native inputs for ${platform} in ${projectDir}. Install the dependencies of the project, and then run the command again.`,
     )
   }
-  return result.hash
+  // @expo/fingerprint lists the native folder when it exists. In a managed
+  // project it skips the files of the folder, and the source has no hash.
+  const readsNativeFolder =
+    Array.isArray(result.sources) &&
+    result.sources.some(
+      (source) =>
+        isRecord(source) &&
+        source.type === 'dir' &&
+        source.filePath === platform &&
+        typeof source.hash === 'string',
+    )
+  return { hash: result.hash, readsNativeFolder }
 }
 
 function fingerprintVersion(file: string): string | undefined {

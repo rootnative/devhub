@@ -198,6 +198,14 @@ A stored build serves a run when all of these agree:
 When DevHub is not sure that a stored build fits, Expo CLI builds the app.
 DevHub does not use or store a build of a run with `--scheme`. When DevHub
 cannot read or write the store, it gives a warning, and the run continues.
+
+In a managed project, git ignores the `android` and `ios` folders, and the
+fingerprint does not read them. Expo CLI runs prebuild only when the folder
+is missing. So after a change to the app config, `npx expo run:*` builds
+the old native code with the new fingerprint. DevHub does not store such a
+build: when `app.json` or `app.config.*` is newer than the last prebuild,
+it gives a warning. Delete the folder, or run `npx expo prebuild --clean`,
+and then run again.
 DevHub serves only the builds that `npx expo run:*` made, not the builds
 that `devhub sync` downloaded from EAS.
 

@@ -4,6 +4,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   FingerprintError,
+  platformFingerprint,
   projectFingerprint,
   resolveFingerprintModule,
 } from '../fingerprint/fingerprint'
@@ -174,6 +175,37 @@ describe('projectFingerprint', () => {
     await expect(
       projectFingerprint(project, 'android', resolveFingerprintModule(project)),
     ).rejects.toThrow('@expo/fingerprint gave no hash for android')
+  })
+})
+
+describe('platformFingerprint', () => {
+  const tempDir = useTempDir()
+
+  async function readsNativeFolder(nativeFolderHash?: string | null) {
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { ios: IOS_HASH },
+      nativeFolderHash,
+    })
+    return platformFingerprint(
+      project,
+      'ios',
+      resolveFingerprintModule(project),
+    )
+  }
+
+  it('reads the native folder of a bare project', async () => {
+    expect(await readsNativeFolder('5555')).toEqual({
+      hash: IOS_HASH,
+      readsNativeFolder: true,
+    })
+  })
+
+  it('does not read the folder that a managed project lists with no hash', async () => {
+    expect((await readsNativeFolder(null)).readsNativeFolder).toBe(false)
+  })
+
+  it('does not read a folder that is missing', async () => {
+    expect((await readsNativeFolder()).readsNativeFolder).toBe(false)
   })
 })
 

@@ -12,9 +12,10 @@ import {
 import { runTool, type Device } from '../devices/device'
 import {
   FINGERPRINT_PLATFORMS,
-  projectFingerprint,
+  platformFingerprint,
   resolveFingerprintModule,
   type FingerprintPlatform,
+  type PlatformFingerprint,
 } from '../fingerprint/fingerprint'
 import { unpackIosBuild } from '../install/unpack'
 import { storeLocalBuild } from '../local/store-local'
@@ -28,6 +29,7 @@ import {
   type LocalStoredBuild,
   type RunOptions,
 } from './key'
+import { configNewerThanPrebuild } from './prebuild'
 
 export type CalculateFingerprintHashProps = {
   projectRoot: string
@@ -85,17 +87,17 @@ export function createCacheProvider(deps: CacheProviderDeps): CacheProvider {
   // Expo CLI asks for the hash before the build and again before the upload.
   // The build started from the files of the first call, so the second call
   // uses the same hash, and the run calculates it only one time.
-  const hashes = new Map<string, Promise<string>>()
+  const hashes = new Map<string, Promise<PlatformFingerprint>>()
 
   function fingerprint(
     projectRoot: string,
     platform: FingerprintPlatform,
-  ): Promise<string> {
+  ): Promise<PlatformFingerprint> {
     const key = `${projectRoot}\0${platform}`
     let hash = hashes.get(key)
     if (hash === undefined) {
       hash = Promise.resolve().then(() =>
-        projectFingerprint(
+        platformFingerprint(
           projectRoot,
           platform,
           resolveFingerprintModule(projectRoot),
@@ -241,7 +243,7 @@ export function createCacheProvider(deps: CacheProviderDeps): CacheProvider {
         return null
       }
       try {
-        return await fingerprint(projectRoot, platform)
+        return (await fingerprint(projectRoot, platform)).hash
       } catch (error) {
         deps.warn(
           `DevHub cannot calculate the fingerprint. ${message(error)} Expo CLI does not use the DevHub store in this run.`,
@@ -304,6 +306,22 @@ export function createCacheProvider(deps: CacheProviderDeps): CacheProvider {
         const variant = runVariant(platform, runOptions)
         if (variant.kind === 'unknown') {
           deps.log(`DevHub does not store this build. ${variant.reason}`)
+          return null
+        }
+        // A bare project has its native folder in the hash, so an old
+        // folder gives an old hash too. Only a managed project needs the
+        // check, and the hash of this run is in the cache already.
+        const changedConfig = await configNewerThanPrebuild(
+          projectRoot,
+          platform,
+        )
+        if (
+          changedConfig !== undefined &&
+          !(await fingerprint(projectRoot, platform)).readsNativeFolder
+        ) {
+          deps.warn(
+            `DevHub does not store this build. ${changedConfig} changed after the last prebuild, so the ${platform} folder can hold old native code. Expo CLI runs prebuild only when the folder is missing. Delete the ${platform} folder, or run npx expo prebuild --clean, and then run again.`,
+          )
           return null
         }
         const home = resolveHome(deps)

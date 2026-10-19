@@ -16,7 +16,10 @@ notes name each one.
   with the same fingerprint and variant installs the stored build, and does
   not build the app. On Android the stored APK must have native code for
   each ready device. On iOS a Mac with the same architecture must have made
-  it. The provider uses the per-platform fingerprint of `devhub match`.
+  it. The provider uses the per-platform fingerprint of `devhub match`. In
+  a managed project, it does not store a build when the app config is newer
+  than the last prebuild, because Expo CLI then builds the old native
+  folder with the new fingerprint.
 - The core exports `createCacheProvider`, `adbAbiListCommand`,
   `primaryAbi`, and `ANDROID_ABIS`.
 

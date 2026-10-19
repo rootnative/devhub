@@ -1,4 +1,11 @@
-import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  readFile,
+  realpath,
+  rm,
+  utimes,
+  writeFile,
+} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -538,6 +545,126 @@ describe('uploadBuildCache', () => {
     expect(logs).toEqual([
       'DevHub does not store this build. The run gives --scheme, and a stored build does not record its scheme.',
     ])
+  })
+
+  const BEFORE = new Date('2026-01-01T00:00:00.000Z')
+  const AFTER = new Date('2026-02-01T00:00:00.000Z')
+
+  /**
+   * A project with a native folder from prebuild, and an app config file.
+   * The fake hash skips the folder, the same as in a managed project, unless
+   * `nativeFolderHash` is a string.
+   */
+  async function prebuiltProject(options: {
+    platform: 'android' | 'ios'
+    prebuild: Date
+    config: Date
+    configFile?: string
+    nativeFolderHash?: string | null
+  }) {
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { [options.platform]: HASH },
+      nativeFolderHash: options.nativeFolderHash ?? null,
+    })
+    const prebuildFile =
+      options.platform === 'android'
+        ? path.join(project, 'android/app/src/main/AndroidManifest.xml')
+        : path.join(project, 'ios/Podfile')
+    await mkdir(path.dirname(prebuildFile), { recursive: true })
+    await writeFile(prebuildFile, '')
+    await utimes(prebuildFile, options.prebuild, options.prebuild)
+    const configFile = path.join(project, options.configFile ?? 'app.json')
+    await writeFile(configFile, '{}')
+    await utimes(configFile, options.config, options.config)
+    return project
+  }
+
+  it('does not store a build when the app config changed after the last prebuild', async () => {
+    const home = await tempDir()
+    const project = await prebuiltProject({
+      platform: 'android',
+      prebuild: BEFORE,
+      config: AFTER,
+    })
+    const { plugin, warnings } = provider(home, fakeDeviceTools().run)
+    const props = { ...ANDROID, projectRoot: project }
+
+    expect(await plugin.calculateFingerprintHash(props)).toBe(HASH)
+    expect(
+      await plugin.uploadBuildCache({
+        ...props,
+        buildPath: await apk(['x86_64']),
+      }),
+    ).toBeNull()
+    expect(warnings).toEqual([
+      'DevHub does not store this build. app.json changed after the last prebuild, so the android folder can hold old native code. Expo CLI runs prebuild only when the folder is missing. Delete the android folder, or run npx expo prebuild --clean, and then run again.',
+    ])
+    expect((await scanStore(home)).builds).toEqual([])
+    expect(await fingerprintCalls(project)).toHaveLength(1)
+  })
+
+  it('reads the Podfile for iOS, and each app config file', async () => {
+    const home = await tempDir()
+    const project = await prebuiltProject({
+      platform: 'ios',
+      prebuild: BEFORE,
+      config: AFTER,
+      configFile: 'app.config.ts',
+    })
+    const app = path.join(await tempDir(), 'My App.app')
+    await mkdir(app)
+    const { plugin, warnings } = provider(home, fakeDeviceTools().run)
+
+    expect(
+      await plugin.uploadBuildCache({
+        ...ANDROID,
+        platform: 'ios',
+        projectRoot: project,
+        buildPath: app,
+      }),
+    ).toBeNull()
+    expect(warnings[0]).toMatch(
+      /^DevHub does not store this build\. app\.config\.ts changed after the last prebuild, so the ios folder/,
+    )
+  })
+
+  it('stores the build when prebuild ran after the change', async () => {
+    const home = await tempDir()
+    const project = await prebuiltProject({
+      platform: 'android',
+      prebuild: AFTER,
+      config: BEFORE,
+    })
+    const { plugin, warnings } = provider(home, fakeDeviceTools().run)
+
+    await plugin.uploadBuildCache({
+      ...ANDROID,
+      projectRoot: project,
+      buildPath: await apk(['x86_64']),
+    })
+
+    expect(warnings).toEqual([])
+    expect((await scanStore(home)).builds).toHaveLength(1)
+  })
+
+  it('stores the build of a bare project, because its hash reads the folder', async () => {
+    const home = await tempDir()
+    const project = await prebuiltProject({
+      platform: 'android',
+      prebuild: BEFORE,
+      config: AFTER,
+      nativeFolderHash: '5555',
+    })
+    const { plugin, warnings } = provider(home, fakeDeviceTools().run)
+
+    await plugin.uploadBuildCache({
+      ...ANDROID,
+      projectRoot: project,
+      buildPath: await apk(['x86_64']),
+    })
+
+    expect(warnings).toEqual([])
+    expect((await scanStore(home)).builds).toHaveLength(1)
   })
 
   it('gives a warning, not an error, when it cannot store the build', async () => {

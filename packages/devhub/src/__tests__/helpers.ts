@@ -323,6 +323,12 @@ export type FakeFingerprintOptions = {
   /** The message of the error that `createFingerprintAsync` throws. */
   failure?: string
   /**
+   * Adds the native folder of the platform to the sources, with this hash.
+   * `null` is a managed project: @expo/fingerprint lists the folder, but
+   * skips its files.
+   */
+  nativeFolderHash?: string | null
+  /**
    * `expo`: `expo/fingerprint` resolves, the same as in SDK 52 and later.
    * `direct`: only `@expo/fingerprint` resolves.
    */
@@ -352,6 +358,7 @@ export async function writeFingerprintProject(
   const module = `const fs = require('node:fs')
 const HASHES = ${JSON.stringify(options.hashes ?? {})}
 const FAILURE = ${JSON.stringify(options.failure ?? null)}
+const NATIVE_FOLDER_HASH = ${JSON.stringify(options.nativeFolderHash)}
 exports.createFingerprintAsync = async (projectRoot, options) => {
   const file = ${JSON.stringify(calls)}
   const calls = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : []
@@ -360,10 +367,16 @@ exports.createFingerprintAsync = async (projectRoot, options) => {
   if (FAILURE !== null) {
     throw new Error(FAILURE)
   }
-  const hash = HASHES[options.platforms[0]]
-  return hash === undefined
-    ? {}
-    : { hash, sources: [{ type: 'contents', id: 'fake', contents: hash }] }
+  const platform = options.platforms[0]
+  const hash = HASHES[platform]
+  if (hash === undefined) {
+    return {}
+  }
+  const sources = [{ type: 'contents', id: 'fake', contents: hash }]
+  if (NATIVE_FOLDER_HASH !== undefined) {
+    sources.push({ type: 'dir', filePath: platform, reasons: ['bareNativeDir'], hash: NATIVE_FOLDER_HASH })
+  }
+  return { hash, sources }
 }
 `
   const fingerprintDir = path.join(dir, 'node_modules', '@expo', 'fingerprint')

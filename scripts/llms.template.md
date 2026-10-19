@@ -147,6 +147,13 @@ Rules:
 - Only builds that `npx expo run:*` made serve a run. A build from
   `devhub sync` does not.
 - A run with `--scheme` (iOS) does not use or store a build.
+- In a managed project (git ignores `android/` and `ios/`, so the
+  fingerprint does not read them), the provider does not store a build when
+  an app config file (`app.json`, `app.config.json`, `app.config.*`) is
+  newer than the last prebuild (`android/app/src/main/AndroidManifest.xml`,
+  `ios/Podfile`). Expo CLI runs prebuild only when the folder is missing,
+  so that build can hold old native code. The fix: delete the folder, or
+  run `npx expo prebuild --clean`.
 - The provider never fails a run. It prints its lines with the prefix
   `› DevHub:`, and Expo CLI builds the app when no stored build fits.
 - `devhub list` shows a stored local build with the profile `local` and its
