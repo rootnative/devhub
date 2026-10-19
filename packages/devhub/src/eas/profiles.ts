@@ -1,7 +1,7 @@
-import { access, readFile, realpath } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import JSON5 from 'json5'
-import { isErrnoException, isRecord } from '../store/files'
+import { findFolderWith, isErrnoException, isRecord } from '../store/files'
 import { EAS_PLATFORMS, type EasPlatform } from './build'
 
 /** A build profile to sync, and the platforms whose builds DevHub keeps. */
@@ -32,23 +32,8 @@ export class EasJsonError extends Error {
  * that has an eas.json. Returns the real path, so that one project has one
  * entry in projects.json.
  */
-export async function findEasProject(
-  start: string,
-): Promise<string | undefined> {
-  let folder = path.resolve(start)
-  for (;;) {
-    try {
-      await access(path.join(folder, 'eas.json'))
-      return await realpath(folder)
-    } catch {
-      // Not here. Try the parent folder.
-    }
-    const parent = path.dirname(folder)
-    if (parent === folder) {
-      return undefined
-    }
-    folder = parent
-  }
+export function findEasProject(start: string): Promise<string | undefined> {
+  return findFolderWith(start, 'eas.json')
 }
 
 export async function readEasJson(projectDir: string): Promise<unknown> {

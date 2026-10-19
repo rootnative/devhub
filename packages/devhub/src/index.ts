@@ -71,6 +71,15 @@ export {
   withExtraProfiles,
   type SyncProfile,
 } from './eas/profiles'
+export {
+  FINGERPRINT_PLATFORMS,
+  FingerprintError,
+  projectFingerprint,
+  resolveFingerprintModule,
+  type FingerprintModule,
+  type FingerprintPlatform,
+} from './fingerprint/fingerprint'
+export { findProjectRoot } from './fingerprint/project'
 export { deviceReport, type DeviceReport } from './flow/devices'
 export { findStoredBuild } from './flow/find'
 export {
@@ -80,6 +89,15 @@ export {
   type InstalledBuild,
 } from './flow/install'
 export { listBuilds, type BuildList, type ListedBuild } from './flow/list'
+export {
+  hasMatch,
+  matchBuilds,
+  matchesFingerprint,
+  type MatchDeps,
+  type MatchReport,
+  type MatchRequest,
+  type PlatformMatch,
+} from './flow/match'
 export type { FlowError, FlowResult } from './flow/result'
 export { syncBuilds, type SyncBuildsDeps, type SyncRequest } from './flow/sync'
 export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'

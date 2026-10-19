@@ -8,11 +8,13 @@ import { buildFolder } from '../store/builds'
 import {
   capture,
   easBuild,
+  fingerprintCalls,
   fakeDeviceTools,
   fakeDownload,
   fakeEas,
   testContext,
   useTempDir,
+  writeFingerprintProject,
   writeProject,
   writeStoredBuild,
 } from './helpers'
@@ -607,6 +609,117 @@ describe('devhub devices', () => {
     expect(out).toEqual([
       'No device runs now. Start an emulator or a simulator, or connect a device with USB debugging on.',
     ])
+  })
+})
+
+describe('devhub match', () => {
+  const tempDir = useTempDir()
+  const ANDROID_HASH = '1111111111111111111111111111111111111111'
+  const IOS_HASH = '2222222222222222222222222222222222222222'
+
+  it('shows the matches of each platform', async () => {
+    const home = await tempDir()
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { android: ANDROID_HASH, ios: IOS_HASH },
+    })
+    await writeStoredBuild(
+      home,
+      easBuild({ id: ID_A, fingerprint: { hash: ANDROID_HASH } }),
+    )
+    await writeStoredBuild(
+      home,
+      easBuild({ id: ID_B, fingerprint: { hash: 'other' } }),
+    )
+    const { io, out, err } = capture()
+
+    expect(await run(['match'], testContext({ io, home, cwd: project }))).toBe(
+      EXIT_CODE.ok,
+    )
+
+    expect(out.join('\n')).toBe(
+      [
+        `Project: ${project} (@expo/fingerprint 0.20.13)`,
+        '',
+        `android  ${ANDROID_HASH}`,
+        '  ID        PLATFORM  PROFILE      VERSION  COMMIT   CREATED     EAS EXPIRY',
+        '  aaaa1111  android   development  1.0.0    0123456  2026-10-01  2026-10-31',
+        '',
+        `ios  ${IOS_HASH}`,
+        '  No stored build matches this fingerprint.',
+      ].join('\n'),
+    )
+    expect(err).toEqual([
+      `Calculating the android fingerprint of ${project}.`,
+      `Calculating the ios fingerprint of ${project}.`,
+    ])
+  })
+
+  it('prints the report as JSON, and exits with 1 when no build matches', async () => {
+    const home = await tempDir()
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { android: ANDROID_HASH },
+    })
+    await writeStoredBuild(
+      home,
+      easBuild({ id: ID_A, fingerprint: { hash: 'other' } }),
+    )
+    const { io, out } = capture()
+
+    expect(
+      await run(
+        ['match', '--platform', 'android', '--json'],
+        testContext({ io, home, cwd: project }),
+      ),
+    ).toBe(EXIT_CODE.failure)
+
+    expect(JSON.parse(out.join('\n'))).toEqual({
+      project,
+      fingerprintVersion: '0.20.13',
+      platforms: [{ platform: 'android', hash: ANDROID_HASH, matches: [] }],
+    })
+    expect(await fingerprintCalls(project)).toHaveLength(1)
+  })
+
+  it('gives the hint when no platform matches', async () => {
+    const home = await tempDir()
+    const project = await writeFingerprintProject(await tempDir(), {
+      hashes: { android: ANDROID_HASH, ios: IOS_HASH },
+    })
+    const { io, out } = capture()
+
+    expect(await run(['match'], testContext({ io, home, cwd: project }))).toBe(
+      EXIT_CODE.failure,
+    )
+
+    expect(out.join('\n')).toContain(
+      'Run devhub sync to download the newest EAS builds. When EAS has no build with this fingerprint, make a new build.',
+    )
+  })
+
+  it('refuses a platform that is not android or ios', async () => {
+    const home = await tempDir()
+    const { io, err } = capture()
+
+    expect(
+      await run(['match', '--platform', 'web'], testContext({ io, home })),
+    ).toBe(EXIT_CODE.usage)
+
+    expect(err.join('\n')).toContain(
+      '"web" is not a platform. Give android or ios.',
+    )
+  })
+
+  it('stops when the folder has no package.json', async () => {
+    const home = await tempDir()
+    const cwd = await tempDir()
+    const { io, out, err } = capture()
+
+    expect(await run(['match'], testContext({ io, home, cwd }))).toBe(
+      EXIT_CODE.failure,
+    )
+
+    expect(out).toEqual([])
+    expect(err.join('\n')).toContain('have no package.json')
   })
 })
 

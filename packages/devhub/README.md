@@ -47,6 +47,7 @@ for example `npx @rootnative/devhub list`. The daily sync below runs
 | `devhub where <id>` | Prints the path of a stored build file. `<id>` is the EAS build ID, or a unique start of it. |
 | `devhub devices` | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators, with their state. |
 | `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
+| `devhub match` | Calculates the native fingerprint of the project in the current folder, and shows the stored builds with the same EAS fingerprint. A match needs no new build. |
 | `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices, installs a build with one click, and syncs each project. |
 
 Options of `devhub sync`:
@@ -56,8 +57,8 @@ Options of `devhub sync`:
 - `--dry-run` shows what the sync downloads, and downloads nothing.
 - `--json` prints the result as JSON.
 
-`devhub list`, `devhub where`, `devhub devices`, `devhub install`, and
-`devhub ui` also accept `--json`.
+`devhub list`, `devhub where`, `devhub devices`, `devhub install`,
+`devhub match`, and `devhub ui` also accept `--json`.
 Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.
@@ -152,6 +153,41 @@ IDs. When no device is ready, DevHub gives the reason for each device.
 To load the JavaScript of the project, run `npx expo start` in the project
 folder, and press `a` for Android or `i` for iOS. Expo CLI then opens the
 installed dev client with the URL of Metro.
+
+### Match a build
+
+`devhub match` tells you which stored builds work with the code in the
+current folder. A dev client needs a new build only when the native
+fingerprint changes. DevHub runs the `@expo/fingerprint` of the project,
+with the same options as eas-cli, and compares the hash of each platform
+with the EAS fingerprint of each stored build.
+
+```text
+Project: /Users/me/my-app (@expo/fingerprint 0.20.13)
+
+android  3f2a0c9e1b7d4a6f8e2c5b1d9a7f3e6c4b8d2a1f
+  ID        PLATFORM  PROFILE      VERSION  COMMIT   CREATED     EAS EXPIRY
+  5d1c9a2e  android   development  1.4.0    8b1f2c3  2026-10-12  2026-11-11
+
+ios  9c1b7e4d2a6f0c3e8b5d1a7f4e2c9b6d3a8f1e5c
+  No stored build matches this fingerprint.
+```
+
+- `--platform <name>` limits the match to `android` or `ios`. Give it
+  again for the other platform. The default is both.
+- `--json` prints the result as JSON, with the full record of each match.
+
+The exit code is `1` when no stored build matches, so a script can make a
+new build only when it is necessary. The project folder is the nearest
+folder with a `package.json`, the same as for Expo CLI and eas-cli. In a
+monorepo, run the command in the app folder. The project needs Expo SDK 52
+or later, which ships `expo/fingerprint`.
+
+When a build does not match, compare the hash with the fingerprint on the
+EAS build page. A different `@expo/fingerprint` version, a change to a
+native input, or an `env` value of the build profile that changes the app
+config can give a different hash. DevHub applies no `env` of a build
+profile.
 
 ### The local page
 

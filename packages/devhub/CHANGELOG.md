@@ -8,6 +8,16 @@ notes name each one.
 
 ## [Unreleased]
 
+### Added
+
+- `devhub match` calculates the native fingerprint of the project in the
+  current folder, with the project's own `expo/fingerprint` and the options
+  of eas-cli, and shows the stored builds with the same EAS fingerprint. It
+  accepts `--platform <name>` and `--json`, and exits with `1` when no
+  stored build matches.
+- The core exports `findProjectRoot`, `resolveFingerprintModule`,
+  `projectFingerprint`, `matchBuilds`, `matchesFingerprint`, and `hasMatch`.
+
 ## [0.0.0-alpha.0] - 2026-10-19
 
 The first alpha. DevHub keeps your EAS dev client builds, installs a stored

@@ -1,5 +1,13 @@
 import { randomBytes } from 'node:crypto'
-import { readFile, rename, rm, writeFile } from 'node:fs/promises'
+import {
+  access,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
+import path from 'node:path'
 
 export function tempPath(target: string): string {
   return `${target}.${process.pid}-${randomBytes(4).toString('hex')}.tmp`
@@ -35,6 +43,30 @@ export async function readJsonFile(file: string): Promise<unknown> {
     throw error
   }
   return JSON.parse(text) as unknown
+}
+
+/**
+ * Finds the start folder, or the nearest parent folder, that has the file.
+ * Returns the real path, so that one folder has one name.
+ */
+export async function findFolderWith(
+  start: string,
+  file: string,
+): Promise<string | undefined> {
+  let folder = path.resolve(start)
+  for (;;) {
+    try {
+      await access(path.join(folder, file))
+      return await realpath(folder)
+    } catch {
+      // Not here. Try the parent folder.
+    }
+    const parent = path.dirname(folder)
+    if (parent === folder) {
+      return undefined
+    }
+    folder = parent
+  }
 }
 
 export function isErrnoException(

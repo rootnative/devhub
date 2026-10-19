@@ -9,6 +9,7 @@ import {
 import { devicesCommand } from './devices'
 import { installCommand } from './install'
 import { listCommand } from './list'
+import { matchCommand } from './match'
 import { syncCommand } from './sync'
 import { uiCommand } from './ui'
 import { whereCommand } from './where'
@@ -26,6 +27,7 @@ Commands:
   where <id>    Print the path of a stored build file.
   devices       List the Android devices and the iOS simulators.
   install <id>  Install a stored build on the ready device.
+  match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
 
 Options:
@@ -43,6 +45,7 @@ const COMMANDS: Record<
   where: whereCommand,
   devices: devicesCommand,
   install: installCommand,
+  match: matchCommand,
   ui: uiCommand,
 }
 

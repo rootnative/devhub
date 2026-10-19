@@ -18,9 +18,12 @@ Source: https://github.com/rootnative/devhub
 - `devhub devices` lists the Android emulators and devices, and on macOS the
   booted iOS simulators.
 - `devhub install` installs a stored build on a device that runs now.
+- `devhub match` calculates the native fingerprint of a project with the
+  project's own `expo/fingerprint`, and shows the stored builds with the
+  same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
 
-NOT IMPLEMENTED, do not call: the fingerprint match, the Expo build cache
+NOT IMPLEMENTED, do not call: the Expo build cache
 provider (`@rootnative/devhub/cache-provider`), the import of a build file,
 the launch (boot a device, open the app), launch profiles, prune, and the
 desktop app. They are the plan only.
@@ -46,7 +49,8 @@ desktop app. They are the plan only.
   error. After a failure, stdout is empty and stderr holds the message, with
   two exceptions. `devhub devices --json` prints its JSON and exits with `1`
   when each device tool fails. `devhub sync --json` prints its JSON and
-  exits with `1` when a project fails.
+  exits with `1` when a project fails. `devhub match --json` prints its
+  JSON and exits with `1` when no stored build matches.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.
@@ -61,6 +65,10 @@ desktop app. They are the plan only.
 - `devhub install` refuses an Android App Bundle (`.aab`), an iOS device
   build (`.ipa`), and each iOS build on Windows or Linux. `installProblem`
   in `devhub list --json` gives the reason and the fix before you try.
+- `devhub match` runs in the project folder, or in a folder inside it. It
+  needs the dependencies of the project installed, and Expo SDK 52 or
+  later. It runs no `eas` command and no network call. A match is a
+  `ListedBuild`: give its `id` to `devhub install`.
 - `devhub ui` runs until Ctrl+C. To read data, use the commands with
   `--json`, not the page.
 - Only one sync runs at a time. A second sync stops with exit code `1` and
@@ -84,6 +92,7 @@ Commands:
   where <id>    Print the path of a stored build file.
   devices       List the Android devices and the iOS simulators.
   install <id>  Install a stored build on the ready device.
+  match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
 
 Options:
@@ -174,6 +183,26 @@ Options:
   -h, --help     Show this help.
 ```
 
+### devhub match
+
+```text
+Usage: devhub match [options]
+
+Find the stored builds that match the native code of the project in the
+current folder. DevHub runs the @expo/fingerprint of the project, with the
+same options as eas-cli, and compares the hash with the EAS fingerprint of
+each stored build. A build that matches needs no new build: install it with
+"devhub install <id>".
+
+Options:
+  --platform <name>  Only this platform: android or ios. Give it again for
+                     the other one. The default is both.
+  --json             Print the result as JSON.
+  -h, --help         Show this help.
+
+The exit code is 1 when no stored build matches.
+```
+
 ### devhub ui
 
 ```text
@@ -196,6 +225,7 @@ Options:
 - `devhub list --json` prints `BuildList`.
 - `devhub devices --json` prints `DeviceReport`.
 - `devhub install <id> --json` prints `InstalledBuild`.
+- `devhub match --json` prints `MatchReport`.
 
 ```ts
 type SyncReport = {
@@ -341,6 +371,25 @@ type InstalledBuild = {
     path: string;
     device: Device;
 };
+
+/** The JSON of `devhub match --json`. */
+type MatchReport = {
+    /** The project folder: the nearest folder with a package.json. */
+    project: string;
+    /** The `@expo/fingerprint` version of the project, when it is known. */
+    fingerprintVersion?: string;
+    platforms: PlatformMatch[];
+};
+
+type PlatformMatch = {
+    platform: FingerprintPlatform;
+    /** The fingerprint of the project for this platform. */
+    hash: string;
+    /** The stored builds with this fingerprint, newest first. */
+    matches: ListedBuild[];
+};
+
+type FingerprintPlatform = 'android' | 'ios';
 ```
 
 - `devhub where <id> --json` prints `{ "id": string, "path": string }`.
@@ -379,24 +428,28 @@ version before `1.0.0`.
 
 Functions, classes, and constants: ADB_MISSING, BUILD_LIST_PAGE_SIZE,
 DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError, EasJsonError,
-StoreLockedError, TAR_MISSING, XCRUN_MISSING, adbAvdNameCommand, adbDevice,
-adbDevicesCommand, adbInstallCommand, adbInstallFailure, adbUninstallCommand,
-artifactUrl, checkEasLogin, devClientProfiles, deviceReport, downloadFile,
+FINGERPRINT_PLATFORMS, FingerprintError, StoreLockedError, TAR_MISSING,
+XCRUN_MISSING, adbAvdNameCommand, adbDevice, adbDevicesCommand,
+adbInstallCommand, adbInstallFailure, adbUninstallCommand, artifactUrl,
+checkEasLogin, devClientProfiles, deviceReport, downloadFile,
 easBuildListCommand, easWhoamiCommand, findBuild, findDevice, findEasProject,
-findStoredBuild, installBuild, installPlatform, installProblem,
-installStoredBuild, iosRuntimeVersion, isEmulatorSerial, isExpired,
-listAndroidDevices, listBuilds, listDevices, listFinishedBuilds,
-listIosSimulators, parseAdbDevices, parseAvdName, parseEasJson,
-parseSimctlDevices, planSync, readEasJson, readProjects, resolveAdb,
-resolveHome, runCommand, scanStore, selectDevice, simctlInstallCommand,
-simctlListCommand, syncBuilds, syncFailed, syncProjects, tarExtractCommand,
-unpackIosBuild, version, withExtraProfiles.
+findProjectRoot, findStoredBuild, hasMatch, installBuild, installPlatform,
+installProblem, installStoredBuild, iosRuntimeVersion, isEmulatorSerial,
+isExpired, listAndroidDevices, listBuilds, listDevices, listFinishedBuilds,
+listIosSimulators, matchBuilds, matchesFingerprint, parseAdbDevices,
+parseAvdName, parseEasJson, parseSimctlDevices, planSync, projectFingerprint,
+readEasJson, readProjects, resolveAdb, resolveFingerprintModule, resolveHome,
+runCommand, scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
+syncBuilds, syncFailed, syncProjects, tarExtractCommand, unpackIosBuild,
+version, withExtraProfiles.
 
 Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
 BuildRecord, BuildStatus, Command, CommandOptions, CommandResult, CommandRunner,
 Device, DeviceChoice, DeviceKind, DeviceList, DeviceListOptions, DevicePlatform,
 DeviceReport, DeviceSource, DownloadResult, Downloader, EasBuild, EasInvocation,
-EasPlatform, FindResult, FlowError, FlowResult, HomeOptions, InstallDeps,
-InstallOptions, InstallRequest, InstalledBuild, ListedBuild, PlanItem,
-ProfileBuilds, ProjectSyncResult, StoreScan, StoredBuild, SyncBuildsDeps,
-SyncDeps, SyncOptions, SyncProfile, SyncReport, SyncRequest, UnpackOptions.
+EasPlatform, FindResult, FingerprintModule, FingerprintPlatform, FlowError,
+FlowResult, HomeOptions, InstallDeps, InstallOptions, InstallRequest,
+InstalledBuild, ListedBuild, MatchDeps, MatchReport, MatchRequest, PlanItem,
+PlatformMatch, ProfileBuilds, ProjectSyncResult, StoreScan, StoredBuild,
+SyncBuildsDeps, SyncDeps, SyncOptions, SyncProfile, SyncReport, SyncRequest,
+UnpackOptions.

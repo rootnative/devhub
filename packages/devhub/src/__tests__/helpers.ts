@@ -1,5 +1,12 @@
 import { createHash } from 'node:crypto'
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach } from 'vitest'
@@ -276,4 +283,87 @@ export function testContext(
     now: () => NOW,
     ...rest,
   }
+}
+
+export type FakeFingerprintOptions = {
+  /** The hash for each platform. A missing platform gives no hash. */
+  hashes?: Partial<Record<'android' | 'ios', string>>
+  /** The version in the package.json of `@expo/fingerprint`. */
+  version?: string
+  /** The message of the error that `createFingerprintAsync` throws. */
+  failure?: string
+  /**
+   * `expo`: `expo/fingerprint` resolves, the same as in SDK 52 and later.
+   * `direct`: only `@expo/fingerprint` resolves.
+   */
+  layout?: 'expo' | 'direct'
+}
+
+export const FINGERPRINT_CALLS_FILE = 'fingerprint-calls.json'
+
+/**
+ * A project folder with a package.json and a fake `expo/fingerprint`. The
+ * fake answers with the hash of the one platform in `options.platforms`, and
+ * appends each call to `fingerprint-calls.json` in the project folder.
+ * Returns the real path, because Node resolves a module to its real path.
+ */
+export async function writeFingerprintProject(
+  dir: string,
+  options: FakeFingerprintOptions = {},
+): Promise<string> {
+  const layout = options.layout ?? 'expo'
+  await mkdir(dir, { recursive: true })
+  dir = await realpath(dir)
+  await writeFile(
+    path.join(dir, 'package.json'),
+    JSON.stringify({ name: 'my-app', version: '1.0.0' }),
+  )
+  const calls = path.join(dir, FINGERPRINT_CALLS_FILE)
+  const module = `const fs = require('node:fs')
+const HASHES = ${JSON.stringify(options.hashes ?? {})}
+const FAILURE = ${JSON.stringify(options.failure ?? null)}
+exports.createFingerprintAsync = async (projectRoot, options) => {
+  const file = ${JSON.stringify(calls)}
+  const calls = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : []
+  calls.push({ projectRoot, options })
+  fs.writeFileSync(file, JSON.stringify(calls))
+  if (FAILURE !== null) {
+    throw new Error(FAILURE)
+  }
+  const hash = HASHES[options.platforms[0]]
+  return hash === undefined ? {} : { hash, sources: [] }
+}
+`
+  const fingerprintDir = path.join(dir, 'node_modules', '@expo', 'fingerprint')
+  await mkdir(path.join(fingerprintDir, 'build'), { recursive: true })
+  await writeFile(
+    path.join(fingerprintDir, 'package.json'),
+    JSON.stringify({
+      name: '@expo/fingerprint',
+      version: options.version ?? '0.20.13',
+      main: 'build/index.js',
+    }),
+  )
+  await writeFile(path.join(fingerprintDir, 'build', 'index.js'), module)
+  if (layout === 'expo') {
+    const expoDir = path.join(dir, 'node_modules', 'expo')
+    await mkdir(expoDir, { recursive: true })
+    await writeFile(
+      path.join(expoDir, 'package.json'),
+      JSON.stringify({ name: 'expo', version: '54.0.0' }),
+    )
+    await writeFile(
+      path.join(expoDir, 'fingerprint.js'),
+      "module.exports = require('@expo/fingerprint')\n",
+    )
+  }
+  return dir
+}
+
+/** The calls that the fake `expo/fingerprint` of the project received. */
+export async function fingerprintCalls(
+  dir: string,
+): Promise<{ projectRoot: string; options: unknown }[]> {
+  const text = await readFile(path.join(dir, FINGERPRINT_CALLS_FILE), 'utf8')
+  return JSON.parse(text) as { projectRoot: string; options: unknown }[]
 }

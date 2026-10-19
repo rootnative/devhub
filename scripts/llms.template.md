@@ -24,9 +24,12 @@ Source: https://github.com/rootnative/devhub
 - `devhub devices` lists the Android emulators and devices, and on macOS the
   booted iOS simulators.
 - `devhub install` installs a stored build on a device that runs now.
+- `devhub match` calculates the native fingerprint of a project with the
+  project's own `expo/fingerprint`, and shows the stored builds with the
+  same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
 
-NOT IMPLEMENTED, do not call: the fingerprint match, the Expo build cache
+NOT IMPLEMENTED, do not call: the Expo build cache
 provider (`@rootnative/devhub/cache-provider`), the import of a build file,
 the launch (boot a device, open the app), launch profiles, prune, and the
 desktop app. They are the plan only.
@@ -52,7 +55,8 @@ desktop app. They are the plan only.
   error. After a failure, stdout is empty and stderr holds the message, with
   two exceptions. `devhub devices --json` prints its JSON and exits with `1`
   when each device tool fails. `devhub sync --json` prints its JSON and
-  exits with `1` when a project fails.
+  exits with `1` when a project fails. `devhub match --json` prints its
+  JSON and exits with `1` when no stored build matches.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.
@@ -67,6 +71,10 @@ desktop app. They are the plan only.
 - `devhub install` refuses an Android App Bundle (`.aab`), an iOS device
   build (`.ipa`), and each iOS build on Windows or Linux. `installProblem`
   in `devhub list --json` gives the reason and the fix before you try.
+- `devhub match` runs in the project folder, or in a folder inside it. It
+  needs the dependencies of the project installed, and Expo SDK 52 or
+  later. It runs no `eas` command and no network call. A match is a
+  `ListedBuild`: give its `id` to `devhub install`.
 - `devhub ui` runs until Ctrl+C. To read data, use the commands with
   `--json`, not the page.
 - Only one sync runs at a time. A second sync stops with exit code `1` and
