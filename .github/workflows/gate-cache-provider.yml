@@ -1,0 +1,92 @@
+name: Gate / Cache provider
+
+# The M4 gate: real `npx expo run:*` builds of the example app, with the
+# DevHub cache provider. Each job takes about 30 minutes, so the workflow
+# runs only by hand. `example/gate.mjs` holds the steps and the checks, so
+# a run on a developer's machine does the same checks.
+on:
+  workflow_dispatch:
+
+# The token only reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-cache-provider-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: iOS simulator
+    # Expo SDK 57 needs Xcode 26 (Swift 6.2). The macos-26 image has it as
+    # the default Xcode.
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      # `cache: pnpm` is set on purpose. setup-node v6 and later cache
+      # automatically for npm only, so pnpm needs the explicit input.
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The example loads the cache provider from packages/devhub/dist.
+      - name: Build package
+        run: pnpm run build
+
+      - name: Run the gate on a simulator
+        working-directory: example
+        run: node gate.mjs ios
+
+  android:
+    name: Android emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm run build
+
+      # The emulator needs KVM. A Linux runner gives access to it only with
+      # this udev rule.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # React Native 0.86 builds with NDK 27.1.12297006, and the image has
+      # 27.3 as the default. The action installs the NDK first.
+      - name: Run the gate on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          ndk: 27.1.12297006
+          working-directory: example
+          script: node gate.mjs android

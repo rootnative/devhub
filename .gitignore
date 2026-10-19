@@ -19,6 +19,9 @@ web-build/
 ios/
 android/
 
+# The DevHub store of the example app
+example/.devhub/
+
 # Logs
 *.log
 npm-debug.log*

@@ -39,6 +39,9 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "@rootnative/devhub-example#typecheck": {
+      "outputs": []
+    },
     "test": {
       "dependsOn": ["^build"],
       "outputs": []

@@ -10,6 +10,7 @@ on:
     paths:
       - "packages/**"
       - "apps/**"
+      - "example/**"
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -24,6 +25,7 @@ on:
     paths:
       - "packages/**"
       - "apps/**"
+      - "example/**"
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"

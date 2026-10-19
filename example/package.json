@@ -1,0 +1,27 @@
+{
+  "name": "@rootnative/devhub-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "An Expo app that tests the DevHub build cache provider with npx expo run. It keeps its builds in .devhub/, not in the store of the developer.",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "node with-store.mjs expo run:android",
+    "ios": "node with-store.mjs expo run:ios",
+    "devhub": "node with-store.mjs devhub",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "node -e \"for (const p of ['.devhub', '.expo', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
+  },
+  "dependencies": {
+    "expo": "~57.0.21",
+    "expo-dev-client": "~57.0.20",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@rootnative/devhub": "workspace:*",
+    "@types/react": "~19.2.0",
+    "typescript": "^5.9.3"
+  }
+}

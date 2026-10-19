@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "DevHub Example",
+    "slug": "devhub-example",
+    "version": "0.0.0",
+    "platforms": ["ios", "android"],
+    "orientation": "portrait",
+    "ios": {
+      "bundleIdentifier": "io.github.rootnative.devhub.example"
+    },
+    "android": {
+      "package": "io.github.rootnative.devhub.example"
+    },
+    "buildCacheProvider": {
+      "plugin": "@rootnative/devhub/cache-provider"
+    }
+  }
+}
