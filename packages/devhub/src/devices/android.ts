@@ -51,6 +51,31 @@ export function adbDevicesCommand(adb: string): Command {
   return [adb, 'devices', '-l']
 }
 
+/** The ABIs that the device runs, best first, separated by commas. */
+export function adbAbiListCommand(adb: string, serial: string): Command {
+  return [adb, '-s', serial, 'shell', 'getprop', 'ro.product.cpu.abilist']
+}
+
+/** The ABIs for which Expo CLI builds, the same list as Expo CLI 57. */
+export const ANDROID_ABIS: readonly string[] = [
+  'armeabi-v7a',
+  'arm64-v8a',
+  'x86',
+  'x86_64',
+]
+
+/**
+ * The ABI of a debug build of `npx expo run:android` for this device: the
+ * first ABI of `ro.product.cpu.abilist` that Expo CLI builds for.
+ */
+export function primaryAbi(abiList: string): string | undefined {
+  return abiList
+    .trim()
+    .split(',')
+    .map((abi) => abi.trim())
+    .find((abi) => ANDROID_ABIS.includes(abi))
+}
+
 export function adbAvdNameCommand(adb: string, serial: string): Command {
   return [adb, '-s', serial, 'emu', 'avd', 'name']
 }

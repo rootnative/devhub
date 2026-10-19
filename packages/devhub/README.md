@@ -154,6 +154,53 @@ To load the JavaScript of the project, run `npx expo start` in the project
 folder, and press `a` for Android or `i` for iOS. Expo CLI then opens the
 installed dev client with the URL of Metro.
 
+### Keep your local builds
+
+DevHub is also an Expo build cache provider. With it, `npx expo run:android`
+and `npx expo run:ios` store each new build, and install a stored build in
+place of a new build when the native code did not change.
+
+1. Add DevHub to the project:
+
+   ```bash
+   npm install --save-dev @rootnative/devhub
+   ```
+
+2. Add the provider to the app config (`app.json` or `app.config.js`):
+
+   ```json
+   {
+     "expo": {
+       "buildCacheProvider": { "plugin": "@rootnative/devhub/cache-provider" }
+     }
+   }
+   ```
+
+   Expo SDK 53 reads the key under `expo.experiments`.
+
+The first `npx expo run:android` builds the app, and DevHub stores the APK.
+The next run with the same native code installs the stored APK, and Gradle
+does not run. iOS works the same for a simulator. Expo CLI does not use a
+build cache provider for an iOS device.
+
+A stored build serves a run when all of these agree:
+
+- The fingerprint of the platform. DevHub calculates it with the
+  `@expo/fingerprint` of the project, the same as `devhub match`.
+- The Android variant (`--variant`, default `debug`) or the iOS
+  configuration (`--configuration`, default `Debug`).
+- Android: the APK has native code for each ready device. A debug build of
+  `npx expo run:android` holds only the ABI of the device that it was made
+  for. With `--device <name>`, DevHub checks only that device. With
+  `--all-arch`, the APK must hold all four ABIs.
+- iOS: a Mac with the same architecture made the build.
+
+When DevHub is not sure that a stored build fits, Expo CLI builds the app.
+DevHub does not use or store a build of a run with `--scheme`. When DevHub
+cannot read or write the store, it gives a warning, and the run continues.
+DevHub serves only the builds that `npx expo run:*` made, not the builds
+that `devhub sync` downloaded from EAS.
+
 ### Match a build
 
 `devhub match` tells you which stored builds work with the code in the

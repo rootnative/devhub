@@ -10,6 +10,16 @@ notes name each one.
 
 ### Added
 
+- `@rootnative/devhub/cache-provider`, an Expo build cache provider. Add it
+  to `buildCacheProvider` in the app config, and `npx expo run:android` and
+  `npx expo run:ios` store each new build in the DevHub store. A later run
+  with the same fingerprint and variant installs the stored build, and does
+  not build the app. On Android the stored APK must have native code for
+  each ready device. On iOS a Mac with the same architecture must have made
+  it. The provider uses the per-platform fingerprint of `devhub match`.
+- The core exports `createCacheProvider`, `adbAbiListCommand`,
+  `primaryAbi`, and `ANDROID_ABIS`.
+
 - `devhub match` calculates the native fingerprint of the project in the
   current folder, with the project's own `expo/fingerprint` and the options
   of eas-cli, and shows the stored builds with the same EAS fingerprint. It
@@ -30,6 +40,9 @@ notes name each one.
   local build has `local` in place of `eas`.
 - `matchesFingerprint` takes a build of `devhub list --json`, not an EAS
   record, so it also matches a local build.
+- `devhub match` stops when `@expo/fingerprint` finds no native inputs in
+  the project. That hash is the same for each such project, so it would
+  match the builds of another app.
 - A local build record has `schemaVersion` 2. DevHub `0.0.0-alpha.0` does
   not read it, and `devhub list` of that version says that a newer DevHub
   wrote it. EAS build records keep `schemaVersion` 1.

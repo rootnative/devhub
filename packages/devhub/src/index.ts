@@ -4,6 +4,15 @@ export const version: string = pkg.version
 
 export { apkAbis } from './binary/apk'
 export {
+  createCacheProvider,
+  type CacheProvider,
+  type CacheProviderDeps,
+  type CalculateFingerprintHashProps,
+  type ResolveBuildCacheProps,
+  type UploadBuildCacheProps,
+} from './cache-provider/provider'
+export type { RunOptions } from './cache-provider/key'
+export {
   runCommand,
   type Command,
   type CommandOptions,
@@ -12,6 +21,8 @@ export {
 } from './command/run-command'
 export {
   ADB_MISSING,
+  ANDROID_ABIS,
+  adbAbiListCommand,
   adbAvdNameCommand,
   adbDevice,
   adbDevicesCommand,
@@ -21,6 +32,7 @@ export {
   listAndroidDevices,
   parseAdbDevices,
   parseAvdName,
+  primaryAbi,
   resolveAdb,
   type AdbEntry,
   type AdbOptions,

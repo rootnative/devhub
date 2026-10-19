@@ -28,9 +28,11 @@ Source: https://github.com/rootnative/devhub
   project's own `expo/fingerprint`, and shows the stored builds with the
   same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
+- `@rootnative/devhub/cache-provider` is an Expo build cache provider.
+  `npx expo run:android` and `npx expo run:ios` then store each new build,
+  and install a stored build when the native code did not change.
 
-NOT IMPLEMENTED, do not call: the Expo build cache
-provider (`@rootnative/devhub/cache-provider`), the import of a build file,
+NOT IMPLEMENTED, do not call: the import of a build file,
 the launch (boot a device, open the app), launch profiles, prune, and the
 desktop app. They are the plan only.
 
@@ -122,6 +124,33 @@ folder. Read it with the CLI. Do not write into it.
 `DEVHUB_HOME` sets the folder. The default is
 `~/Library/Application Support/devhub` on macOS, `%LOCALAPPDATA%\devhub` on
 Windows, and `$XDG_DATA_HOME/devhub` or `~/.local/share/devhub` on Linux.
+
+## Expo build cache provider
+
+Set it up in a project:
+
+1. Install `@rootnative/devhub` as a dev dependency of the project. Expo CLI
+   resolves the plugin from the project folder, not from a global install.
+2. Add `"buildCacheProvider": { "plugin": "@rootnative/devhub/cache-provider" }`
+   to `expo` in the app config. Expo SDK 53 reads it under
+   `expo.experiments`.
+
+Rules:
+
+- Expo CLI calls the provider only for `npx expo run:*`, and on iOS only for
+  a simulator. `--binary` turns it off for one run.
+- A stored build serves a run only when the platform, the fingerprint, and
+  the variant (`--variant`, default `debug`; `--configuration`, default
+  `Debug`) agree. On Android the APK must have native code for each ready
+  device, or for the device that `--device` names, and for all four ABIs
+  with `--all-arch`. On iOS a Mac with the same `process.arch` made it.
+- Only builds that `npx expo run:*` made serve a run. A build from
+  `devhub sync` does not.
+- A run with `--scheme` (iOS) does not use or store a build.
+- The provider never fails a run. It prints its lines with the prefix
+  `› DevHub:`, and Expo CLI builds the app when no stored build fits.
+- `devhub list` shows a stored local build with the profile `local` and its
+  variant. `devhub match` shows it as a match.
 
 ## Core API
 

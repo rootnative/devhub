@@ -151,6 +151,10 @@ export function fakeDeviceTools(
     tarFailure?: { code: number; stderr: string }
     /** The answer to `xcrun simctl install`. The default is a success. */
     simctlInstall?: CommandResult
+    /** `ro.product.cpu.abilist` of each serial. A missing serial gives "". */
+    abiLists?: Record<string, string>
+    /** The answer to `git`. The default is a folder with no git repository. */
+    git?: CommandResult
   } = {},
 ): FakeRunner {
   const calls: Command[] = []
@@ -159,6 +163,15 @@ export function fakeDeviceTools(
   const run: CommandRunner = async (command) => {
     calls.push(command)
     const program = path.basename(command[0]).replace(/\.exe$/i, '')
+    if (program === 'git') {
+      return (
+        options.git ?? {
+          code: 128,
+          stdout: '',
+          stderr: 'fatal: not a git repository',
+        }
+      )
+    }
     if (program === 'tar') {
       if (options.tarFailure) {
         return { stdout: '', ...options.tarFailure }
@@ -212,6 +225,16 @@ export function fakeDeviceTools(
           stderr: '',
         }
       )
+    }
+    if (
+      flag === '-s' &&
+      rest.join(' ') === 'shell getprop ro.product.cpu.abilist'
+    ) {
+      return {
+        code: 0,
+        stdout: `${options.abiLists?.[serial] ?? ''}\n`,
+        stderr: '',
+      }
     }
     if (flag === '-s' && rest.join(' ') === 'emu avd name') {
       const name = options.avdNames?.[serial]
@@ -338,7 +361,9 @@ exports.createFingerprintAsync = async (projectRoot, options) => {
     throw new Error(FAILURE)
   }
   const hash = HASHES[options.platforms[0]]
-  return hash === undefined ? {} : { hash, sources: [] }
+  return hash === undefined
+    ? {}
+    : { hash, sources: [{ type: 'contents', id: 'fake', contents: hash }] }
 }
 `
   const fingerprintDir = path.join(dir, 'node_modules', '@expo', 'fingerprint')
@@ -396,6 +421,7 @@ export async function writeLocalBuild(
   id: string,
   local: LocalBuild,
   file = 'app.apk',
+  storedAt = NOW,
 ): Promise<string> {
   const folder = buildFolder(home, id)
   await mkdir(folder, { recursive: true })
@@ -403,7 +429,7 @@ export async function writeLocalBuild(
   const record: LocalBuildRecord = {
     schemaVersion: LOCAL_RECORD_SCHEMA_VERSION,
     source: 'local',
-    storedAt: NOW.toISOString(),
+    storedAt: storedAt.toISOString(),
     file,
     size: 6,
     sha256: createHash('sha256').update('binary').digest('hex'),

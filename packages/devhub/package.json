@@ -36,6 +36,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./cache-provider": {
+      "types": "./dist/cache-provider.d.ts",
+      "default": "./dist/cache-provider.js"
     }
   },
   "files": [

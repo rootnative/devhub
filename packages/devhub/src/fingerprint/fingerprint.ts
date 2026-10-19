@@ -111,6 +111,13 @@ export async function projectFingerprint(
       `@expo/fingerprint gave no hash for ${platform} in ${projectDir}. Update Expo, and then run the command again.`,
     )
   }
+  // A fingerprint with no sources is the hash of nothing. Each project that
+  // gets it has the same hash, so it would match the builds of another app.
+  if (Array.isArray(result.sources) && result.sources.length === 0) {
+    throw new FingerprintError(
+      `@expo/fingerprint found no native inputs for ${platform} in ${projectDir}. Install the dependencies of the project, and then run the command again.`,
+    )
+  }
   return result.hash
 }
 

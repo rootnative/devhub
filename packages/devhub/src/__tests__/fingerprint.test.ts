@@ -145,6 +145,27 @@ describe('projectFingerprint', () => {
     )
   })
 
+  it('refuses a fingerprint with no sources, the hash of nothing', async () => {
+    const project = await writeFingerprintProject(await tempDir())
+    await writeFile(
+      path.join(
+        project,
+        'node_modules',
+        '@expo',
+        'fingerprint',
+        'build',
+        'index.js',
+      ),
+      "exports.createFingerprintAsync = async () => ({ hash: 'da39a3ee5e6b4b0d3255bfef95601890afd80709', sources: [] })\n",
+    )
+
+    await expect(
+      projectFingerprint(project, 'ios', resolveFingerprintModule(project)),
+    ).rejects.toThrow(
+      `@expo/fingerprint found no native inputs for ios in ${project}. Install the dependencies of the project, and then run the command again.`,
+    )
+  })
+
   it('reports a result with no hash', async () => {
     const project = await writeFingerprintProject(await tempDir(), {
       hashes: { ios: IOS_HASH },

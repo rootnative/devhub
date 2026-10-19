@@ -13,6 +13,9 @@
  *   - A test file in the tarball.
  *   - A runtime dependency on a `@rootnative` package. Only the built page
  *     uses one, and the build copies that page into `dist/ui/`.
+ *   - A cache provider entry that `require` cannot load, or that does not
+ *     export the functions that Expo CLI calls. Expo CLI loads the plugin
+ *     with `require`, which refuses an ES module with a top-level `await`.
  *
  * Run it after `pnpm run build`. CI and both release workflows run it, so
  * the check on a pull request is the check before a publish.
@@ -20,6 +23,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -97,6 +101,27 @@ for (const field of ['dependencies', 'peerDependencies']) {
   }
 }
 
+const CACHE_PROVIDER = 'dist/cache-provider.js'
+const PLUGIN_FUNCTIONS = [
+  'calculateFingerprintHash',
+  'resolveBuildCache',
+  'uploadBuildCache',
+]
+if (existsSync(join(packageDir, CACHE_PROVIDER))) {
+  try {
+    const plugin = createRequire(import.meta.url)(
+      join(packageDir, CACHE_PROVIDER),
+    )
+    for (const name of PLUGIN_FUNCTIONS) {
+      if (typeof plugin[name] !== 'function') {
+        fail(`${CACHE_PROVIDER} does not export the function ${name}.`)
+      }
+    }
+  } catch (error) {
+    fail(`require() cannot load ${CACHE_PROVIDER}: ${error.message}`)
+  }
+}
+
 let packed
 try {
   // `--ignore-scripts` stops `prepack`, so the check reads the build that is
@@ -143,5 +168,5 @@ if (problems.length > 0) {
   process.exit(1)
 }
 console.log(
-  `[check-artifact] ok: the tarball holds ${packed.length} files, the page and llms.txt among them.`,
+  `[check-artifact] ok: the tarball holds ${packed.length} files, the page and llms.txt among them. require() loads the cache provider.`,
 )
