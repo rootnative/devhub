@@ -28,7 +28,7 @@ function listed(id: string, eas: Partial<EasBuild> = {}): ListedBuild {
       gitCommitHash: 'b44e6ca0123456789',
       createdAt: '2026-10-06T08:00:00.000Z',
       expirationDate: '2026-10-20T08:00:00.000Z',
-      app: { slug: 'fargo' },
+      app: { slug: 'demo-app' },
       ...eas,
     },
   }
@@ -121,17 +121,17 @@ describe('groupBuilds', () => {
   it('groups the builds by project in the order of the list', () => {
     const groups = groupBuilds(
       list([
-        listed('aaaa1111-0000', { app: { slug: 'fargo' } }),
-        listed('bbbb2222-0000', { app: { slug: 'fargo' } }),
-        listed('cccc3333-0000', { app: { name: 'Reelist' } }),
+        listed('aaaa1111-0000', { app: { slug: 'demo-app' } }),
+        listed('bbbb2222-0000', { app: { slug: 'demo-app' } }),
+        listed('cccc3333-0000', { app: { name: 'Demo Notes' } }),
         listed('dddd4444-0000', { app: undefined }),
       ]),
       NOW,
     )
 
     expect(groups.map((group) => group.project)).toEqual([
-      'fargo',
-      'Reelist',
+      'demo-app',
+      'Demo Notes',
       '-',
     ])
     expect(groups[0]?.builds.map((build) => build.shortId)).toEqual([
@@ -208,11 +208,11 @@ describe('groupBuilds with local builds', () => {
 
   it('uses the slug of the app config when the build has one', () => {
     const [group] = groupBuilds(
-      list([listedLocal('aaaa1111-0000', { slug: 'expense-app' })]),
+      list([listedLocal('aaaa1111-0000', { slug: 'sample-app' })]),
       NOW,
     )
 
-    expect(group?.project).toBe('expense-app')
+    expect(group?.project).toBe('sample-app')
   })
 })
 

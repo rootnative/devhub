@@ -29,7 +29,7 @@ const ID_A = 'aaaa1111-0000-4000-8000-000000000001'
 const ID_B = 'bbbb2222-0000-4000-8000-000000000002'
 const EMULATOR_LINE =
   'emulator-5554  device product:sdk_gphone64_x86_64 model:sdk_gphone64_x86_64'
-const PHONE_LINE = 'R58M12ABCDE    device usb:1-1 product:c32 model:Nokia_C32'
+const PHONE_LINE = 'R58M12ABCDE    device usb:1-1 product:test model:Test_Phone'
 const ABI_LISTS = {
   'emulator-5554': 'x86_64,arm64-v8a',
   R58M12ABCDE: 'arm64-v8a,armeabi-v7a,armeabi',
@@ -67,7 +67,7 @@ function androidRun(
 ) {
   return fakeDeviceTools({
     devices: options.devices ?? adbList(EMULATOR_LINE),
-    avdNames: { 'emulator-5554': 'Pixel_Light_34' },
+    avdNames: { 'emulator-5554': 'Test_AVD_34' },
     abiLists: options.abiLists ?? ABI_LISTS,
   })
 }
@@ -227,7 +227,7 @@ describe('resolveBuildCache for Android', () => {
 
     expect(await plugin.resolveBuildCache(ANDROID)).toBeNull()
     expect(logs).toEqual([
-      'The stored build aaaa1111 has the same fingerprint, but no native code for Nokia C32 (arm64-v8a). Expo CLI builds the app.',
+      'The stored build aaaa1111 has the same fingerprint, but no native code for Test Phone (arm64-v8a). Expo CLI builds the app.',
     ])
   })
 
@@ -243,7 +243,7 @@ describe('resolveBuildCache for Android', () => {
       androidRun({ devices: adbList(EMULATOR_LINE, PHONE_LINE) }).run,
     )
 
-    for (const device of ['Pixel_Light_34', 'emulator-5554']) {
+    for (const device of ['Test_AVD_34', 'emulator-5554']) {
       expect(
         await plugin.resolveBuildCache({ ...ANDROID, runOptions: { device } }),
       ).toBe(file)
@@ -251,7 +251,7 @@ describe('resolveBuildCache for Android', () => {
     expect(
       await plugin.resolveBuildCache({
         ...ANDROID,
-        runOptions: { device: 'Nokia_C32' },
+        runOptions: { device: 'Test_Phone' },
       }),
     ).toBeNull()
   })
@@ -311,7 +311,7 @@ describe('resolveBuildCache for Android', () => {
       [
         androidRun({ abiLists: {} }),
         undefined,
-        'DevHub cannot read the ABI of Pixel_Light_34 (emulator-5554).',
+        'DevHub cannot read the ABI of Test_AVD_34 (emulator-5554).',
       ],
     ]
     for (const [tools, device, reason] of cases) {
