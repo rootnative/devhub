@@ -398,10 +398,11 @@ describe('devhub doctor', () => {
   ) {
     const home = path.join(await tempDir(), 'store')
     const output = capture()
+    // The real platform: a fake one resolves the store path with the path
+    // rules of another system, and breaks it on a Windows host.
     const code = await run(argv, {
       ...testContext({ io: output.io, home }),
       homedir: await tempDir(),
-      platform: 'linux',
       run: tools,
       nodeVersion,
     })
@@ -425,7 +426,11 @@ describe('devhub doctor', () => {
     expect(text).toContain(
       'warn  EAS      Not signed in (eas on PATH)\n               eas-cli has no login. Run "eas login" in a terminal, and then start the sync again.\n',
     )
-    expect(text).toContain('skip  iOS      iOS simulators need macOS.\n')
+    expect(text).toContain(
+      process.platform === 'darwin'
+        ? 'ok    iOS      Xcode 26.0.1\n'
+        : 'skip  iOS      iOS simulators need macOS.\n',
+    )
     expect(text).toMatch(
       /\n1 warning\. The other features work\. Do the fix above for the features that you use\.$/,
     )
@@ -461,7 +466,7 @@ describe('devhub doctor', () => {
       ['store', 'ok'],
       ['eas', 'ok'],
       ['android', 'warn'],
-      ['ios', 'skip'],
+      ['ios', process.platform === 'darwin' ? 'ok' : 'skip'],
     ])
     expect(check(report, 'store')?.detail).toContain(home)
   })
