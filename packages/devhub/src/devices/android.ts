@@ -47,6 +47,23 @@ export function resolveAdb(
   return 'adb'
 }
 
+export function adbVersionCommand(adb: string): Command {
+  return [adb, 'version']
+}
+
+/**
+ * The Platform-Tools version from `adb version`, for example `36.0.0`. adb
+ * 1.0.41 and later print it on the line "Version 36.0.0-13206524". An older
+ * adb prints only "Android Debug Bridge version 1.0.40".
+ */
+export function parseAdbVersion(stdout: string): string | undefined {
+  const tools = /^Version (\d+(?:\.\d+)*)/m.exec(stdout)
+  if (tools !== null) {
+    return tools[1]
+  }
+  return /Android Debug Bridge version (\S+)/.exec(stdout)?.[1]
+}
+
 export function adbDevicesCommand(adb: string): Command {
   return [adb, 'devices', '-l']
 }

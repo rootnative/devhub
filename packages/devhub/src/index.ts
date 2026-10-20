@@ -28,9 +28,11 @@ export {
   adbDevicesCommand,
   adbInstallCommand,
   adbUninstallCommand,
+  adbVersionCommand,
   isEmulatorSerial,
   listAndroidDevices,
   parseAdbDevices,
+  parseAdbVersion,
   parseAvdName,
   primaryAbi,
   resolveAdb,
@@ -44,12 +46,15 @@ export {
   type DevicePlatform,
 } from './devices/device'
 export {
+  XCODE_FIX,
   XCRUN_MISSING,
   iosRuntimeVersion,
   listIosSimulators,
   parseSimctlDevices,
+  parseXcodeVersion,
   simctlInstallCommand,
   simctlListCommand,
+  xcodeVersionCommand,
 } from './devices/ios'
 export {
   listDevices,
@@ -94,6 +99,16 @@ export {
 } from './fingerprint/fingerprint'
 export { findProjectRoot } from './fingerprint/project'
 export { deviceReport, type DeviceReport } from './flow/devices'
+export {
+  NODE_MINIMUM,
+  doctor,
+  doctorPassed,
+  type DoctorCheck,
+  type DoctorCheckId,
+  type DoctorDeps,
+  type DoctorReport,
+  type DoctorStatus,
+} from './flow/doctor'
 export { findStoredBuild } from './flow/find'
 export {
   installStoredBuild,

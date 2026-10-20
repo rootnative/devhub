@@ -38,6 +38,13 @@ Check the install:
 devhub --version
 ```
 
+Then check the tools in the table above. [`devhub doctor`](./commands/doctor.md)
+gives the fix for each tool that is missing:
+
+```bash
+devhub doctor
+```
+
 ## Add DevHub to a project
 
 The [cache provider](./guides/local-builds.md) runs inside

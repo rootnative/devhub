@@ -18,6 +18,7 @@ const sidebars: SidebarsConfig = {
         'commands/match',
         'commands/ui',
         'commands/whoami',
+        'commands/doctor',
       ],
     },
     {

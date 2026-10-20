@@ -32,6 +32,8 @@ export type CliContext = {
   waitForStop: () => Promise<void>
   /** The folder of the built `devhub ui` page. */
   uiFiles: string
+  /** The version of the Node that runs DevHub, for example `24.11.0`. */
+  nodeVersion: string
 }
 
 export function processContext(): CliContext {
@@ -52,6 +54,7 @@ export function processContext(): CliContext {
     // tsup bundles this file into dist/, and the build puts the page in
     // dist/ui/.
     uiFiles: fileURLToPath(new URL('./ui/', import.meta.url)),
+    nodeVersion: process.versions.node,
   }
 }
 

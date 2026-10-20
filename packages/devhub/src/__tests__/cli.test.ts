@@ -56,6 +56,7 @@ describe('devhub CLI', () => {
     ['install'],
     ['ui'],
     ['whoami'],
+    ['doctor'],
   ])('devhub %s --help prints the help of the command', async (command) => {
     const { io, out } = capture()
 

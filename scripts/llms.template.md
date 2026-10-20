@@ -29,6 +29,8 @@ Source: https://github.com/rootnative/devhub
   same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
 - `devhub whoami` shows the EAS login state. A sync needs a login.
+- `devhub doctor` checks Node, the store, eas-cli and its login, adb, and
+  Xcode, and gives the fix for each problem.
 - `@rootnative/devhub/cache-provider` is an Expo build cache provider.
   `npx expo run:android` and `npx expo run:ios` then store each new build,
   and install a stored build when the native code did not change.
@@ -61,6 +63,10 @@ desktop app. They are the plan only.
   exits with `1` when a project fails. `devhub match --json` prints its
   JSON and exits with `1` when no stored build matches. `devhub whoami --json`
   prints its JSON and exits with `1` when eas-cli has no login.
+  `devhub doctor --json` prints its JSON and exits with `1` when a check has
+  the status `fail`.
+- When a command fails because a tool is missing, run
+  `devhub doctor --json`. Each check with `warn` or `fail` has a `fix`.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.

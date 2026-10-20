@@ -39,6 +39,7 @@ const JSON_TYPES = [
   { command: 'devhub install <id> --json', type: 'InstalledBuild' },
   { command: 'devhub match --json', type: 'MatchReport' },
   { command: 'devhub whoami --json', type: 'WhoamiReport' },
+  { command: 'devhub doctor --json', type: 'DoctorReport' },
 ]
 
 const checkOnly = process.argv.includes('--check')

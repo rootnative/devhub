@@ -9,6 +9,19 @@ import { DeviceError, runTool, type Device } from './device'
 export const XCRUN_MISSING =
   'DevHub cannot find xcrun. Install Xcode from the App Store, and then run the command again.'
 
+export const XCODE_FIX =
+  'Install Xcode, and select it with "sudo xcode-select --switch /Applications/Xcode.app".'
+
+/** Fails when `xcode-select` points at the Command Line Tools only. */
+export function xcodeVersionCommand(): Command {
+  return ['xcodebuild', '-version']
+}
+
+/** The version on the line "Xcode 26.0.1" of `xcodebuild -version`. */
+export function parseXcodeVersion(stdout: string): string | undefined {
+  return /^Xcode (\S+)/m.exec(stdout)?.[1]
+}
+
 export function simctlListCommand(): Command {
   return ['xcrun', 'simctl', 'list', 'devices', '--json']
 }
@@ -77,7 +90,7 @@ export async function listIosSimulators(
   const result = await runTool(run, simctlListCommand(), cwd, XCRUN_MISSING)
   if (result.code !== 0) {
     throw new DeviceError(
-      `"xcrun simctl list" failed with exit code ${result.code}. Install Xcode, and select it with "sudo xcode-select --switch /Applications/Xcode.app".${outputTail(result.stderr)}`,
+      `"xcrun simctl list" failed with exit code ${result.code}. ${XCODE_FIX}${outputTail(result.stderr)}`,
     )
   }
   return parseSimctlDevices(result.stdout)

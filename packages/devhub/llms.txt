@@ -23,6 +23,8 @@ Source: https://github.com/rootnative/devhub
   same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
 - `devhub whoami` shows the EAS login state. A sync needs a login.
+- `devhub doctor` checks Node, the store, eas-cli and its login, adb, and
+  Xcode, and gives the fix for each problem.
 - `@rootnative/devhub/cache-provider` is an Expo build cache provider.
   `npx expo run:android` and `npx expo run:ios` then store each new build,
   and install a stored build when the native code did not change.
@@ -55,6 +57,10 @@ desktop app. They are the plan only.
   exits with `1` when a project fails. `devhub match --json` prints its
   JSON and exits with `1` when no stored build matches. `devhub whoami --json`
   prints its JSON and exits with `1` when eas-cli has no login.
+  `devhub doctor --json` prints its JSON and exits with `1` when a check has
+  the status `fail`.
+- When a command fails because a tool is missing, run
+  `devhub doctor --json`. Each check with `warn` or `fail` has a `fix`.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.
@@ -99,6 +105,7 @@ Commands:
   match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
   whoami        Show the EAS login state.
+  doctor        Check the tools and the store that DevHub uses.
 
 Options:
   -h, --help     Show this help.
@@ -240,6 +247,24 @@ Options:
   -h, --help  Show this help.
 ```
 
+### devhub doctor
+
+```text
+Usage: devhub doctor [options]
+
+Check the tools and the store that DevHub uses on this machine: Node, the
+store folder, eas-cli and its login, adb, and on macOS Xcode. Give the fix
+for each problem. The checks do not read the current folder.
+
+A warning stops one feature, for example the iOS installs. A failure stops
+DevHub. The exit code is 1 when a check fails, and 0 otherwise. The first
+run of "npx --yes eas-cli" downloads eas-cli, so it can take a while.
+
+Options:
+  --json      Print the report as JSON.
+  -h, --help  Show this help.
+```
+
 ## JSON output
 
 - `devhub sync --json` prints `SyncReport`.
@@ -248,6 +273,7 @@ Options:
 - `devhub install <id> --json` prints `InstalledBuild`.
 - `devhub match --json` prints `MatchReport`.
 - `devhub whoami --json` prints `WhoamiReport`.
+- `devhub doctor --json` prints `DoctorReport`.
 
 ```ts
 type SyncReport = {
@@ -460,6 +486,30 @@ type WhoamiReport = {
     /** What is wrong, with the fix, with each state but `signed-in`. */
     message?: string;
 };
+
+/** The JSON of `devhub doctor --json`. */
+type DoctorReport = {
+    checks: DoctorCheck[];
+};
+
+type DoctorCheck = {
+    id: DoctorCheckId;
+    /** For example "Node" or "Android". */
+    label: string;
+    status: DoctorStatus;
+    /** What DevHub found, for example "Node 24.11.0". */
+    detail: string;
+    /** With `warn` and `fail`: what is wrong, the fix, and what needs it. */
+    fix?: string;
+};
+
+type DoctorCheckId = 'node' | 'store' | 'eas' | 'android' | 'ios';
+
+/**
+ * `warn`: one feature does not work. `fail`: no feature works. `skip`: the
+ * check does not apply to this system.
+ */
+type DoctorStatus = 'ok' | 'warn' | 'fail' | 'skip';
 ```
 
 - `devhub where <id> --json` prints `{ "id": string, "path": string }`.
@@ -537,28 +587,31 @@ version before `1.0.0`.
 
 Functions, classes, and constants: ADB_MISSING, ANDROID_ABIS,
 BUILD_LIST_PAGE_SIZE, DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError,
-EasJsonError, FINGERPRINT_PLATFORMS, FingerprintError, StoreLockedError,
-TAR_MISSING, TAR_PACK_MISSING, XCRUN_MISSING, adbAbiListCommand,
-adbAvdNameCommand, adbDevice, adbDevicesCommand, adbInstallCommand,
-adbInstallFailure, adbUninstallCommand, apkAbis, artifactUrl, buildSummary,
-canSync, checkEasLogin, createCacheProvider, devClientProfiles, deviceReport,
-downloadFile, easBuildListCommand, easWhoamiCommand, findBuild, findDevice,
-findEasProject, findProjectRoot, findStoredBuild, hasMatch, installBuild,
-installPlatform, installProblem, installStoredBuild, iosRuntimeVersion,
-isEmulatorSerial, isExpired, isLocalRecord, listAndroidDevices, listBuilds,
-listDevices, listFinishedBuilds, listIosSimulators, matchBuilds,
-matchesFingerprint, parseAdbDevices, parseAvdName, parseEasJson,
-parseSimctlDevices, planSync, primaryAbi, projectFingerprint, readEasJson,
-readProjects, resolveAdb, resolveFingerprintModule, resolveHome, runCommand,
-scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
+EasJsonError, FINGERPRINT_PLATFORMS, FingerprintError, NODE_MINIMUM,
+StoreLockedError, TAR_MISSING, TAR_PACK_MISSING, XCODE_FIX, XCRUN_MISSING,
+adbAbiListCommand, adbAvdNameCommand, adbDevice, adbDevicesCommand,
+adbInstallCommand, adbInstallFailure, adbUninstallCommand, adbVersionCommand,
+apkAbis, artifactUrl, buildSummary, canSync, checkEasLogin, createCacheProvider,
+devClientProfiles, deviceReport, doctor, doctorPassed, downloadFile,
+easBuildListCommand, easWhoamiCommand, findBuild, findDevice, findEasProject,
+findProjectRoot, findStoredBuild, hasMatch, installBuild, installPlatform,
+installProblem, installStoredBuild, iosRuntimeVersion, isEmulatorSerial,
+isExpired, isLocalRecord, listAndroidDevices, listBuilds, listDevices,
+listFinishedBuilds, listIosSimulators, matchBuilds, matchesFingerprint,
+parseAdbDevices, parseAdbVersion, parseAvdName, parseEasJson,
+parseSimctlDevices, parseXcodeVersion, planSync, primaryAbi, projectFingerprint,
+readEasJson, readProjects, resolveAdb, resolveFingerprintModule, resolveHome,
+runCommand, scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
 storeLocalBuild, syncBuilds, syncFailed, syncProjects, tarCreateCommand,
-tarExtractCommand, unpackIosBuild, version, whoami, withExtraProfiles.
+tarExtractCommand, unpackIosBuild, version, whoami, withExtraProfiles,
+xcodeVersionCommand.
 
 Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
 BuildRecord, BuildSource, BuildStatus, BuildSummary, CacheProvider,
 CacheProviderDeps, CalculateFingerprintHashProps, Command, CommandOptions,
 CommandResult, CommandRunner, Device, DeviceChoice, DeviceKind, DeviceList,
-DeviceListOptions, DevicePlatform, DeviceReport, DeviceSource, DownloadResult,
+DeviceListOptions, DevicePlatform, DeviceReport, DeviceSource, DoctorCheck,
+DoctorCheckId, DoctorDeps, DoctorReport, DoctorStatus, DownloadResult,
 Downloader, EasBuild, EasBuildRecord, EasInvocation, EasPlatform, FindResult,
 FingerprintModule, FingerprintPlatform, FlowError, FlowResult, HomeOptions,
 InstallDeps, InstallOptions, InstallRequest, InstalledBuild, ListedBuild,

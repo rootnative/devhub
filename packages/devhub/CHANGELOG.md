@@ -24,6 +24,11 @@ notes name each one.
   `primaryAbi`, and `ANDROID_ABIS`.
 - The public docs site at https://rootnative.github.io/devhub/. The README
   files link to it, and `homepage` in the package points at it.
+- `devhub doctor`, which checks Node, the store folder, eas-cli and its
+  login, adb, and on macOS Xcode, and gives the fix for each problem. Each
+  check is `ok`, `warn`, `fail`, or `skip`. A warning stops one feature,
+  and a failure stops DevHub. The exit code is `1` when a check fails.
+  The core exports `doctor`, `doctorPassed`, and `NODE_MINIMUM`.
 - `devhub whoami`, which shows the EAS login state: `signed-in` with the
   user name, `signed-out`, `no-cli`, or `failed`, with the fix. The exit
   code is `1` without a login. `devhub ui` serves it as `GET /api/whoami`.

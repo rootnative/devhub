@@ -39,6 +39,9 @@ for example `npx @rootnative/devhub list`. The daily sync below runs
   `eas login`. DevHub uses that login, and never reads, asks for, or stores
   a token.
 
+Run `devhub doctor` to check each requirement. It gives the fix for each
+tool that is missing.
+
 ## Commands
 
 | Command | What it does |
@@ -52,6 +55,7 @@ for example `npx @rootnative/devhub list`. The daily sync below runs
 | `devhub match` | Calculates the native fingerprint of the project in the current folder, and shows the stored builds with the same EAS fingerprint. A match needs no new build. |
 | `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices, installs a build with one click, and syncs each project. |
 | `devhub whoami` | Shows the EAS login state. A sync needs a login. The exit code is `1` without one. |
+| `devhub doctor` | Checks Node, the store, eas-cli and its login, adb, and on macOS Xcode, and gives the fix for each problem. The exit code is `1` when a check fails. |
 
 Options of `devhub sync`:
 
@@ -61,7 +65,8 @@ Options of `devhub sync`:
 - `--json` prints the result as JSON.
 
 `devhub list`, `devhub where`, `devhub devices`, `devhub install`,
-`devhub match`, `devhub ui`, and `devhub whoami` also accept `--json`.
+`devhub match`, `devhub ui`, `devhub whoami`, and `devhub doctor` also
+accept `--json`.
 Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.

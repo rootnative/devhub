@@ -7,6 +7,7 @@ import {
   type CliContext,
 } from './context'
 import { devicesCommand } from './devices'
+import { doctorCommand } from './doctor'
 import { installCommand } from './install'
 import { listCommand } from './list'
 import { matchCommand } from './match'
@@ -31,6 +32,7 @@ Commands:
   match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
   whoami        Show the EAS login state.
+  doctor        Check the tools and the store that DevHub uses.
 
 Options:
   -h, --help     Show this help.
@@ -50,6 +52,7 @@ const COMMANDS: Record<
   match: matchCommand,
   ui: uiCommand,
   whoami: whoamiCommand,
+  doctor: doctorCommand,
 }
 
 export async function run(
