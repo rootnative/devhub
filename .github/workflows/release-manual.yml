@@ -12,7 +12,8 @@ name: Release (manual)
 #
 #   custom_version  Release an exact version, for example 0.0.1 or
 #                   0.1.0-beta.0. The run makes the release commit, the
-#                   same as release.yml.
+#                   same as release.yml. Commit the CHANGELOG section of
+#                   that version first.
 #   version: skip   Publish the version that main has now, with no bump and
 #                   no release commit. Use it after a run that pushed the
 #                   release commit and then failed at the publish. Delete
@@ -137,12 +138,6 @@ jobs:
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
-      - name: Write the CHANGELOG section and the status lines
-        if: ${{ steps.version.outputs.commit == 'true' }}
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: node scripts/prepare-release.mjs --version "$VERSION"
-
       # llms.txt names the version, and check:llms in preflight compares it
       # with the build.
       - name: Build llms.txt for the new version
@@ -166,7 +161,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ "$COMMIT" = "true" ]; then
-            git add packages/devhub/package.json packages/devhub/CHANGELOG.md packages/devhub/llms.txt README.md packages/devhub/README.md
+            git add packages/devhub/package.json packages/devhub/llms.txt
             git commit -m "release: $TAG"
           fi
           git tag "$TAG"

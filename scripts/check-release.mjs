@@ -81,6 +81,29 @@ if (manifest.private === true) {
   )
 }
 
+// The release workflows do not write the CHANGELOG. A person commits the
+// section of the version before the run.
+const changelog = readFileSync(
+  join(repoRoot, 'packages', 'devhub', 'CHANGELOG.md'),
+  'utf8',
+).replace(/\r\n/g, '\n')
+const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+if (
+  !new RegExp(`^## \\[${escaped}\\] - \\d{4}-\\d{2}-\\d{2}$`, 'm').test(
+    changelog,
+  )
+) {
+  fail(
+    `packages/devhub/CHANGELOG.md has no "## [${version}] - YYYY-MM-DD" section. Move the entries under "## [Unreleased]" to it, commit it to main, and run the release again.`,
+  )
+}
+const releaseLink = `[${version}]: https://github.com/rootnative/devhub/releases/tag/devhub@${version}`
+if (!changelog.split('\n').includes(releaseLink)) {
+  fail(
+    `packages/devhub/CHANGELOG.md has no link line "${releaseLink}". Add it at the end, and set "[unreleased]" to compare from devhub@${version}.`,
+  )
+}
+
 // The checkout must have the tags, so a CI checkout uses `fetch-depth: 0`.
 const tag = `devhub@${version}`
 let tagExists = true

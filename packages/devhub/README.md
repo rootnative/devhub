@@ -7,7 +7,7 @@ keeps every development build on your machine, finds the build that matches
 your current code by its native fingerprint, and starts a simulator or an
 emulator with that build in one action.
 
-> **Status:** `0.0.0-alpha.0`, an alpha. Each alpha can change the CLI,
+> **Status:** alpha. Each alpha can change the CLI,
 > its JSON output, and the core API. The launch of an app comes in a later
 > version. The
 > [CHANGELOG](https://github.com/rootnative/devhub/blob/main/packages/devhub/CHANGELOG.md)
