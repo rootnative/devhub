@@ -45,6 +45,14 @@ Only one install runs at a time.
 
 ### Sync
 
+Under the Builds title, the page shows the EAS login state of
+[`devhub whoami`](./whoami.md): signed in with the user name, not signed
+in, eas-cli not installed, or the check failed. The page runs that check
+when it opens, on Refresh, and after a sync that eas-cli refused. Without
+a login, the Sync button is off, and its tooltip gives the fix: the
+`eas login` command to run in a terminal. The builds and the install need
+no login.
+
 Click Sync to run `devhub sync --all`. The terminal of `devhub ui` shows
 the progress. When the sync ends, the page shows the result of each
 project, and reads the builds again.

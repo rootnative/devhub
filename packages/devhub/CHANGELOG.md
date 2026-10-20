@@ -28,6 +28,9 @@ notes name each one.
   user name, `signed-out`, `no-cli`, or `failed`, with the fix. The exit
   code is `1` without a login. `devhub ui` serves it as `GET /api/whoami`.
   The core exports `whoami` and `canSync`.
+- The page of `devhub ui` shows the EAS login state under the Builds
+  title. Without a login, the Sync button is off, and its tooltip gives
+  the fix.
 - `devhub install` and the install button of `devhub ui` compare the
   SHA-256 of the stored file with the record before the install, and refuse
   a file that differs. The message names both hashes and the fix.

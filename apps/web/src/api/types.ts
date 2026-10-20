@@ -108,3 +108,11 @@ export type InstalledBuild = {
   path: string
   device: Device
 }
+
+/** `devhub whoami --json`. */
+export type WhoamiReport = {
+  state: 'signed-in' | 'signed-out' | 'no-cli' | 'failed'
+  cli: 'eas' | 'npx' | 'none'
+  user?: string
+  message?: string
+}

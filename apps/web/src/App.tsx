@@ -20,6 +20,7 @@ import type {
   DeviceReport,
   InstalledBuild,
   SyncReport,
+  WhoamiReport,
 } from './api/types'
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
@@ -29,6 +30,7 @@ import { SyncCard, type SyncState } from './components/SyncCard'
 import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import type { BuildRow } from './logic/view'
+import { easStatus } from './logic/whoami'
 
 const TITLE = 'DevHub by Root Native'
 
@@ -61,6 +63,8 @@ function Dashboard({ token }: { token: string }) {
   const snackbar = useSnackbar()
   const builds = useApi<BuildList>('/api/builds', token)
   const devices = useApi<DeviceReport>('/api/devices', token)
+  // One eas-cli call on load, the one network call the page makes by itself.
+  const eas = useApi<WhoamiReport>('/api/whoami', token)
   const reloadDevices = devices.reload
   const [installing, setInstalling] = useState<string>()
   // The message stays while the dialog runs its exit animation.
@@ -78,6 +82,7 @@ function Dashboard({ token }: { token: string }) {
   const refresh = () => {
     void builds.reload()
     void devices.reload()
+    void eas.reload()
   }
 
   // The request returns when the sync ends, which can take minutes. The
@@ -88,6 +93,11 @@ function Dashboard({ token }: { token: string }) {
     const result = await postJson<SyncReport>('/api/sync', token, {})
     setSync({ kind: 'done', result })
     void builds.reload()
+    // A sync that eas-cli refused, for example after a logout, changes the
+    // login state.
+    if (result.kind === 'error') {
+      void eas.reload()
+    }
   }
 
   const install = async (row: BuildRow, device: Device) => {
@@ -113,7 +123,7 @@ function Dashboard({ token }: { token: string }) {
         trailing={
           <Button
             variant="text"
-            loading={builds.busy || devices.busy}
+            loading={builds.busy || devices.busy || eas.busy}
             onPress={refresh}
           >
             Refresh
@@ -139,6 +149,7 @@ function Dashboard({ token }: { token: string }) {
                 onInstall={(row, device) => void install(row, device)}
                 syncing={sync.kind === 'running'}
                 onSync={() => void runSync()}
+                eas={easStatus(eas.state)}
                 syncResult={
                   <SyncCard
                     state={sync}
