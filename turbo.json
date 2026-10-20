@@ -31,6 +31,18 @@
         "package.json"
       ]
     },
+    "@rootnative/devhub-docs#build": {
+      "outputs": ["build/**"],
+      "inputs": [
+        "docs/**",
+        "src/**",
+        "static/**",
+        "docusaurus.config.ts",
+        "sidebars.ts",
+        "tsconfig.json",
+        "package.json"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true

@@ -9,6 +9,8 @@ export default [
     ignores: [
       '**/dist/**',
       '**/out/**',
+      '**/build/**',
+      '**/.docusaurus/**',
       '**/.turbo/**',
       '**/.expo/**',
       '**/node_modules/**',

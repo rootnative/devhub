@@ -2,6 +2,7 @@ node_modules
 dist
 build
 out
+.docusaurus
 .turbo
 coverage
 pnpm-lock.yaml

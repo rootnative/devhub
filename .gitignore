@@ -11,6 +11,9 @@ out/
 # Turborepo
 .turbo/
 
+# Docusaurus
+.docusaurus/
+
 # Expo
 .expo/
 .expo-shared/

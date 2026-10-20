@@ -2,6 +2,7 @@ packages:
   - 'packages/*'
   - 'apps/*'
   - 'example'
+  - 'docs'
 
 # pnpm 11 and later ignore pnpm settings in .npmrc, so they live here too.
 # The org pins a hoisted layout in every pnpm repository. The Expo apps need
