@@ -32,7 +32,7 @@ export const runCommand: CommandRunner = (command, options) =>
     const [program, ...args] = command
     const child = spawn(program, args, {
       cwd: options.cwd,
-      env: options.env ?? process.env,
+      env: childEnv(options.env ?? process.env),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
     })
@@ -49,6 +49,22 @@ export const runCommand: CommandRunner = (command, options) =>
       }),
     )
   })
+
+/**
+ * The environment of a child, without the `npm_config_*` variables. A
+ * package manager sets them for a script that it runs, and `pnpm` sets
+ * values that npm does not know. npx then writes a warning for each one to
+ * stderr, and the warnings hide the real message of eas-cli.
+ */
+export function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const clean: NodeJS.ProcessEnv = {}
+  for (const [key, value] of Object.entries(env)) {
+    if (!key.toLowerCase().startsWith('npm_config_')) {
+      clean[key] = value
+    }
+  }
+  return clean
+}
 
 /**
  * The command as text for a message, with an argument in quotes when it has

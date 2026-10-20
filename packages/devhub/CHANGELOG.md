@@ -28,6 +28,17 @@ notes name each one.
   SHA-256 of the stored file with the record before the install, and refuse
   a file that differs. The message names both hashes and the fix.
 
+### Fixed
+
+- The sync reads "Not logged in" on stdout, where eas-cli 16 writes it. A
+  sync with no login showed the exit code and the npm warnings instead of
+  the login message.
+- DevHub drops the `npm_config_*` variables of a package manager script
+  from the environment of each child. npx warned about each pnpm value,
+  and the warnings hid the message of eas-cli.
+- The two eas-cli messages say "in a terminal" and "start the sync again",
+  because the sync can start from the page.
+
 - `devhub match` calculates the native fingerprint of the project in the
   current folder, with the project's own `expo/fingerprint` and the options
   of eas-cli, and shows the stored builds with the same EAS fingerprint. It

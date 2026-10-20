@@ -93,7 +93,7 @@ export type FakeRunner = {
 export function fakeEas(
   buildsByProfile: Record<string, EasBuild[]>,
   options: {
-    whoami?: { code: number; stderr: string }
+    whoami?: { code: number; stdout?: string; stderr: string }
     /** `false`: `eas` is not on PATH, and only npx starts eas-cli. */
     easOnPath?: boolean
   } = {},
@@ -107,8 +107,11 @@ export function fakeEas(
     const prefix = command[0] === 'npx' ? EAS_WITH_NPX : EAS_ON_PATH
     const [subcommand, ...args] = command.slice(prefix.length)
     if (subcommand === 'whoami') {
-      const { code, stderr } = options.whoami ?? { code: 0, stderr: '' }
-      return { code, stdout: code === 0 ? 'someone\n' : '', stderr }
+      const { code, stdout, stderr } = options.whoami ?? {
+        code: 0,
+        stderr: '',
+      }
+      return { code, stdout: stdout ?? (code === 0 ? 'someone\n' : ''), stderr }
     }
     if (subcommand === 'build:list') {
       const flag = (name: string) => args[args.indexOf(name) + 1] ?? ''

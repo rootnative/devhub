@@ -78,14 +78,19 @@ export async function checkEasLogin(
   if (result.code === 0) {
     return eas
   }
-  if (/not logged in/i.test(result.stderr)) {
+  if (isNotLoggedIn(result)) {
     throw new EasCliError(
-      `eas-cli has no login. Run "${formatCommand([...eas, 'login'])}", and then run the command again.`,
+      `eas-cli has no login. Run "${formatCommand([...eas, 'login'])}" in a terminal, and then start the sync again.`,
     )
   }
   throw new EasCliError(
     `"${formatCommand(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${outputTail(result.stderr)}`,
   )
+}
+
+/** eas-cli writes "Not logged in" to stdout, and an older eas-cli to stderr. */
+export function isNotLoggedIn(result: CommandResult): boolean {
+  return /not logged in/i.test(`${result.stdout}\n${result.stderr}`)
 }
 
 /**
@@ -144,7 +149,7 @@ async function runEas(run: CommandRunner, command: Command, cwd: string) {
   } catch (error) {
     if (isNotFound(error)) {
       throw new EasCliError(
-        `DevHub cannot start "${command[0]}". Put "eas" or "npx" on PATH. npx is in the folder of node. Then run the command again.`,
+        `DevHub cannot start "${command[0]}". Put "eas" or "npx" on PATH. npx is in the folder of node. Then start the sync again.`,
       )
     }
     throw error

@@ -194,6 +194,23 @@ describe('checkEasLogin', () => {
     )
   })
 
+  it('reads "Not logged in" on stdout, where eas-cli 16 writes it', async () => {
+    const eas = fakeEas(
+      {},
+      {
+        whoami: {
+          code: 1,
+          stdout: 'Not logged in\n',
+          stderr: 'npm warn Unknown env config "node-linker".\n',
+        },
+      },
+    )
+
+    await expect(checkEasLogin(eas.run, '/work')).rejects.toThrow(
+      'eas-cli has no login. Run "eas login" in a terminal, and then start the sync again.',
+    )
+  })
+
   it('tells the user to fix PATH when neither eas nor npx starts', async () => {
     const run: CommandRunner = async ([program]) => {
       throw Object.assign(new Error(`spawn ${program} ENOENT`), {

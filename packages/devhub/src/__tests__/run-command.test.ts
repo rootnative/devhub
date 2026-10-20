@@ -1,7 +1,7 @@
 import { chmod, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { runCommand } from '../command/run-command'
+import { childEnv, runCommand } from '../command/run-command'
 import { useTempDir } from './helpers'
 
 const ARGS = [
@@ -77,5 +77,18 @@ describe('runCommand', () => {
     await expect(
       runCommand(['devhub-no-such-program'], { cwd: dir }),
     ).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+})
+
+describe('childEnv', () => {
+  it('drops the npm_config_* variables of a package manager script', () => {
+    expect(
+      childEnv({
+        PATH: '/usr/bin',
+        npm_config_node_linker: 'hoisted',
+        NPM_CONFIG_RECURSIVE: 'true',
+        npm_lifecycle_event: 'desktop',
+      }),
+    ).toEqual({ PATH: '/usr/bin', npm_lifecycle_event: 'desktop' })
   })
 })
