@@ -85,6 +85,16 @@ const config: Config = {
           position: 'left',
         },
         {
+          to: '/commands/sync',
+          label: 'Commands',
+          position: 'left',
+        },
+        {
+          to: '/guides/local-builds',
+          label: 'Cache provider',
+          position: 'left',
+        },
+        {
           href: 'https://github.com/rootnative/devhub',
           position: 'right',
           className: 'navbar-github-link',
@@ -97,11 +107,27 @@ const config: Config = {
       links: [
         {
           title: 'Docs',
-          items: [{ label: 'Introduction', to: '/introduction' }],
+          items: [
+            { label: 'Introduction', to: '/introduction' },
+            { label: 'Installation', to: '/installation' },
+            { label: 'Quick start', to: '/quick-start' },
+            { label: 'Sync every day', to: '/guides/daily-sync' },
+          ],
+        },
+        {
+          title: 'Commands',
+          items: [
+            { label: 'devhub sync', to: '/commands/sync' },
+            { label: 'devhub install', to: '/commands/install' },
+            { label: 'devhub match', to: '/commands/match' },
+            { label: 'devhub ui', to: '/commands/ui' },
+          ],
         },
         {
           title: 'More',
           items: [
+            { label: 'For AI agents', to: '/reference/ai-agents' },
+            { label: 'Security', to: '/reference/security' },
             { label: 'GitHub', href: 'https://github.com/rootnative/devhub' },
             {
               label: 'npm',
@@ -114,7 +140,7 @@ const config: Config = {
       copyright: `© ${new Date().getFullYear()} Root Native · MIT Licensed`,
     },
     prism: {
-      additionalLanguages: ['bash'],
+      additionalLanguages: ['bash', 'powershell'],
     },
   } satisfies Preset.ThemeConfig,
 }

@@ -4,13 +4,13 @@
   "private": true,
   "description": "The public docs site of DevHub by Root Native, at https://rootnative.github.io/devhub/.",
   "scripts": {
-    "dev": "docusaurus start",
-    "build": "docusaurus build",
-    "build:check": "docusaurus build --out-dir .docusaurus/check-build",
+    "dev": "node scripts/copy-llms.mjs && docusaurus start",
+    "build": "node scripts/copy-llms.mjs && docusaurus build",
+    "build:check": "node scripts/copy-llms.mjs && docusaurus build --out-dir .docusaurus/check-build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "serve": "docusaurus serve",
-    "clean": "node -e \"for (const p of ['build', '.docusaurus', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
+    "clean": "node -e \"for (const p of ['build', '.docusaurus', '.turbo', 'static/llms.txt']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.0",

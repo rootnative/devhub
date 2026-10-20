@@ -13,6 +13,8 @@ out/
 
 # Docusaurus
 .docusaurus/
+# A copy of packages/devhub/llms.txt that the docs build makes.
+docs/static/llms.txt
 
 # Expo
 .expo/
