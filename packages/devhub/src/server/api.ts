@@ -5,6 +5,7 @@ import { installStoredBuild } from '../flow/install'
 import { listBuilds } from '../flow/list'
 import type { FlowResult } from '../flow/result'
 import { syncBuilds } from '../flow/sync'
+import { whoami } from '../flow/whoami'
 import { isRecord } from '../store/files'
 import { resolveHome } from '../store/home'
 
@@ -50,6 +51,13 @@ export const API_ROUTES: Readonly<Record<string, ApiRoute>> = {
         ),
       )
     },
+  },
+  '/api/whoami': {
+    method: 'GET',
+    handle: async (_body, context) => ({
+      status: 200,
+      body: await whoami({ run: context.run, cwd: context.cwd }),
+    }),
   },
   '/api/sync': {
     method: 'POST',

@@ -250,7 +250,7 @@ function Hero() {
 }
 
 const stats = [
-  { value: '7', label: 'Commands' },
+  { value: '8', label: 'Commands' },
   { value: '3', label: 'Host systems' },
   { value: '0', label: 'Telemetry' },
   { value: 'MIT', label: 'Licensed' },

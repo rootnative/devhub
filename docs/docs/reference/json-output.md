@@ -27,6 +27,7 @@ Three commands print their JSON and also exit with `1`:
 | `devhub sync --json` | A project failed. The JSON shows which one. |
 | `devhub devices --json` | Each device tool failed. The JSON has the warnings. |
 | `devhub match --json` | No stored build matches. |
+| `devhub whoami --json` | eas-cli has no login, or does not run. |
 
 ## The output of each command
 
@@ -39,6 +40,7 @@ Three commands print their JSON and also exit with `1`:
 | `devhub install <id> --json` | `InstalledBuild`: `id`, `path`, and the `device`. |
 | `devhub match --json` | `MatchReport`: `project`, `fingerprintVersion`, and for each platform its `hash` and its `matches`. |
 | `devhub ui --json` | `{ "url": string, "port": number }`. The server then runs until Ctrl+C. |
+| `devhub whoami --json` | `WhoamiReport`: `state`, `cli`, and `user` or `message`. |
 
 The full TypeScript types of each output are in
 [`llms.txt`](https://rootnative.github.io/devhub/llms.txt).

@@ -22,6 +22,7 @@ Source: https://github.com/rootnative/devhub
   project's own `expo/fingerprint`, and shows the stored builds with the
   same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
+- `devhub whoami` shows the EAS login state. A sync needs a login.
 - `@rootnative/devhub/cache-provider` is an Expo build cache provider.
   `npx expo run:android` and `npx expo run:ios` then store each new build,
   and install a stored build when the native code did not change.
@@ -49,10 +50,11 @@ desktop app. They are the plan only.
   else. Progress and warnings go to stderr.
 - The exit code is `0` for success, `1` for a failure, and `2` for a usage
   error. After a failure, stdout is empty and stderr holds the message, with
-  two exceptions. `devhub devices --json` prints its JSON and exits with `1`
+  these exceptions. `devhub devices --json` prints its JSON and exits with `1`
   when each device tool fails. `devhub sync --json` prints its JSON and
   exits with `1` when a project fails. `devhub match --json` prints its
-  JSON and exits with `1` when no stored build matches.
+  JSON and exits with `1` when no stored build matches. `devhub whoami --json`
+  prints its JSON and exits with `1` when eas-cli has no login.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.
@@ -96,6 +98,7 @@ Commands:
   install <id>  Install a stored build on the ready device.
   match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
+  whoami        Show the EAS login state.
 
 Options:
   -h, --help     Show this help.
@@ -223,6 +226,20 @@ Options:
   -h, --help  Show this help.
 ```
 
+### devhub whoami
+
+```text
+Usage: devhub whoami [options]
+
+Show the EAS login state. DevHub runs "eas whoami" with eas on PATH, or
+else with "npx --yes eas-cli". A sync needs a login. The exit code is 0
+with a login, and 1 without one.
+
+Options:
+  --json      Print the state as JSON.
+  -h, --help  Show this help.
+```
+
 ## JSON output
 
 - `devhub sync --json` prints `SyncReport`.
@@ -230,6 +247,7 @@ Options:
 - `devhub devices --json` prints `DeviceReport`.
 - `devhub install <id> --json` prints `InstalledBuild`.
 - `devhub match --json` prints `MatchReport`.
+- `devhub whoami --json` prints `WhoamiReport`.
 
 ```ts
 type SyncReport = {
@@ -426,6 +444,22 @@ type PlatformMatch = {
     /** The stored builds with this fingerprint, newest first. */
     matches: ListedBuild[];
 };
+
+/** The JSON of `devhub whoami --json`. */
+type WhoamiReport = {
+    /**
+     * `signed-in`: eas-cli runs and has a login. `signed-out`: eas-cli runs
+     * and has no login. `no-cli`: neither `eas` nor `npx` starts. `failed`:
+     * eas-cli started and failed for another reason, for example no network.
+     */
+    state: 'signed-in' | 'signed-out' | 'no-cli' | 'failed';
+    /** How DevHub starts eas-cli: `eas` on PATH, or `npx --yes eas-cli`. */
+    cli: 'eas' | 'npx' | 'none';
+    /** The EAS user name, with the state `signed-in`. */
+    user?: string;
+    /** What is wrong, with the fix, with each state but `signed-in`. */
+    message?: string;
+};
 ```
 
 - `devhub where <id> --json` prints `{ "id": string, "path": string }`.
@@ -507,7 +541,7 @@ EasJsonError, FINGERPRINT_PLATFORMS, FingerprintError, StoreLockedError,
 TAR_MISSING, TAR_PACK_MISSING, XCRUN_MISSING, adbAbiListCommand,
 adbAvdNameCommand, adbDevice, adbDevicesCommand, adbInstallCommand,
 adbInstallFailure, adbUninstallCommand, apkAbis, artifactUrl, buildSummary,
-checkEasLogin, createCacheProvider, devClientProfiles, deviceReport,
+canSync, checkEasLogin, createCacheProvider, devClientProfiles, deviceReport,
 downloadFile, easBuildListCommand, easWhoamiCommand, findBuild, findDevice,
 findEasProject, findProjectRoot, findStoredBuild, hasMatch, installBuild,
 installPlatform, installProblem, installStoredBuild, iosRuntimeVersion,
@@ -518,7 +552,7 @@ parseSimctlDevices, planSync, primaryAbi, projectFingerprint, readEasJson,
 readProjects, resolveAdb, resolveFingerprintModule, resolveHome, runCommand,
 scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
 storeLocalBuild, syncBuilds, syncFailed, syncProjects, tarCreateCommand,
-tarExtractCommand, unpackIosBuild, version, withExtraProfiles.
+tarExtractCommand, unpackIosBuild, version, whoami, withExtraProfiles.
 
 Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
 BuildRecord, BuildSource, BuildStatus, BuildSummary, CacheProvider,
@@ -532,4 +566,5 @@ ListedEasBuild, ListedLocalBuild, LocalBuild, LocalBuildInput, LocalBuildRecord,
 MatchDeps, MatchReport, MatchRequest, PlanItem, PlatformMatch, ProfileBuilds,
 ProjectSyncResult, ResolveBuildCacheProps, RunOptions, StoreLocalOptions,
 StoreScan, StoredBuild, SyncBuildsDeps, SyncDeps, SyncOptions, SyncProfile,
-SyncReport, SyncRequest, UnpackOptions, UploadBuildCacheProps.
+SyncReport, SyncRequest, UnpackOptions, UploadBuildCacheProps, WhoamiDeps,
+WhoamiReport.

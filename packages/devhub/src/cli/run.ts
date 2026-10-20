@@ -13,6 +13,7 @@ import { matchCommand } from './match'
 import { syncCommand } from './sync'
 import { uiCommand } from './ui'
 import { whereCommand } from './where'
+import { whoamiCommand } from './whoami'
 
 export { EXIT_CODE, type CliContext, type Io } from './context'
 
@@ -29,6 +30,7 @@ Commands:
   install <id>  Install a stored build on the ready device.
   match         Show the stored builds that match the code of this project.
   ui            Open the DevHub page in the browser.
+  whoami        Show the EAS login state.
 
 Options:
   -h, --help     Show this help.
@@ -47,6 +49,7 @@ const COMMANDS: Record<
   install: installCommand,
   match: matchCommand,
   ui: uiCommand,
+  whoami: whoamiCommand,
 }
 
 export async function run(

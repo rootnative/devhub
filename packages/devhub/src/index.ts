@@ -119,6 +119,12 @@ export {
 } from './flow/match'
 export type { FlowError, FlowResult } from './flow/result'
 export { syncBuilds, type SyncBuildsDeps, type SyncRequest } from './flow/sync'
+export {
+  canSync,
+  whoami,
+  type WhoamiDeps,
+  type WhoamiReport,
+} from './flow/whoami'
 export { adbInstallFailure, type AdbInstallTarget } from './install/adb-failure'
 export {
   installBuild,

@@ -44,6 +44,7 @@ stored build, you use that build, and you do not build again.
 | Install a stored build on a device that runs now. | [`devhub install`](./commands/install.md) |
 | Find the stored builds that match the native code of a project. | [`devhub match`](./commands/match.md) |
 | Show the builds and the devices on a page, with an install button. | [`devhub ui`](./commands/ui.md) |
+| Show the EAS login state that a sync needs. | [`devhub whoami`](./commands/whoami.md) |
 | Store each `npx expo run:*` build, and use it again on the next run. | [The cache provider](./guides/local-builds.md) |
 
 ## How it works

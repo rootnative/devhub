@@ -48,15 +48,20 @@ describe('devhub CLI', () => {
     },
   )
 
-  it.each([['sync'], ['list'], ['where'], ['devices'], ['install'], ['ui']])(
-    'devhub %s --help prints the help of the command',
-    async (command) => {
-      const { io, out } = capture()
+  it.each([
+    ['sync'],
+    ['list'],
+    ['where'],
+    ['devices'],
+    ['install'],
+    ['ui'],
+    ['whoami'],
+  ])('devhub %s --help prints the help of the command', async (command) => {
+    const { io, out } = capture()
 
-      expect(await run([command, '--help'], { io })).toBe(EXIT_CODE.ok)
-      expect(out.join('\n')).toContain(`Usage: devhub ${command}`)
-    },
-  )
+    expect(await run([command, '--help'], { io })).toBe(EXIT_CODE.ok)
+    expect(out.join('\n')).toContain(`Usage: devhub ${command}`)
+  })
 
   it.each([
     [['launch'], 'Unknown command "launch"', 'devhub --help'],

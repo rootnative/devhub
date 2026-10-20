@@ -28,6 +28,7 @@ Source: https://github.com/rootnative/devhub
   project's own `expo/fingerprint`, and shows the stored builds with the
   same EAS fingerprint.
 - `devhub ui` serves a local page with the same functions, on 127.0.0.1.
+- `devhub whoami` shows the EAS login state. A sync needs a login.
 - `@rootnative/devhub/cache-provider` is an Expo build cache provider.
   `npx expo run:android` and `npx expo run:ios` then store each new build,
   and install a stored build when the native code did not change.
@@ -55,10 +56,11 @@ desktop app. They are the plan only.
   else. Progress and warnings go to stderr.
 - The exit code is `0` for success, `1` for a failure, and `2` for a usage
   error. After a failure, stdout is empty and stderr holds the message, with
-  two exceptions. `devhub devices --json` prints its JSON and exits with `1`
+  these exceptions. `devhub devices --json` prints its JSON and exits with `1`
   when each device tool fails. `devhub sync --json` prints its JSON and
   exits with `1` when a project fails. `devhub match --json` prints its
-  JSON and exits with `1` when no stored build matches.
+  JSON and exits with `1` when no stored build matches. `devhub whoami --json`
+  prints its JSON and exits with `1` when eas-cli has no login.
 - `<id>` is the EAS build ID, or a unique start of it. `devhub list --json`
   gives each full ID.
 - `devhub install` does not start a device, and does not open the app.

@@ -17,6 +17,7 @@ const sidebars: SidebarsConfig = {
         'commands/install',
         'commands/match',
         'commands/ui',
+        'commands/whoami',
       ],
     },
     {

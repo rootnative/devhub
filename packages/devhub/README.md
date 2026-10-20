@@ -51,6 +51,7 @@ for example `npx @rootnative/devhub list`. The daily sync below runs
 | `devhub install <id>` | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator (macOS only). |
 | `devhub match` | Calculates the native fingerprint of the project in the current folder, and shows the stored builds with the same EAS fingerprint. A match needs no new build. |
 | `devhub ui` | Starts a local server, and opens the DevHub page in the browser. The page shows the stored builds and the devices, installs a build with one click, and syncs each project. |
+| `devhub whoami` | Shows the EAS login state. A sync needs a login. The exit code is `1` without one. |
 
 Options of `devhub sync`:
 
@@ -60,7 +61,7 @@ Options of `devhub sync`:
 - `--json` prints the result as JSON.
 
 `devhub list`, `devhub where`, `devhub devices`, `devhub install`,
-`devhub match`, and `devhub ui` also accept `--json`.
+`devhub match`, `devhub ui`, and `devhub whoami` also accept `--json`.
 Results go to stdout.
 Progress and warnings go to stderr. The exit code is `0` for success, `1` for
 a failure, and `2` for a usage error.

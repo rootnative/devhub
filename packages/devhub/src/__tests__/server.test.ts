@@ -321,6 +321,25 @@ describe('devhub ui API', () => {
     })
   })
 
+  it('GET /api/whoami returns the JSON of devhub whoami --json', async () => {
+    const home = await tempDir()
+    const eas = fakeEas(
+      {},
+      { whoami: { code: 1, stdout: 'Not logged in\n', stderr: '' } },
+    )
+    const ui = await startUi({ home, uiFiles: home, run: eas.run })
+
+    const reply = await send(ui.port, {
+      path: '/api/whoami',
+      headers: ui.auth(),
+    })
+
+    expect(reply.status).toBe(200)
+    const cli = await cliJson(['whoami', '--json'], { home, run: eas.run })
+    expect(json(reply)).toEqual(cli.json)
+    expect(json(reply)).toMatchObject({ state: 'signed-out', cli: 'eas' })
+  })
+
   it('POST /api/install returns the JSON of devhub install --json', async () => {
     const home = await tempDir()
     await writeStoredBuild(home, easBuild({ id: ID_A }))

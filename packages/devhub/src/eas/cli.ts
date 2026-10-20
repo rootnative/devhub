@@ -57,13 +57,14 @@ export function easBuildListCommand(
 }
 
 /**
- * Finds how to start eas-cli: `eas` on PATH, and else npx. Stops with the
- * next step when neither starts, or when eas-cli has no login.
+ * Runs `eas whoami` with `eas` on PATH, and else with npx. Returns the
+ * invocation that answered, with its result. Throws `EasCliError` when
+ * neither program starts.
  */
-export async function checkEasLogin(
+export async function runEasWhoami(
   run: CommandRunner,
   cwd: string,
-): Promise<EasInvocation> {
+): Promise<{ eas: EasInvocation; result: CommandResult }> {
   let eas = EAS_ON_PATH
   let result: CommandResult
   try {
@@ -75,17 +76,44 @@ export async function checkEasLogin(
     eas = EAS_WITH_NPX
     result = await runEas(run, easWhoamiCommand(eas), cwd)
   }
+  return { eas, result }
+}
+
+/**
+ * Finds how to start eas-cli: `eas` on PATH, and else npx. Stops with the
+ * next step when neither starts, or when eas-cli has no login.
+ */
+export async function checkEasLogin(
+  run: CommandRunner,
+  cwd: string,
+): Promise<EasInvocation> {
+  const { eas, result } = await runEasWhoami(run, cwd)
   if (result.code === 0) {
     return eas
   }
   if (isNotLoggedIn(result)) {
-    throw new EasCliError(
-      `eas-cli has no login. Run "${formatCommand([...eas, 'login'])}" in a terminal, and then start the sync again.`,
-    )
+    throw new EasCliError(noLoginMessage(eas))
   }
-  throw new EasCliError(
-    `"${formatCommand(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${outputTail(result.stderr)}`,
-  )
+  throw new EasCliError(whoamiFailedMessage(eas, result))
+}
+
+export function noLoginMessage(eas: EasInvocation): string {
+  return `eas-cli has no login. Run "${formatCommand([...eas, 'login'])}" in a terminal, and then start the sync again.`
+}
+
+export function whoamiFailedMessage(
+  eas: EasInvocation,
+  result: CommandResult,
+): string {
+  return `"${formatCommand(easWhoamiCommand(eas))}" failed with exit code ${result.code}.${outputTail(result.stderr)}`
+}
+
+/** The EAS user name: the first line of `eas whoami` that is not empty. */
+export function easUserName(stdout: string): string | undefined {
+  return stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line !== '')
 }
 
 /** eas-cli writes "Not logged in" to stdout, and an older eas-cli to stderr. */

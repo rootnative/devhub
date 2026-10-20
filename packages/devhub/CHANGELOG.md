@@ -24,6 +24,10 @@ notes name each one.
   `primaryAbi`, and `ANDROID_ABIS`.
 - The public docs site at https://rootnative.github.io/devhub/. The README
   files link to it, and `homepage` in the package points at it.
+- `devhub whoami`, which shows the EAS login state: `signed-in` with the
+  user name, `signed-out`, `no-cli`, or `failed`, with the fix. The exit
+  code is `1` without a login. `devhub ui` serves it as `GET /api/whoami`.
+  The core exports `whoami` and `canSync`.
 - `devhub install` and the install button of `devhub ui` compare the
   SHA-256 of the stored file with the record before the install, and refuse
   a file that differs. The message names both hashes and the fix.
