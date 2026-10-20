@@ -60,24 +60,35 @@ function expectLine(result, text) {
   check(result.output.includes(text), `The output has no line with: ${text}`)
 }
 
+// On a busy CI runner, `simctl openurl` can time out after a good build and
+// install. Expo CLI then stops before the upload, outside DevHub, so the gate
+// tries the run one more time. A build that cannot start fails both times.
+const OPEN_TIMEOUT = /simctl openurl .* exited with non-zero code: 60/
+
 async function expoRun() {
-  const result = await run('expo', [
-    `run:${platform}`,
-    '--no-bundler',
-    ...deviceArgs(),
-    ...runArgs,
-  ])
+  const args = [`run:${platform}`, '--no-bundler', ...deviceArgs(), ...runArgs]
+  let result = await run('expo', args)
+  if (result.code !== 0 && OPEN_TIMEOUT.test(result.output)) {
+    console.log(
+      '\nThe simulator did not open the app in time. The gate does the run one more time.\n',
+    )
+    result = await run('expo', args)
+  }
   check(result.code === 0, `expo run:${platform} exited with ${result.code}.`)
   return result
 }
 
 let iosDevice
 function deviceArgs() {
-  if (platform !== 'ios' || runArgs.includes('--device')) {
-    return []
-  }
-  iosDevice ??= newestIphone()
-  return ['--device', iosDevice]
+  return iosDevice === undefined ? [] : ['--device', iosDevice]
+}
+
+// `bootstatus -b` boots the device, and waits until the boot is complete.
+// Then the first run does not open the app while the boot still runs.
+function bootSimulator(udid) {
+  execFileSync('xcrun', ['simctl', 'bootstatus', udid, '-b'], {
+    stdio: 'inherit',
+  })
 }
 
 function newestIphone() {
@@ -112,6 +123,7 @@ function compareVersions(a, b) {
 function checkSwift() {
   const text = execFileSync('xcrun', ['swift', '--version'], {
     encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
   })
   const found = version(text.match(/Swift version [\d.]+/)?.[0] ?? '')
   check(
@@ -153,6 +165,10 @@ try {
   check(changed !== original, 'app.json has no "orientation": "portrait".')
   if (platform === 'ios') {
     checkSwift()
+    if (!runArgs.includes('--device')) {
+      iosDevice = newestIphone()
+      bootSimulator(iosDevice)
+    }
   }
   rmSync(store, { recursive: true, force: true })
   removeNativeFolder()
