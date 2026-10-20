@@ -11,6 +11,7 @@ on:
       - "packages/**"
       - "apps/**"
       - "example/**"
+      - "docs/**"
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -26,6 +27,7 @@ on:
       - "packages/**"
       - "apps/**"
       - "example/**"
+      - "docs/**"
       - "scripts/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -95,3 +97,9 @@ jobs:
       # and llms.txt. Both release workflows run the same script.
       - name: Check the package artifact
         run: pnpm run check:artifact
+
+      # The docs build fails on a broken link (`onBrokenLinks: 'throw'`).
+      # The site is the same on each system, so it is built on Linux only.
+      - name: Check the docs site
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm run docs:check
