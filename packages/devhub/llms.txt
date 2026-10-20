@@ -500,11 +500,35 @@ Rules:
 for Node. The types are in `dist/index.d.ts`. The API can change in each
 version before `1.0.0`.
 
-Functions, classes, and constants: e as CacheProvider, f as CacheProviderDeps, C
-as CalculateFingerprintHashProps, g as CommandOptions, h as
-FINGERPRINT_PLATFORMS, i as FingerprintError, j as FingerprintModule, R as
-ResolveBuildCacheProps, a as RunOptions, U as UploadBuildCacheProps, k as
-createCacheProvider, p as projectFingerprint, r as resolveFingerprintModule, l
-as resolveHome, m as runCommand.
+Functions, classes, and constants: ADB_MISSING, ANDROID_ABIS,
+BUILD_LIST_PAGE_SIZE, DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError,
+EasJsonError, FINGERPRINT_PLATFORMS, FingerprintError, StoreLockedError,
+TAR_MISSING, TAR_PACK_MISSING, XCRUN_MISSING, adbAbiListCommand,
+adbAvdNameCommand, adbDevice, adbDevicesCommand, adbInstallCommand,
+adbInstallFailure, adbUninstallCommand, apkAbis, artifactUrl, buildSummary,
+checkEasLogin, createCacheProvider, devClientProfiles, deviceReport,
+downloadFile, easBuildListCommand, easWhoamiCommand, findBuild, findDevice,
+findEasProject, findProjectRoot, findStoredBuild, hasMatch, installBuild,
+installPlatform, installProblem, installStoredBuild, iosRuntimeVersion,
+isEmulatorSerial, isExpired, isLocalRecord, listAndroidDevices, listBuilds,
+listDevices, listFinishedBuilds, listIosSimulators, matchBuilds,
+matchesFingerprint, parseAdbDevices, parseAvdName, parseEasJson,
+parseSimctlDevices, planSync, primaryAbi, projectFingerprint, readEasJson,
+readProjects, resolveAdb, resolveFingerprintModule, resolveHome, runCommand,
+scanStore, selectDevice, simctlInstallCommand, simctlListCommand,
+storeLocalBuild, syncBuilds, syncFailed, syncProjects, tarCreateCommand,
+tarExtractCommand, unpackIosBuild, version, withExtraProfiles.
 
-Types: .
+Types: AdbEntry, AdbInstallTarget, AdbOptions, BuildList, BuildOutcome,
+BuildRecord, BuildSource, BuildStatus, BuildSummary, CacheProvider,
+CacheProviderDeps, CalculateFingerprintHashProps, Command, CommandOptions,
+CommandResult, CommandRunner, Device, DeviceChoice, DeviceKind, DeviceList,
+DeviceListOptions, DevicePlatform, DeviceReport, DeviceSource, DownloadResult,
+Downloader, EasBuild, EasBuildRecord, EasInvocation, EasPlatform, FindResult,
+FingerprintModule, FingerprintPlatform, FlowError, FlowResult, HomeOptions,
+InstallDeps, InstallOptions, InstallRequest, InstalledBuild, ListedBuild,
+ListedEasBuild, ListedLocalBuild, LocalBuild, LocalBuildInput, LocalBuildRecord,
+MatchDeps, MatchReport, MatchRequest, PlanItem, PlatformMatch, ProfileBuilds,
+ProjectSyncResult, ResolveBuildCacheProps, RunOptions, StoreLocalOptions,
+StoreScan, StoredBuild, SyncBuildsDeps, SyncDeps, SyncOptions, SyncProfile,
+SyncReport, SyncRequest, UnpackOptions, UploadBuildCacheProps.

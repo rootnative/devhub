@@ -206,22 +206,87 @@ function wrap(text, width = 80) {
   return lines.join('\n')
 }
 
-function exportsSection(declarations) {
-  const statement = declarations
-    .map(stripComments)
-    .find((code) => code.startsWith('export {'))
-  if (statement === undefined) {
+// `statements` ends a statement at its `}`, so it cuts the `from` off these
+// lines. Read them from the text.
+const NAMED_LIST =
+  /^(import|export)(\s+type)?\s*\{([^}]*)\}\s*(?:from\s*['"]([^'"]+)['"])?/gm
+
+/**
+ * Each `import { … } from '…'` and `export { … }` line of a .d.ts file.
+ * `{ a as B, type C }` gives `{ local: 'a', name: 'B' }` and a type `C`.
+ */
+function namedLists(file) {
+  return [...stripComments(readText(file)).matchAll(NAMED_LIST)].map(
+    ([, keyword, typeOnly, list, source]) => ({
+      keyword,
+      source: source?.startsWith('./') ? source : undefined,
+      specifiers: list
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry !== '')
+        .map((entry) => {
+          const type = typeOnly !== undefined || entry.startsWith('type ')
+          const [local, name = local] = entry
+            .replace(/^type\s+/, '')
+            .split(/\s+as\s+/)
+          return { local, name, type }
+        }),
+    }),
+  )
+}
+
+// tsup puts the types that two entries share in a chunk, and the index
+// imports or re-exports them under short aliases (`e as CacheProvider`).
+// Only the export line of the chunk says if an alias is a type.
+function chunkKinds(source) {
+  const file = join(dirname(typesPath), source.replace(/\.js$/, '.d.ts'))
+  const kinds = new Map(
+    namedLists(file)
+      .filter((list) => list.keyword === 'export' && list.source === undefined)
+      .flatMap((list) => list.specifiers)
+      .map(({ name, type }) => [name, type]),
+  )
+  return (alias) => {
+    if (!kinds.has(alias)) {
+      throw new Error(`[${label}] ${file} does not export ${alias}.`)
+    }
+    return kinds.get(alias)
+  }
+}
+
+function exportsSection() {
+  const lists = namedLists(typesPath)
+  const importedTypes = new Map()
+  for (const list of lists) {
+    if (list.keyword !== 'import' || list.source === undefined) {
+      continue
+    }
+    const kindOf = chunkKinds(list.source)
+    for (const { local, name, type } of list.specifiers) {
+      importedTypes.set(name, type || kindOf(local))
+    }
+  }
+  const exportLists = lists.filter((list) => list.keyword === 'export')
+  if (exportLists.length === 0) {
     throw new Error(`[${label}] ${typesPath} has no "export { ... }".`)
   }
-  const names = statement
-    .slice('export {'.length, statement.lastIndexOf('}'))
-    .split(',')
-    .map((name) => name.trim())
-    .filter((name) => name !== '')
-  const types = names
-    .filter((name) => name.startsWith('type '))
-    .map((name) => name.slice('type '.length))
-  const values = names.filter((name) => !name.startsWith('type '))
+  const isType = new Map()
+  for (const list of exportLists) {
+    const kindOf =
+      list.source === undefined ? undefined : chunkKinds(list.source)
+    for (const { local, name, type } of list.specifiers) {
+      isType.set(
+        name,
+        type ||
+          (kindOf === undefined
+            ? (importedTypes.get(local) ?? false)
+            : kindOf(local)),
+      )
+    }
+  }
+  const names = [...isType.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+  const types = names.filter((name) => isType.get(name))
+  const values = names.filter((name) => !isType.get(name))
   return [
     wrap(`Functions, classes, and constants: ${values.join(', ')}.`),
     wrap(`Types: ${types.join(', ')}.`),
@@ -234,7 +299,7 @@ function render() {
     version: JSON.parse(readText(join(packageDir, 'package.json'))).version,
     cli: cliSection(),
     json: jsonSection(declarations),
-    exports: exportsSection(declarations),
+    exports: exportsSection(),
   }
   const used = new Set()
   const output = readText(templatePath)
