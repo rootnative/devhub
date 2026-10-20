@@ -1,6 +1,7 @@
 import type { CliContext } from '../cli/context'
 import { listDevices } from '../devices/list'
 import { deviceReport } from '../flow/devices'
+import { doctor } from '../flow/doctor'
 import { installStoredBuild } from '../flow/install'
 import { listBuilds } from '../flow/list'
 import type { FlowResult } from '../flow/result'
@@ -57,6 +58,13 @@ export const API_ROUTES: Readonly<Record<string, ApiRoute>> = {
     handle: async (_body, context) => ({
       status: 200,
       body: await whoami({ run: context.run, cwd: context.cwd }),
+    }),
+  },
+  '/api/doctor': {
+    method: 'GET',
+    handle: async (_body, context) => ({
+      status: 200,
+      body: await doctor(context),
     }),
   },
   '/api/sync': {

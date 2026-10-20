@@ -285,6 +285,10 @@ the progress, and the page shows the result of each project when the sync
 ends. Only one sync runs at a time: while a sync runs from the terminal or
 from a second tab, the page shows that message.
 
+Click Check in the Setup section to run the checks of `devhub doctor`.
+The page shows the fix below each warning and failure. It runs the checks
+only on a click, because the EAS check can use the network.
+
 The server listens on `127.0.0.1` only, never on your network. Each run
 makes a new token, and puts it in the URL after `#token=`. Each API call
 must send the token, so a different page in your browser cannot use the

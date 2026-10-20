@@ -1,7 +1,7 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
-import { Container, Grid, Layout } from '@rootnative/components/layout'
+import { Column, Container, Grid, Layout } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
@@ -13,11 +13,12 @@ import {
 } from '@rootnative/core'
 import { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native'
-import { NO_TOKEN, postJson } from './api/client'
+import { NO_TOKEN, getJson, postJson } from './api/client'
 import type {
   BuildList,
   Device,
   DeviceReport,
+  DoctorReport,
   InstalledBuild,
   SyncReport,
   WhoamiReport,
@@ -26,6 +27,7 @@ import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
 import { Notice } from './components/Notice'
+import { SetupSection, type DoctorState } from './components/SetupSection'
 import { SyncCard, type SyncState } from './components/SyncCard'
 import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
@@ -70,6 +72,7 @@ function Dashboard({ token }: { token: string }) {
   // The message stays while the dialog runs its exit animation.
   const [failure, setFailure] = useState({ visible: false, message: '' })
   const [sync, setSync] = useState<SyncState>({ kind: 'idle' })
+  const [checks, setChecks] = useState<DoctorState>({ running: false })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -98,6 +101,14 @@ function Dashboard({ token }: { token: string }) {
     if (result.kind === 'error') {
       void eas.reload()
     }
+  }
+
+  // The checks run on a click only. The EAS check calls eas-cli, and the page
+  // load makes one eas-cli call already.
+  const runChecks = async () => {
+    setChecks((current) => ({ ...current, running: true }))
+    const result = await getJson<DoctorReport>('/api/doctor', token)
+    setChecks({ running: false, result })
   }
 
   const install = async (row: BuildRow, device: Device) => {
@@ -134,7 +145,10 @@ function Dashboard({ token }: { token: string }) {
         <Container width="large" p="lg">
           <Grid columns={{ compact: 1, expanded: 3 }} gap="lg">
             <Grid.Cell span={1}>
-              <DevicesSection state={devices.state} />
+              <Column gap="xl">
+                <DevicesSection state={devices.state} />
+                <SetupSection state={checks} onRun={() => void runChecks()} />
+              </Column>
             </Grid.Cell>
             <Grid.Cell span={{ compact: 1, expanded: 2 }}>
               <BuildsSection

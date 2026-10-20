@@ -25,8 +25,8 @@ server stops after it ends. Press Ctrl+C again to stop the server at once.
 
 ## The page
 
-The page has a devices section and a builds section, with one card for
-each project. It reads the devices again when you return to the window,
+The page has a devices section, a setup section, and a builds section,
+with one card for each project. It reads the devices again when you return to the window,
 and when you click Refresh. It does not poll.
 
 ### Install a build
@@ -59,6 +59,15 @@ project, and reads the builds again.
 
 Only one sync runs at a time. When a sync runs from a terminal or from a
 second tab, the page shows that message.
+
+### Setup
+
+Click Check in the Setup section to run the checks of
+[`devhub doctor`](./doctor.md): Node, the store, eas-cli and its login,
+adb, and on macOS Xcode. The page shows the state of each check, and the
+fix below each warning and failure. The page runs the checks only on a
+click, because the EAS check can use the network. Click Check again after
+a fix.
 
 ## Security
 

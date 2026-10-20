@@ -340,6 +340,38 @@ describe('devhub ui API', () => {
     expect(json(reply)).toMatchObject({ state: 'signed-out', cli: 'eas' })
   })
 
+  it('GET /api/doctor returns the JSON of devhub doctor --json', async () => {
+    const home = await tempDir()
+    const homedir = await tempDir()
+    const eas = fakeEas(
+      {},
+      { whoami: { code: 1, stdout: 'Not logged in\n', stderr: '' } },
+    )
+    const ui = await startUi({ home, homedir, uiFiles: home, run: eas.run })
+
+    const reply = await send(ui.port, {
+      path: '/api/doctor',
+      headers: ui.auth(),
+    })
+
+    expect(reply.status).toBe(200)
+    const cli = await cliJson(['doctor', '--json'], {
+      home,
+      homedir,
+      run: eas.run,
+    })
+    expect(json(reply)).toEqual(cli.json)
+    expect(json(reply)).toMatchObject({
+      checks: [
+        { id: 'node', status: 'ok' },
+        { id: 'store', status: 'ok' },
+        { id: 'eas', status: 'warn' },
+        { id: 'android', status: 'warn' },
+        { id: 'ios', status: expect.stringMatching(/^(warn|skip)$/) },
+      ],
+    })
+  })
+
   it('POST /api/install returns the JSON of devhub install --json', async () => {
     const home = await tempDir()
     await writeStoredBuild(home, easBuild({ id: ID_A }))

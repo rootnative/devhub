@@ -109,6 +109,21 @@ export type InstalledBuild = {
   device: Device
 }
 
+/** `devhub doctor --json`. */
+export type DoctorReport = {
+  checks: DoctorCheck[]
+}
+
+export type DoctorStatus = 'ok' | 'warn' | 'fail' | 'skip'
+
+export type DoctorCheck = {
+  id: 'node' | 'store' | 'eas' | 'android' | 'ios'
+  label: string
+  status: DoctorStatus
+  detail: string
+  fix?: string
+}
+
 /** `devhub whoami --json`. */
 export type WhoamiReport = {
   state: 'signed-in' | 'signed-out' | 'no-cli' | 'failed'

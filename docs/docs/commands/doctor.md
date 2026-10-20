@@ -59,6 +59,9 @@ take a while.
 | `fail` | No feature works until you do the fix. |
 | `skip` | The check does not apply to this system, for example the iOS check on Windows and Linux. |
 
+The page of [`devhub ui`](./ui.md#setup) shows the same checks in its
+Setup section.
+
 A `warn` and a `fail` give the fix below the line. The exit code is `1`
 when a check is `fail`, and `0` otherwise. A warning gives `0`, because a
 developer who builds for Android only does not need Xcode.
