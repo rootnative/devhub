@@ -33,6 +33,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
       # Prettier does not format Markdown here. `.prettierignore` gives the
       # reason.

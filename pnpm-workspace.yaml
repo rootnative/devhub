@@ -13,3 +13,8 @@ shamefullyHoist: true
 strictPeerDependencies: false
 autoInstallPeers: true
 engineStrict: true
+
+# The install script of electron downloads the Electron binary. CI sets
+# ELECTRON_SKIP_BINARY_DOWNLOAD, because no CI job starts the app.
+onlyBuiltDependencies:
+  - electron

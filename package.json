@@ -17,6 +17,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "clean": "turbo run clean",
+    "desktop": "turbo run build --filter=@rootnative/devhub-desktop && pnpm --filter @rootnative/devhub-desktop start",
     "docs:dev": "pnpm --filter @rootnative/devhub-docs dev",
     "docs:build": "turbo run build --filter=@rootnative/devhub-docs",
     "docs:check": "pnpm --filter @rootnative/devhub-docs build:check",

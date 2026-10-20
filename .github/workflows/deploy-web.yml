@@ -53,6 +53,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
       # The site imports nothing from the package. It copies the committed
       # packages/devhub/llms.txt, and ci-build.yml checks that file against
