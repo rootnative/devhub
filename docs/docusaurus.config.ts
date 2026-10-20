@@ -1,11 +1,16 @@
 import type * as Preset from '@docusaurus/preset-classic'
 import type { Config } from '@docusaurus/types'
 
+// Docusaurus adds `baseUrl` to `favicon` and `themeConfig.image`, but not to
+// a `headTags` href, so the apple-touch-icon builds its href from this value.
+const baseUrl = '/devhub/'
+
 const config: Config = {
   title: 'DevHub by Root Native',
   tagline: 'Keep every dev build. Launch any one in one click.',
   url: 'https://rootnative.github.io',
-  baseUrl: '/devhub/',
+  baseUrl,
+  favicon: 'img/favicon.png',
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
 
@@ -21,6 +26,14 @@ const config: Config = {
   },
 
   headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'apple-touch-icon',
+        sizes: '180x180',
+        href: `${baseUrl}img/favicon.png`,
+      },
+    },
     {
       tagName: 'link',
       attributes: { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -74,8 +87,14 @@ const config: Config = {
     colorMode: {
       respectPrefersColorScheme: true,
     },
+    image: 'img/social-card.png',
     navbar: {
       title: 'DevHub',
+      logo: {
+        alt: 'DevHub',
+        src: 'img/logo.svg',
+        srcDark: 'img/logo-dark.svg',
+      },
       hideOnScroll: true,
       items: [
         {

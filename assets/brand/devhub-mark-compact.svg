@@ -1,0 +1,9 @@
+<!--
+  A wider cut, for 32 px and less, where the anti-aliasing fills the
+  normal cut.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" role="img" aria-label="DevHub">
+  <title>DevHub</title>
+  <path d="M 12 12 L 35 12 L 35 23 L 27 23 L 27 52 L 12 52 Z" fill="#f59e0b" />
+  <path d="M 40 12 L 52 12 L 52 52 L 32 52 L 32 28 L 40 28 Z" fill="#b45309" />
+</svg>
