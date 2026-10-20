@@ -4,7 +4,7 @@
   "description": "DevHub by Root Native: keep every Expo development build, and launch any one on a simulator or an emulator in one click.",
   "license": "MIT",
   "author": "RootNative",
-  "homepage": "https://github.com/rootnative/devhub#readme",
+  "homepage": "https://rootnative.github.io/devhub/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rootnative/devhub.git",

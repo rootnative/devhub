@@ -22,6 +22,8 @@ notes name each one.
   folder with the new fingerprint.
 - The core exports `createCacheProvider`, `adbAbiListCommand`,
   `primaryAbi`, and `ANDROID_ABIS`.
+- The public docs site at https://rootnative.github.io/devhub/. The README
+  files link to it, and `homepage` in the package points at it.
 
 - `devhub match` calculates the native fingerprint of the project in the
   current folder, with the project's own `expo/fingerprint` and the options

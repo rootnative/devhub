@@ -7,6 +7,8 @@
 
 **Keep every dev build. Launch any one in one click.**
 
+> [Documentation](https://rootnative.github.io/devhub/) &nbsp;|&nbsp; [LLM Docs](https://rootnative.github.io/devhub/llms.txt) &nbsp;|&nbsp; [npm](https://www.npmjs.com/package/@rootnative/devhub) &nbsp;|&nbsp; [Package README](packages/devhub/README.md)
+
 DevHub by Root Native is a desktop app and a CLI for Expo developers. It keeps
 every development build on your machine, finds the build that matches your
 current code, and starts a simulator or an emulator with that build in one

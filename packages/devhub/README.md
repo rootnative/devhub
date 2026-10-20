@@ -14,6 +14,8 @@ emulator with that build in one action.
 > fingerprint match and the launch come in later milestones. See the
 > [CHANGELOG](https://github.com/rootnative/devhub/blob/main/packages/devhub/CHANGELOG.md).
 
+Documentation: https://rootnative.github.io/devhub/
+
 Source, design, and roadmap: https://github.com/rootnative/devhub
 
 ## Install
