@@ -8,8 +8,29 @@ notes name each one.
 
 ## [Unreleased]
 
+## [0.0.0-alpha.1] - 2026-10-20
+
+The second alpha. DevHub finds the stored build that matches the native
+code of a project, keeps each build that `npx expo run:*` makes, and checks
+the tools that it needs. The launch of an app is not in this version.
+
+Three checks are open. A CI run of the cache provider passed on Android, and
+no run on iOS has passed yet. The provider uses the same code on both
+platforms. `devhub match` gave the same hashes as `@expo/fingerprint` on a
+real project, but no manual run has compared it with the fingerprint of a
+real EAS build. On Windows, no manual run has confirmed that `devhub ui`
+gives the browser its token.
+
 ### Added
 
+- `devhub match` calculates the native fingerprint of the project in the
+  current folder, with the project's own `expo/fingerprint` and the options
+  of eas-cli, and shows the stored builds with the same fingerprint. A
+  match needs no new build. It accepts `--platform <name>` and `--json`,
+  and exits with `1` when no stored build matches. It stops when
+  `@expo/fingerprint` finds no native inputs in the project, because that
+  hash is the same for each such project, and it would match the builds of
+  a different app.
 - `@rootnative/devhub/cache-provider`, an Expo build cache provider. Add it
   to `buildCacheProvider` in the app config, and `npx expo run:android` and
   `npx expo run:ios` store each new build in the DevHub store. A later run
@@ -20,27 +41,54 @@ notes name each one.
   a managed project, it does not store a build when the app config is newer
   than the last prebuild, because Expo CLI then builds the old native
   folder with the new fingerprint.
-- The core exports `createCacheProvider`, `adbAbiListCommand`,
-  `primaryAbi`, and `ANDROID_ABIS`.
-- The public docs site at https://rootnative.github.io/devhub/. The README
-  files link to it, and `homepage` in the package points at it.
-- `devhub doctor`, which checks Node, the store folder, eas-cli and its
-  login, adb, and on macOS Xcode, and gives the fix for each problem. Each
-  check is `ok`, `warn`, `fail`, or `skip`. A warning stops one feature,
-  and a failure stops DevHub. The exit code is `1` when a check fails.
-  The core exports `doctor`, `doctorPassed`, and `NODE_MINIMUM`.
-  `devhub ui` serves it as `GET /api/doctor`, and the page shows it in a
-  Setup section. The page runs the checks only on a click.
-- `devhub whoami`, which shows the EAS login state: `signed-in` with the
-  user name, `signed-out`, `no-cli`, or `failed`, with the fix. The exit
-  code is `1` without a login. `devhub ui` serves it as `GET /api/whoami`.
-  The core exports `whoami` and `canSync`.
+- The store holds local builds: builds that `npx expo run:*` made.
+  `storeLocalBuild` copies an APK with the ABIs of its native code, or packs
+  a `.app` folder into a `.tar.gz`, and gives the build a new UUID. `list`,
+  `where`, `install`, `match`, and the `devhub ui` page show a local build
+  with the profile `local` and its variant.
+- `devhub doctor` checks Node, the store folder, eas-cli and its login,
+  adb, and on macOS Xcode, and gives the fix for each problem. Each check
+  is `ok`, `warn`, `fail`, or `skip`. A warning stops one feature, and a
+  failure stops DevHub. The exit code is `1` when a check fails. It
+  accepts `--json`. `devhub ui` serves it as `GET /api/doctor`, and the
+  page shows it in a Setup section. The page runs the checks only on a
+  click.
+- `devhub whoami` shows the EAS login state: `signed-in` with the user
+  name, `signed-out`, `no-cli`, or `failed`, with the fix. The exit code is
+  `1` without a login. It accepts `--json`. `devhub ui` serves it as
+  `GET /api/whoami`.
 - The page of `devhub ui` shows the EAS login state under the Builds
   title. Without a login, the Sync button is off, and its tooltip gives
   the fix.
 - `devhub install` and the install button of `devhub ui` compare the
   SHA-256 of the stored file with the record before the install, and refuse
   a file that differs. The message names both hashes and the fix.
+- The public docs site at https://rootnative.github.io/devhub/. The README
+  files link to it, and `homepage` in the package points at it.
+- The core exports for these features:
+  - Match: `findProjectRoot`, `resolveFingerprintModule`,
+    `projectFingerprint`, `matchBuilds`, `matchesFingerprint`, and
+    `hasMatch`.
+  - Local builds and the cache provider: `createCacheProvider`,
+    `storeLocalBuild`, `apkAbis`, `buildSummary`, `isLocalRecord`,
+    `tarCreateCommand`, `adbAbiListCommand`, `primaryAbi`, and
+    `ANDROID_ABIS`.
+  - Doctor: `doctor`, `doctorPassed`, `NODE_MINIMUM`,
+    `adbVersionCommand`, `parseAdbVersion`, `xcodeVersionCommand`, and
+    `parseXcodeVersion`.
+  - Login: `whoami` and `canSync`.
+
+### Changed
+
+- Each build in `devhub list --json` has `source`, `"eas"` or `"local"`. A
+  local build has `local` in place of `eas`. A script that reads `eas` from
+  each build must check `source` first.
+- In the core types, `ListedBuild` and `BuildRecord` are unions of an EAS
+  build and a local build. TypeScript code that reads `eas` must narrow the
+  type first, with `source` or with `isLocalRecord`.
+- A local build record has `schemaVersion` 2. DevHub `0.0.0-alpha.0` does
+  not read it, and `devhub list` of that version says that a newer DevHub
+  wrote it. EAS build records keep `schemaVersion` 1.
 
 ### Fixed
 
@@ -52,33 +100,8 @@ notes name each one.
   and the warnings hid the message of eas-cli.
 - The two eas-cli messages say "in a terminal" and "start the sync again",
   because the sync can start from the page.
-
-- `devhub match` calculates the native fingerprint of the project in the
-  current folder, with the project's own `expo/fingerprint` and the options
-  of eas-cli, and shows the stored builds with the same EAS fingerprint. It
-  accepts `--platform <name>` and `--json`, and exits with `1` when no
-  stored build matches.
-- The core exports `findProjectRoot`, `resolveFingerprintModule`,
-  `projectFingerprint`, `matchBuilds`, `matchesFingerprint`, and `hasMatch`.
-- The store holds local builds: builds that `npx expo run:*` made.
-  `storeLocalBuild` copies an APK with the ABIs of its native code, or packs
-  a `.app` folder into a `.tar.gz`, and gives the build a new UUID. `list`,
-  `where`, `install`, `match`, and the `devhub ui` page show a local build
-  with the profile `local` and its variant. The core also exports
-  `apkAbis`, `buildSummary`, `isLocalRecord`, and `tarCreateCommand`.
-
-### Changed
-
-- Each build in `devhub list --json` has `source`, `"eas"` or `"local"`. A
-  local build has `local` in place of `eas`.
-- `matchesFingerprint` takes a build of `devhub list --json`, not an EAS
-  record, so it also matches a local build.
-- `devhub match` stops when `@expo/fingerprint` finds no native inputs in
-  the project. That hash is the same for each such project, so it would
-  match the builds of another app.
-- A local build record has `schemaVersion` 2. DevHub `0.0.0-alpha.0` does
-  not read it, and `devhub list` of that version says that a newer DevHub
-  wrote it. EAS build records keep `schemaVersion` 1.
+- `llms.txt` lists the full core API. The list in `0.0.0-alpha.0` did not
+  have each exported name.
 
 ## [0.0.0-alpha.0] - 2026-10-19
 
@@ -157,5 +180,6 @@ prints.
   shell string. json5 reads an `eas.json` with comments, which eas-cli
   accepts.
 
-[unreleased]: https://github.com/rootnative/devhub/compare/devhub@0.0.0-alpha.0...HEAD
+[unreleased]: https://github.com/rootnative/devhub/compare/devhub@0.0.0-alpha.1...HEAD
+[0.0.0-alpha.1]: https://github.com/rootnative/devhub/releases/tag/devhub@0.0.0-alpha.1
 [0.0.0-alpha.0]: https://github.com/rootnative/devhub/releases/tag/devhub@0.0.0-alpha.0
