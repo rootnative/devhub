@@ -12,7 +12,8 @@ export const INSTALL_HELP = `Usage: devhub install <id> [options]
 Install a stored build on a device that is ready: an Android build on an
 emulator or a device, or an iOS simulator build on a booted simulator (macOS
 only). <id> is the EAS build ID, or the start of it. "devhub list" shows the
-builds, and "devhub devices" shows the devices. DevHub does not start a
+builds, and "devhub devices" shows the devices. DevHub compares the SHA-256
+of the file with the record before the install. DevHub does not start a
 device, and does not open the app.
 
 Options:

@@ -76,6 +76,16 @@ the fix, for these builds:
 `devhub list --json` gives this reason in `installProblem`, before you
 try the install.
 
+## The hash check
+
+After it selects the device, DevHub reads the SHA-256 of the stored file
+and compares it with the record in the [store](../guides/store.md). The
+sync and the local store write the hash of the file they store. When the
+two differ, the file changed after that, and DevHub does not install it.
+The exit code is `1`, and the message names both hashes and the fix:
+delete the build folder, and run `devhub sync` or `npx expo run:<platform>`
+again. The install button of `devhub ui` makes the same check.
+
 ## When adb install fails
 
 DevHub reads the adb output, and gives the cause and the fix:

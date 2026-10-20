@@ -127,6 +127,13 @@ the fix, for these builds:
 | iOS device build (`.ipa`) | A simulator cannot run it. | Set `"ios": { "simulator": true }` in the build profile in `eas.json`, and make a new build. |
 | Any iOS build on Windows or Linux | iOS simulators run only on macOS. | Install the build on a Mac. |
 
+After it selects the device, DevHub reads the SHA-256 of the stored file
+and compares it with the record. The sync and the local store write the
+hash of the file they store. When the two differ, the file changed after
+that, and DevHub does not install it. The exit code is `1`, and the message
+gives the fix: delete the build folder, and run `devhub sync` or
+`npx expo run:<platform>` again.
+
 When `adb install` fails, DevHub reads the adb output and gives the cause
 and the fix:
 

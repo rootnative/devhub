@@ -1,5 +1,7 @@
-import { mkdir } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CommandRunner } from '../command/run-command'
 import { deviceReport } from '../flow/devices'
@@ -14,9 +16,15 @@ import {
   fakeDeviceTools,
   fakeDownload,
   fakeEas,
+  localBuild,
   useTempDir,
+  writeLocalBuild,
   writeStoredBuild,
 } from './helpers'
+
+function sha256(text: string): string {
+  return createHash('sha256').update(text).digest('hex')
+}
 
 const ID_A = 'aaaa1111-0000-4000-8000-000000000001'
 const ID_B = 'aaaa2222-0000-4000-8000-000000000002'
@@ -204,6 +212,41 @@ describe('installStoredBuild', () => {
       'is an Android App Bundle (app.aab)',
     )
     expect(tools.calls).toEqual([])
+  })
+
+  it('refuses a build whose file does not have the SHA-256 of its record', async () => {
+    const home = await tempDir()
+    const file = await writeStoredBuild(home, easBuild({ id: ID_A }))
+    await writeFile(file, 'changed')
+    const tools = fakeDeviceTools({ devices: adbList(EMULATOR_LINE) })
+    const { deps, progress } = installDeps(home, tools.run)
+
+    const result = await installStoredBuild({ id: ID_A }, deps)
+
+    expect(result).toMatchObject({ kind: 'error', usage: false })
+    const message = result.kind === 'error' ? result.message : ''
+    expect(message).toContain(
+      `The file ${file} of the build ${ID_A} has the SHA-256 ${sha256('changed')}, but its record has ${sha256('binary')}.`,
+    )
+    expect(message).toContain('run devhub sync in the project')
+    expect(progress).toEqual([])
+    expect(installCalls(tools.calls)).toEqual([])
+  })
+
+  it('names npx expo run for a local build whose file changed', async () => {
+    const home = await tempDir()
+    const file = await writeLocalBuild(home, ID_C, localBuild())
+    await writeFile(file, 'changed')
+    const tools = fakeDeviceTools({ devices: adbList(EMULATOR_LINE) })
+    const { deps } = installDeps(home, tools.run)
+
+    const result = await installStoredBuild({ id: ID_C }, deps)
+
+    expect(result).toMatchObject({ kind: 'error', usage: false })
+    expect(result.kind === 'error' && result.message).toContain(
+      `Delete the folder ${path.dirname(file)}, and then run npx expo run:android in the project to store the build again.`,
+    )
+    expect(installCalls(tools.calls)).toEqual([])
   })
 
   it('returns a failed adb install as an error, and does not throw', async () => {

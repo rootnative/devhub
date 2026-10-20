@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { listAndroidDevices, resolveAdb } from '../devices/android'
 import {
   DeviceError,
@@ -12,9 +13,15 @@ import {
   installPlatform,
   installProblem,
 } from '../install/install'
+import {
+  downloadAgainFix,
+  isLocalRecord,
+  type StoredBuild,
+} from '../store/builds'
+import { hashFile } from '../store/files'
 import { resolveHome } from '../store/home'
 import { findStoredBuild } from './find'
-import { failure, type FlowResult } from './result'
+import { errorMessage, failure, type FlowResult } from './result'
 
 export type InstallRequest = {
   /** The EAS build ID, or a unique prefix of it. */
@@ -41,7 +48,8 @@ export type InstalledBuild = {
 
 /**
  * Finds a stored build, checks it, selects the device, and installs the
- * build. It checks the build before it runs a device tool.
+ * build. It checks the build before it runs a device tool, and it compares
+ * the SHA-256 of the file with the record before the install.
  */
 export async function installStoredBuild(
   request: InstallRequest,
@@ -69,6 +77,10 @@ export async function installStoredBuild(
       return choice
     }
     const { device } = choice
+    const hashProblem = await hashProblemOf(build)
+    if (hashProblem !== undefined) {
+      return failure(hashProblem)
+    }
     deps.progress(
       `Installing the build ${build.id} on ${device.name} (${device.id}).`,
     )
@@ -124,4 +136,30 @@ function platformDevices(
   return platform === 'ios'
     ? listIosSimulators(deps.run, deps.cwd)
     : listAndroidDevices(deps.run, resolveAdb(deps), deps.cwd)
+}
+
+/**
+ * The file must have the SHA-256 that the record stores. The sync and the
+ * local store write the hash of the file they store, so a different hash
+ * means the file changed after that.
+ */
+async function hashProblemOf(build: StoredBuild): Promise<string | undefined> {
+  let sha256: string
+  try {
+    sha256 = (await hashFile(build.path)).sha256
+  } catch (error) {
+    return `DevHub cannot read the file ${build.path} of the build ${build.id}: ${errorMessage(error)}`
+  }
+  if (sha256 === build.record.sha256) {
+    return undefined
+  }
+  return `The file ${build.path} of the build ${build.id} has the SHA-256 ${sha256}, but its record has ${build.record.sha256}. The file changed after DevHub stored it, so DevHub does not install it. ${storeAgainFix(build)}`
+}
+
+function storeAgainFix(build: StoredBuild): string {
+  if (!isLocalRecord(build.record)) {
+    return downloadAgainFix(build.path)
+  }
+  const platform = build.record.local.platform.toLowerCase()
+  return `Delete the folder ${path.dirname(build.path)}, and then run npx expo run:${platform} in the project to store the build again.`
 }

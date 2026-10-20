@@ -24,6 +24,9 @@ notes name each one.
   `primaryAbi`, and `ANDROID_ABIS`.
 - The public docs site at https://rootnative.github.io/devhub/. The README
   files link to it, and `homepage` in the package points at it.
+- `devhub install` and the install button of `devhub ui` compare the
+  SHA-256 of the stored file with the record before the install, and refuse
+  a file that differs. The message names both hashes and the fix.
 
 - `devhub match` calculates the native fingerprint of the project in the
   current folder, with the project's own `expo/fingerprint` and the options
