@@ -11,17 +11,34 @@ name: Release
 # trusted publishers:
 #
 #   .github/workflows/release.yml         this file, the normal path
-#   .github/workflows/release-manual.yml  a publish from a named ref
+#   .github/workflows/release-manual.yml  a custom version, or a publish
+#                                         of the committed version
 #
-# This workflow publishes what is committed. It does not change the version,
-# the CHANGELOG, or the READMEs. A person makes that commit, and a reviewer
-# reads it.
+# This workflow makes the release commit. It bumps the version, moves the
+# CHANGELOG entries under "## [Unreleased]" to the new version, sets the
+# version in the README status lines, and builds llms.txt. A person writes
+# the CHANGELOG entries before the run. scripts/prepare-release.mjs stops
+# the run when there are none.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release. It must be the version in packages/devhub/package.json."
+        description: "Version bump type. On an alpha, prerelease gives the next 0.0.0-alpha.N."
         required: true
+        default: prerelease
+        type: choice
+        options:
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
+          - patch
+          - minor
+          - major
+      preid:
+        description: "Prerelease identifier (alpha, beta, or rc). Only the pre* types use it."
+        required: false
+        default: alpha
         type: string
       tag:
         description: "npm dist-tag."
@@ -34,13 +51,14 @@ on:
           - beta
           - rc
       dry_run:
-        description: "Run each gate and check the tarball, but publish nothing and push no tag."
+        description: "Make the release commit and run each gate, but push nothing and publish nothing."
         required: false
         default: false
         type: boolean
 
 # `id-token: write` gives the OIDC token that npm exchanges for the publish.
-# `contents: write` pushes the tag and makes the GitHub Release.
+# `contents: write` pushes the release commit and the tag, and makes the
+# GitHub Release.
 permissions:
   contents: write
   id-token: write
@@ -56,6 +74,14 @@ jobs:
     name: Release @rootnative/devhub
     runs-on: ubuntu-latest
     steps:
+      # The run pushes the release commit to main, so it must start from
+      # main. A commit from another branch would put that branch on main.
+      - name: Check the branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::error::Run this workflow from main. It pushes the release commit to main."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -84,24 +110,67 @@ jobs:
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
+      # The inputs go through the environment, not into the script text, so
+      # a value cannot change the command.
+      - name: Bump the version
+        id: version
+        working-directory: packages/devhub
+        env:
+          BUMP: ${{ inputs.version }}
+          PREID: ${{ inputs.preid }}
+        run: |
+          case "$BUMP" in
+            pre*) npm version "$BUMP" --preid "$PREID" --no-git-tag-version ;;
+            *) npm version "$BUMP" --no-git-tag-version ;;
+          esac
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Write the CHANGELOG section and the status lines
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/prepare-release.mjs --version "$VERSION"
+
+      # llms.txt names the version, and check:llms in preflight compares it
+      # with the build.
+      - name: Build llms.txt for the new version
+        run: pnpm run build && pnpm run build:llms
+
       - name: Check the release
-        run: node scripts/check-release.mjs --version "${{ inputs.version }}" --dist-tag "${{ inputs.tag }}"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DIST_TAG: ${{ inputs.tag }}
+        run: node scripts/check-release.mjs --version "$VERSION" --dist-tag "$DIST_TAG"
 
       # The same script that a laptop runs. No input skips it.
       - name: Preflight
         run: pnpm run preflight
 
-      # The tag goes before the publish. A tag push can fail, and then
-      # nothing is on npm. A publish cannot be undone, so it goes last.
-      - name: Tag the release
-        if: ${{ !inputs.dry_run }}
+      # A dry run makes the commit too, so its log shows the release commit.
+      - name: Commit and tag
         env:
-          TAG: devhub@${{ inputs.version }}
+          TAG: devhub@${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/devhub/package.json packages/devhub/CHANGELOG.md packages/devhub/llms.txt README.md packages/devhub/README.md
+          git commit -m "release: $TAG"
           git tag "$TAG"
-          git push origin "$TAG"
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::The release changed files that the commit does not hold. A build step writes a tracked file."
+            git status --short
+            exit 1
+          fi
+          git show --stat HEAD
+
+      # Push before the publish. A push can fail, for example when a commit
+      # reached main during the run, and a publish cannot be undone. In this
+      # order, a failed push stops the run before npm gets anything.
+      # `--atomic` pushes the commit and the tag together, or neither.
+      - name: Push the commit and the tag
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG: devhub@${{ steps.version.outputs.version }}
+        run: git push --atomic origin HEAD:main "refs/tags/$TAG"
 
       # OIDC only. Do not add `NODE_AUTH_TOKEN` or an `NPM_TOKEN` secret: a
       # token takes precedence over OIDC and hides a registration fault.
@@ -111,46 +180,64 @@ jobs:
       # it with 2FA. The dist-tag cannot change at the approval. `prepack`
       # builds the package and the page before the upload.
       - name: Stage the publish on npm
+        id: stage
         if: ${{ !inputs.dry_run }}
         working-directory: packages/devhub
-        run: npm stage publish --provenance --access public --tag "${{ inputs.tag }}"
+        env:
+          DIST_TAG: ${{ inputs.tag }}
+        run: npm stage publish --provenance --access public --tag "$DIST_TAG"
 
       - name: Explain a publish failure
-        if: ${{ failure() && !inputs.dry_run }}
+        if: ${{ failure() && steps.stage.outcome == 'failure' }}
+        env:
+          TAG: devhub@${{ steps.version.outputs.version }}
         run: |
           echo "::error::A 404 on PUT /@rootnative%2fdevhub is almost always an authentication fault, not a missing package."
           echo "Check these, in this order:"
           echo "  1. Is '.github/workflows/release.yml' a trusted publisher of @rootnative/devhub on npmjs.com? npm binds to the exact filename. The release-manual.yml entry does not cover this file."
-          echo "  2. Is this the first publish of the package? npm cannot register a trusted publisher before the package exists. Publish the first version from a laptop, and then register both workflows."
-          echo "  3. Does the job still have 'id-token: write'?"
-          echo "  4. Did the step run 'npm publish'? Both publishers are stage-only, so the step must run 'npm stage publish'."
+          echo "  2. Does the job still have 'id-token: write'?"
+          echo "  3. Did the step run 'npm publish'? Both publishers are stage-only, so the step must run 'npm stage publish'."
+          echo "Main has the release commit and the tag $TAG. After the fix:"
+          echo "  1. Delete the tag: git push --delete origin $TAG"
+          echo "  2. Run release-manual.yml with the version 'skip'. It publishes the committed version, with no new commit."
 
       - name: Create the GitHub Release
         if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: devhub@${{ inputs.version }}
-          VERSION: ${{ inputs.version }}
+          TAG: devhub@${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           prerelease=""
           case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$TAG" --title "$VERSION" --generate-notes $prerelease
 
       - name: Summary
+        if: ${{ always() && steps.version.outputs.version != '' }}
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
           DIST_TAG: ${{ inputs.tag }}
           DRY: ${{ inputs.dry_run }}
+          OUTCOME: ${{ job.status }}
         run: |
           {
-            if [ "$DRY" = "true" ]; then
-              echo "### Dry run: nothing was published"
+            if [ "$OUTCOME" != "success" ]; then
+              echo "### The release of \`$VERSION\` failed"
               echo ""
-              echo "Each gate passed. \`$VERSION\` was **not** staged, and no tag was pushed."
+              echo "Read the failed step. The step 'Explain a publish failure' gives the recovery for a failed publish."
+            elif [ "$DRY" = "true" ]; then
+              echo "### Dry run: nothing was pushed or published"
+              echo ""
+              echo "Each gate passed for \`$VERSION\`. The release commit stayed on the runner:"
+              echo ""
+              echo '```text'
+              git show --stat --format='%s' HEAD
+              echo '```'
             else
               echo "### Staged \`$VERSION\`: not installable yet"
               echo ""
               echo "- npm: \`@rootnative/devhub@$VERSION\` is staged for the dist-tag \`$DIST_TAG\`. Approve it with 2FA on npmjs.com (Staged Packages), or with \`npm stage approve\`."
+              echo "- Commit on main: \`$(git rev-parse --short HEAD)\` release: devhub@$VERSION"
               echo "- Tag: \`devhub@$VERSION\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"

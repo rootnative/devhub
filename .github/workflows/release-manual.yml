@@ -7,26 +7,45 @@ name: Release (manual)
 # npmjs.com must have it as its own entry. The release.yml entry does not
 # cover it.
 #
-# release.yml is the normal path: it publishes the ref that it runs from.
-# Use this file only to publish an exact commit. `workflow_dispatch` can run
-# from a branch or a tag, but not from a commit SHA. This file takes one.
+# release.yml is the normal path: it bumps the version by a bump type. Use
+# this file for one of two jobs:
+#
+#   custom_version  Release an exact version, for example 0.0.1 or
+#                   0.1.0-beta.0. The run makes the release commit, the
+#                   same as release.yml.
+#   version: skip   Publish the version that main has now, with no bump and
+#                   no release commit. Use it after a run that pushed the
+#                   release commit and then failed at the publish. Delete
+#                   the tag first. check-release.mjs stops each run where
+#                   the tag exists.
 #
 # It is not a faster path. It runs the same check-release.mjs and
 # `pnpm run preflight` as release.yml, and no input skips them.
-#
-# It has no input that skips the tag. check-release.mjs stops when the tag
-# exists, so a run with an existing tag cannot pass. To run again after a
-# failed publish, delete the tag first. check-release.mjs gives the command.
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Branch, tag, or full commit SHA to publish from."
-        required: true
-        type: string
       version:
-        description: "Version to release. It must be the version in packages/devhub/package.json at that ref."
-        required: true
+        description: "Version bump type. skip: publish the version on main, with no release commit. custom_version overrides it."
+        required: false
+        default: skip
+        type: choice
+        options:
+          - skip
+          - prerelease
+          - prepatch
+          - preminor
+          - premajor
+          - patch
+          - minor
+          - major
+      custom_version:
+        description: "Exact version, for example 0.0.1 or 0.1.0-beta.0. It overrides the bump type."
+        required: false
+        type: string
+      preid:
+        description: "Prerelease identifier (alpha, beta, or rc). Only the pre* types use it."
+        required: false
+        default: alpha
         type: string
       tag:
         description: "npm dist-tag."
@@ -39,7 +58,7 @@ on:
           - beta
           - rc
       dry_run:
-        description: "Run each gate and check the tarball, but publish nothing and push no tag."
+        description: "Make the release commit and run each gate, but push nothing and publish nothing."
         required: false
         default: false
         type: boolean
@@ -56,31 +75,22 @@ concurrency:
 
 jobs:
   release:
-    name: Release @rootnative/devhub from a named ref
+    name: Release @rootnative/devhub (manual)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout the named ref
+      # The run pushes to main, or publishes the version on main, so it must
+      # start from main.
+      - name: Check the branch
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::error::Run this workflow from main. It pushes the release commit to main, or publishes the version on main."
+          exit 1
+
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.ref }}
           # check-release.mjs reads the tags to see if the version exists.
           fetch-depth: 0
-
-      # A SHA in the input box is easy to get wrong, so the summary shows
-      # the commit before any gate runs.
-      - name: Report what is checked out
-        env:
-          REF: ${{ inputs.ref }}
-        run: |
-          {
-            echo "### Publishing from \`$REF\`"
-            echo ""
-            echo "- Commit: \`$(git rev-parse HEAD)\`"
-            echo "- Subject: $(git log -1 --pretty=%s)"
-            echo "- Author: $(git log -1 --pretty=%an), $(git log -1 --pretty=%ad --date=short)"
-            echo "- On main: $(git merge-base --is-ancestor HEAD origin/main 2>/dev/null && echo yes || echo '**no**: this commit is not on main')"
-          } >> "$GITHUB_STEP_SUMMARY"
-          git log -1 --pretty=fuller
 
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
@@ -103,66 +113,143 @@ jobs:
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
+      # The inputs go through the environment, not into the script text, so
+      # a value cannot change the command. `commit` is false for `skip`.
+      - name: Set the version
+        id: version
+        working-directory: packages/devhub
+        env:
+          BUMP: ${{ inputs.version }}
+          CUSTOM: ${{ inputs.custom_version }}
+          PREID: ${{ inputs.preid }}
+        run: |
+          commit=true
+          if [ -n "$CUSTOM" ]; then
+            npm version "$CUSTOM" --no-git-tag-version
+          elif [ "$BUMP" = "skip" ]; then
+            commit=false
+          else
+            case "$BUMP" in
+              pre*) npm version "$BUMP" --preid "$PREID" --no-git-tag-version ;;
+              *) npm version "$BUMP" --no-git-tag-version ;;
+            esac
+          fi
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Write the CHANGELOG section and the status lines
+        if: ${{ steps.version.outputs.commit == 'true' }}
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/prepare-release.mjs --version "$VERSION"
+
+      # llms.txt names the version, and check:llms in preflight compares it
+      # with the build.
+      - name: Build llms.txt for the new version
+        if: ${{ steps.version.outputs.commit == 'true' }}
+        run: pnpm run build && pnpm run build:llms
+
       - name: Check the release
-        run: node scripts/check-release.mjs --version "${{ inputs.version }}" --dist-tag "${{ inputs.tag }}"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DIST_TAG: ${{ inputs.tag }}
+        run: node scripts/check-release.mjs --version "$VERSION" --dist-tag "$DIST_TAG"
 
       - name: Preflight
         run: pnpm run preflight
 
-      # The tag goes before the publish, for the reason in release.yml.
-      - name: Tag the release
-        if: ${{ !inputs.dry_run }}
+      - name: Commit and tag
         env:
-          TAG: devhub@${{ inputs.version }}
+          TAG: devhub@${{ steps.version.outputs.version }}
+          COMMIT: ${{ steps.version.outputs.commit }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ "$COMMIT" = "true" ]; then
+            git add packages/devhub/package.json packages/devhub/CHANGELOG.md packages/devhub/llms.txt README.md packages/devhub/README.md
+            git commit -m "release: $TAG"
+          fi
           git tag "$TAG"
-          git push origin "$TAG"
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::The release changed files that the commit does not hold. A build step writes a tracked file."
+            git status --short
+            exit 1
+          fi
+          git show --stat HEAD
+
+      # Push before the publish, for the reason in release.yml. With `skip`,
+      # HEAD is main already, and the push adds only the tag.
+      - name: Push the commit and the tag
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG: devhub@${{ steps.version.outputs.version }}
+        run: git push --atomic origin HEAD:main "refs/tags/$TAG"
 
       # OIDC only, and staged, for the reasons in release.yml.
       - name: Stage the publish on npm
+        id: stage
         if: ${{ !inputs.dry_run }}
         working-directory: packages/devhub
-        run: npm stage publish --provenance --access public --tag "${{ inputs.tag }}"
+        env:
+          DIST_TAG: ${{ inputs.tag }}
+        run: npm stage publish --provenance --access public --tag "$DIST_TAG"
 
       - name: Explain a publish failure
-        if: ${{ failure() && !inputs.dry_run }}
+        if: ${{ failure() && steps.stage.outcome == 'failure' }}
+        env:
+          TAG: devhub@${{ steps.version.outputs.version }}
         run: |
           echo "::error::A 404 on PUT /@rootnative%2fdevhub is almost always an authentication fault, not a missing package."
           echo "Check these, in this order:"
           echo "  1. Is '.github/workflows/release-manual.yml' a trusted publisher of @rootnative/devhub on npmjs.com? npm binds to the exact filename. The release.yml entry does not cover this file."
-          echo "  2. Is this the first publish of the package? npm cannot register a trusted publisher before the package exists. Publish the first version from a laptop, and then register both workflows."
-          echo "  3. Does the job still have 'id-token: write'?"
-          echo "  4. Did the step run 'npm publish'? Both publishers are stage-only, so the step must run 'npm stage publish'."
+          echo "  2. Does the job still have 'id-token: write'?"
+          echo "  3. Did the step run 'npm publish'? Both publishers are stage-only, so the step must run 'npm stage publish'."
+          echo "Main has the release commit and the tag $TAG. After the fix:"
+          echo "  1. Delete the tag: git push --delete origin $TAG"
+          echo "  2. Run this workflow again with the version 'skip'. It publishes the committed version, with no new commit."
 
       - name: Create the GitHub Release
         if: ${{ !inputs.dry_run }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: devhub@${{ inputs.version }}
-          VERSION: ${{ inputs.version }}
+          TAG: devhub@${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           prerelease=""
           case "$VERSION" in *-*) prerelease="--prerelease" ;; esac
           gh release create "$TAG" --title "$VERSION" --generate-notes $prerelease
 
       - name: Summary
+        if: ${{ always() && steps.version.outputs.version != '' }}
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
           DIST_TAG: ${{ inputs.tag }}
           DRY: ${{ inputs.dry_run }}
+          COMMIT: ${{ steps.version.outputs.commit }}
+          OUTCOME: ${{ job.status }}
         run: |
           {
-            echo ""
-            if [ "$DRY" = "true" ]; then
-              echo "### Dry run: nothing was published"
+            if [ "$OUTCOME" != "success" ]; then
+              echo "### The release of \`$VERSION\` failed"
               echo ""
-              echo "Each gate passed. \`$VERSION\` was **not** staged, and no tag was pushed."
+              echo "Read the failed step. The step 'Explain a publish failure' gives the recovery for a failed publish."
+            elif [ "$DRY" = "true" ]; then
+              echo "### Dry run: nothing was pushed or published"
+              echo ""
+              if [ "$COMMIT" = "true" ]; then
+                echo "Each gate passed for \`$VERSION\`. The release commit stayed on the runner:"
+                echo ""
+                echo '```text'
+                git show --stat --format='%s' HEAD
+                echo '```'
+              else
+                echo "Each gate passed for \`$VERSION\`, the version on main. A real run adds only the tag and publishes."
+              fi
             else
               echo "### Staged \`$VERSION\`: not installable yet"
               echo ""
               echo "- npm: \`@rootnative/devhub@$VERSION\` is staged for the dist-tag \`$DIST_TAG\`. Approve it with 2FA on npmjs.com (Staged Packages), or with \`npm stage approve\`."
+              echo "- Commit on main: \`$(git rev-parse --short HEAD)\` $(git log -1 --pretty=%s)"
               echo "- Tag: \`devhub@$VERSION\`"
             fi
           } >> "$GITHUB_STEP_SUMMARY"

@@ -14,11 +14,12 @@ every development build on your machine, finds the build that matches your
 current code, and starts a simulator or an emulator with that build in one
 action.
 
-> **Status:** `0.0.0-alpha.0`, the first alpha. The milestones "Keep",
-> "Install", and "Local page" are done: `devhub sync`, `list`, `where`,
-> `devices`, `install`, and `ui` work. The other features below are the
-> plan. The [package README](packages/devhub/README.md) shows how to use
-> the CLI.
+> **Status:** `0.0.0-alpha.0`, an alpha. The CLI, the local page, and
+> the cache provider ship on npm. The desktop app and the other features
+> below are the plan. Each alpha can change the CLI and its JSON output.
+> The [CHANGELOG](packages/devhub/CHANGELOG.md) lists what each version
+> has, and the [package README](packages/devhub/README.md) shows how to
+> use the CLI.
 
 ## Install
 

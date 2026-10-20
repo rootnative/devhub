@@ -71,13 +71,13 @@ const version = manifest.version
 
 if (version !== requestedVersion) {
   fail(
-    `You asked for ${requestedVersion}, but packages/devhub/package.json has ${version}. Commit the version, the CHANGELOG section, and the README lines first.`,
+    `You asked for ${requestedVersion}, but packages/devhub/package.json has ${version}. The release workflows set the version. Run one of them, and do not change the version by hand.`,
   )
 }
 
 if (manifest.private === true) {
   fail(
-    'packages/devhub/package.json has "private": true, so npm refuses the publish. Remove it in the release commit.',
+    'packages/devhub/package.json has "private": true, so npm refuses the publish. Remove it on main, and run the release again.',
   )
 }
 
