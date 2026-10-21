@@ -456,12 +456,12 @@ describe('installChoice', () => {
   it('refuses a build that devhub install refuses, before it looks at a device', () => {
     const aab = {
       ...listed('a'),
-      installProblem: 'The build a is an Android App Bundle (app.aab).',
+      installProblem: 'This build is an Android App Bundle (app.aab).',
     }
 
     expect(installChoice(aab, [emulator])).toEqual({
       kind: 'refused',
-      reason: 'The build a is an Android App Bundle (app.aab).',
+      reason: 'This build is an Android App Bundle (app.aab).',
     })
   })
 

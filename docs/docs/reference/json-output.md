@@ -60,7 +60,7 @@ Each build in `devhub list --json` and in the matches of
 | `size` | The size of the file, in bytes. |
 | `sha256` | The SHA-256 hash of the file. |
 | `storedAt` | The date on which DevHub stored the build. |
-| `installProblem` | Why `devhub install` refuses the build on this system, with the fix. Absent when it can install the build. |
+| `installProblem` | Why `devhub install` refuses the build on this system, with the fix. The text says "this build" and names no ID, because the record has `id`. Absent when it can install the build. |
 | `eas` | An EAS build: the record of `eas build:list --json` with no change. |
 | `local` | A local build: the platform, the fingerprint, the variant, the project folder, and the app values. |
 

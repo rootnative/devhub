@@ -16,6 +16,10 @@ notes name each one.
 
 ### Changed
 
+- `installProblem` in `devhub list --json` and `devhub match --json` names
+  no build ID. It starts with "This build", because the record has `id`,
+  and the page shows it under the row of the build. `devhub install` still
+  names the full ID in its own message, because there the ID is the input.
 - The `devhub ui` page uses the colors of DevHub: an amber accent on grey
   surfaces, in light and dark mode. The app bar shows the DevHub mark.
 - The app bar of the `devhub ui` page shows the store folder under the

@@ -11,6 +11,7 @@ import {
   installBuild,
   installPlatform,
   installProblem,
+  listInstallProblem,
 } from '../install/install'
 import { EAS_RECORD_SCHEMA_VERSION, type StoredBuild } from '../store/builds'
 import {
@@ -363,6 +364,41 @@ describe('installProblem', () => {
     expect(installProblem(storedBuild(file, eas), 'darwin')).toBe(
       `DevHub cannot install the build ${eas.id}. Its file ${file} is not an Android .apk or an iOS simulator build.`,
     )
+  })
+})
+
+describe('listInstallProblem', () => {
+  const ios = easBuild({ platform: 'IOS', buildProfile: 'preview' })
+
+  it('names no ID, because the list shows the ID in the row', () => {
+    const build = storedBuild('app.ipa', ios)
+
+    expect(listInstallProblem(build, 'darwin')).toBe(
+      'This build is an iOS device build (app.ipa). A simulator cannot run it. Set "ios": { "simulator": true } in the build profile "preview" in eas.json, and make a new build.',
+    )
+  })
+
+  it.each([
+    ['an .aab', 'app.aab', easBuild(), 'linux'],
+    ['an iOS build off macOS', 'app.ipa', ios, 'win32'],
+    ['an unknown file', 'app.zip', easBuild(), 'darwin'],
+  ] as const)(
+    'gives the reason of installProblem for %s',
+    (_label, file, eas, platform) => {
+      const build = storedBuild(file, eas)
+      const full = installProblem(build, platform)
+
+      expect(listInstallProblem(build, platform)).toBe(
+        full
+          ?.replace(`The build ${eas.id}`, 'This build')
+          .replace(`the build ${eas.id}`, 'this build'),
+      )
+      expect(listInstallProblem(build, platform)).not.toContain(eas.id)
+    },
+  )
+
+  it('accepts the builds that installProblem accepts', () => {
+    expect(listInstallProblem(storedBuild('app.apk'), 'linux')).toBeUndefined()
   })
 })
 

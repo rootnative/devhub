@@ -32,29 +32,50 @@ export function installProblem(
   build: StoredBuild,
   platform: NodeJS.Platform,
 ): string | undefined {
+  return refusal(build, platform, `the build ${build.id}`)
+}
+
+/**
+ * The reason of `installProblem` for a list, which shows the ID in the row
+ * of the build. The message names no ID. A short ID depends on the other
+ * builds in the list, so it can change when a new build arrives.
+ */
+export function listInstallProblem(
+  build: StoredBuild,
+  platform: NodeJS.Platform,
+): string | undefined {
+  return refusal(build, platform, 'this build')
+}
+
+function refusal(
+  build: StoredBuild,
+  platform: NodeJS.Platform,
+  subject: string,
+): string | undefined {
   const { file } = build.record
   const summary = buildSummary(build.record)
   const name = file.toLowerCase()
+  const Subject = subject.charAt(0).toUpperCase() + subject.slice(1)
   if (summary.platform === 'ANDROID') {
     if (name.endsWith('.apk')) {
       return undefined
     }
     if (name.endsWith('.aab')) {
-      return `The build ${build.id} is an Android App Bundle (${file}). adb installs only an APK. ${profileFix(build, '"android": { "buildType": "apk" }')}`
+      return `${Subject} is an Android App Bundle (${file}). adb installs only an APK. ${profileFix(build, '"android": { "buildType": "apk" }')}`
     }
   }
   if (summary.platform === 'IOS') {
     if (platform !== 'darwin') {
-      return `The build ${build.id} is an iOS build. iOS simulators run only on macOS, so DevHub installs an iOS build only on macOS.`
+      return `${Subject} is an iOS build. iOS simulators run only on macOS, so DevHub installs an iOS build only on macOS.`
     }
     if (name.endsWith('.ipa')) {
-      return `The build ${build.id} is an iOS device build (${file}). A simulator cannot run it. ${profileFix(build, '"ios": { "simulator": true }')}`
+      return `${Subject} is an iOS device build (${file}). A simulator cannot run it. ${profileFix(build, '"ios": { "simulator": true }')}`
     }
     if (summary.isForIosSimulator || name.endsWith('.tar.gz')) {
       return undefined
     }
   }
-  return `DevHub cannot install the build ${build.id}. Its file ${file} is not an Android .apk or an iOS simulator build.`
+  return `DevHub cannot install ${subject}. Its file ${file} is not an Android .apk or an iOS simulator build.`
 }
 
 /** The device platform of a build that `installProblem` accepts. */

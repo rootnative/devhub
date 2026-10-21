@@ -145,8 +145,11 @@ describe('listBuilds', () => {
     )
     const apk = onLinux.value.builds.find((build) => build.id === ID_A)
     expect(apk === undefined || 'installProblem' in apk).toBe(false)
+    expect(problems[ID_B]).toMatch(/^This build is an Android App Bundle/)
     expect(problems[ID_B]).toContain('adb installs only an APK.')
     expect(problems[ID_C]).toContain('iOS simulators run only on macOS')
+    expect(problems[ID_B]).not.toContain(ID_B)
+    expect(problems[ID_C]).not.toContain(ID_C)
   })
 })
 

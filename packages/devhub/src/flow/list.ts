@@ -1,5 +1,5 @@
 import type { EasBuild } from '../eas/build'
-import { installProblem } from '../install/install'
+import { listInstallProblem } from '../install/install'
 import {
   isLocalRecord,
   scanStore,
@@ -20,6 +20,7 @@ type ListedFields = {
   storedAt: string
   /**
    * Why `devhub install` refuses the build on this system, with the fix.
+   * The text says "this build" and names no ID: the record has `id`.
    * Absent when it can install the build.
    */
   installProblem?: string
@@ -77,7 +78,7 @@ function listedBuild(
   platform: NodeJS.Platform,
 ): ListedBuild {
   const { id, path, record } = build
-  const problem = installProblem(build, platform)
+  const problem = listInstallProblem(build, platform)
   const fields = {
     path,
     size: record.size,
