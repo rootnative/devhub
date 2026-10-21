@@ -35,7 +35,7 @@ These commands print their JSON and also exit with `1`:
 | Command | Prints |
 | --- | --- |
 | `devhub sync --json` | `SyncReport`: `dryRun`, and for each project its `status`, its `profiles`, its `builds` with the result of each build, and its `warnings`. |
-| `devhub list --json` | `BuildList`: `builds`, `incomplete`, and `unreadable`. |
+| `devhub list --json` | `BuildList`: `store`, `builds`, `incomplete`, and `unreadable`. |
 | `devhub where <id> --json` | `{ "id": string, "path": string }` |
 | `devhub devices --json` | `DeviceReport`: `devices` and `warnings`. |
 | `devhub install <id> --json` | `InstalledBuild`: `id`, `path`, and the `device`. |

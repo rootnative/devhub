@@ -28,6 +28,10 @@ command, and each scheduled job, must get the same `DEVHUB_HOME`. A
 scheduled job does not read your shell profile, so set the variable in
 the job too.
 
+To see the folder that a command uses, run `devhub list`. Its first line
+names the store folder. `devhub doctor` and the `devhub ui` page show it
+too.
+
 ## What the store holds
 
 ```text

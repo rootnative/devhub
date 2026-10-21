@@ -277,8 +277,8 @@ button is off when no device of the platform is ready. A build that
 `devhub install` refuses has no button, and shows the reason and the fix.
 When an install fails, the page shows the same message as the CLI.
 
-The page shows the EAS login state under the Builds title, and the Sync
-button is off without a login, with the fix in its tooltip. Click Sync to
+The app bar shows the store folder, the EAS login state, and the Sync
+button. Sync is off without a login, with the fix in its tooltip. Click Sync to
 run `devhub sync --all`. The terminal of `devhub ui` shows
 the progress, and the page shows the result of each project when the sync
 ends. Only one sync runs at a time: while a sync runs from the terminal or

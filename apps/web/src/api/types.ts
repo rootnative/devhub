@@ -44,6 +44,8 @@ export type ListedBuild =
 
 /** `devhub list --json`. The builds are by project, and then newest first. */
 export type BuildList = {
+  /** The absolute path of the store folder. */
+  store: string
   builds: ListedBuild[]
   incomplete: string[]
   unreadable: { id: string; reason: string }[]

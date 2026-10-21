@@ -19,6 +19,7 @@ import {
 export const LIST_HELP = `Usage: devhub list [options]
 
 Show the builds in the store, sorted by project and then newest first.
+The first line names the store folder.
 EAS EXPIRY is the date on which EAS deletes its copy. The copy in the store
 stays. A build that "npx expo run" made shows the profile "local" and its
 variant, and CREATED is the date on which DevHub stored it.
@@ -71,6 +72,8 @@ export async function listCommand(
     io.out(JSON.stringify(list, null, 2))
     return EXIT_CODE.ok
   }
+  io.out(`Store: ${list.store}`)
+  io.out('')
   if (list.builds.length === 0) {
     io.out('The store has no builds. Run devhub sync in a project folder.')
     return EXIT_CODE.ok

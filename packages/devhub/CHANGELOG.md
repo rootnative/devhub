@@ -8,10 +8,19 @@ notes name each one.
 
 ## [Unreleased]
 
+### Added
+
+- `devhub list` names the store folder on its first line, and
+  `devhub list --json` has it as `store`. Then you can see which store a
+  command uses, for example when `DEVHUB_HOME` is set in one shell only.
+
 ### Changed
 
 - The `devhub ui` page uses the colors of DevHub: an amber accent on grey
   surfaces, in light and dark mode. The app bar shows the DevHub mark.
+- The app bar of the `devhub ui` page shows the store folder under the
+  title, and the EAS login state, Sync, and Refresh on the right. In a
+  narrow window, the EAS login state and Sync are above the sections.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 

@@ -123,6 +123,7 @@ describe('listBuilds', () => {
       storedAt: NOW.toISOString(),
       eas: newer,
     })
+    expect(result.value.store).toBe(home)
     expect(result.value.incomplete).toEqual([incomplete])
     expect(result.value.unreadable).toEqual([])
   })

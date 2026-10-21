@@ -295,6 +295,7 @@ describe('devhub ui API', () => {
     expect(json(reply)).toEqual(
       (await cliJson(['list', '--json'], { home })).json,
     )
+    expect(json(reply)).toMatchObject({ store: home })
   })
 
   it('GET /api/devices returns the JSON of devhub devices --json', async () => {

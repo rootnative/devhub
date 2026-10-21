@@ -25,6 +25,10 @@ server stops after it ends. Press Ctrl+C again to stop the server at once.
 
 ## The page
 
+The app bar shows the store folder under the title. On its right are the
+EAS login state, Sync, and Refresh. In a narrow window, the EAS login state
+and Sync are above the sections.
+
 The page has a devices section, a setup section, and a builds section,
 with one card for each project. It reads the devices again when you return to the window,
 and when you click Refresh. It does not poll.
@@ -45,7 +49,7 @@ Only one install runs at a time.
 
 ### Sync
 
-Under the Builds title, the page shows the EAS login state of
+The chip in the app bar shows the EAS login state of
 [`devhub whoami`](./whoami.md): signed in with the user name, not signed
 in, eas-cli not installed, or the check failed. The page runs that check
 when it opens, on Refresh, and after a sync that eas-cli refused. Without

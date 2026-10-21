@@ -142,6 +142,7 @@ different folder.
 Usage: devhub list [options]
 
 Show the builds in the store, sorted by project and then newest first.
+The first line names the store folder.
 EAS EXPIRY is the date on which EAS deletes its copy. The copy in the store
 stays. A build that "npx expo run" made shows the profile "local" and its
 variant, and CREATED is the date on which DevHub stored it.
@@ -318,6 +319,8 @@ type BuildStatus = 'downloaded' | 'would-download' | 'stored' | 'expired' | 'no-
 
 /** The JSON of `devhub list --json`. */
 type BuildList = {
+    /** The absolute path of the store folder. */
+    store: string;
     /** Sorted by project, and then newest first. */
     builds: ListedBuild[];
     /** Build folders with no build.json. The next sync replaces them. */
@@ -516,7 +519,8 @@ type DoctorStatus = 'ok' | 'warn' | 'fail' | 'skip';
 - `devhub ui --json` prints `{ "url": string, "port": number }`, and the
   server then runs until Ctrl+C.
 
-Each path is absolute. Each date is an ISO 8601 string. A build in
+Each path is absolute. Each date is an ISO 8601 string.
+`devhub list --json` names the store folder in `store`. A build in
 `devhub list --json` has `source`: `"eas"` for a build that `devhub sync`
 downloaded, and `"local"` for a build that `npx expo run:*` made. An EAS
 build has `eas`, the record of `eas build:list --json` without changes, so

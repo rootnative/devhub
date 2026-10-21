@@ -6,7 +6,7 @@ description: Show the builds in the DevHub store, for all your projects.
 # devhub list
 
 Shows the builds in the store, for all your projects. The list is sorted by
-project, and then newest first.
+project, and then newest first. The first line names the store folder.
 
 ```bash
 devhub list [options]
@@ -20,6 +20,8 @@ devhub list [options]
 ## Example
 
 ```text
+Store: /Users/you/Library/Application Support/devhub
+
 ID        PROJECT    PLATFORM       PROFILE                VERSION  COMMIT   CREATED     EAS EXPIRY
 3c9f6d21  notes      android        development            0.9.2    c41d9e0  2026-10-04  2026-11-03
 e2b4c6d8  trail-app  android        local debug            1.4.0    f00dbab  2026-10-19  -
@@ -58,4 +60,5 @@ A `build.json` that DevHub cannot read, for example one that a newer
 DevHub wrote, gets a warning on stderr with the reason. A sync never
 replaces such a folder.
 
-In `--json`, these folders are in `incomplete` and `unreadable`.
+In `--json`, these folders are in `incomplete` and `unreadable`. The
+store folder is in `store`.

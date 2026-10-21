@@ -1,15 +1,12 @@
-import { Button } from '@rootnative/components/button'
 import { Card } from '@rootnative/components/card'
-import { Box, Column, Row } from '@rootnative/components/layout'
+import { Box, Column } from '@rootnative/components/layout'
 import { List, ListDivider, ListItem } from '@rootnative/components/list'
-import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Fragment, type ReactNode } from 'react'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import { groupBuilds, storeNotes, type BuildRow } from '../logic/view'
-import type { EasStatus } from '../logic/whoami'
 import { InstallButton } from './InstallButton'
 import { Notice } from './Notice'
 
@@ -21,9 +18,6 @@ export function BuildsSection({
   devices,
   installing,
   onInstall,
-  syncing,
-  onSync,
-  eas,
   syncResult,
 }: {
   state: ApiState<BuildList>
@@ -33,48 +27,15 @@ export function BuildsSection({
   /** The ID of the build that installs now. */
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
-  syncing: boolean
-  onSync: () => void
-  /** The EAS login state. Sync is off without a login, with the reason. */
-  eas: EasStatus
   /** The state of the last sync, above the builds. */
   syncResult: ReactNode
 }) {
   const { colors } = useTheme()
-  const syncButton = (
-    <Button
-      variant="tonal"
-      loading={syncing}
-      disabled={!eas.canSync}
-      onPress={onSync}
-      accessibilityLabel="Sync the EAS builds of each project"
-      accessibilityHint={eas.reason}
-    >
-      Sync
-    </Button>
-  )
   return (
     <Column gap="md">
-      <Row justify="space-between" align="center" gap="md">
-        <Column gap="xs">
-          <Typography variant="titleLarge" level={2}>
-            Builds
-          </Typography>
-          <Typography
-            variant="labelMedium"
-            color={eas.tone === 'warn' ? colors.error : colors.onSurfaceVariant}
-          >
-            {eas.label}
-          </Typography>
-        </Column>
-        {eas.reason === undefined ? (
-          syncButton
-        ) : (
-          <Tooltip side="bottom" align="end" anchor={syncButton}>
-            {eas.reason}
-          </Tooltip>
-        )}
-      </Row>
+      <Typography variant="titleLarge" level={2}>
+        Builds
+      </Typography>
       {syncResult}
       {state.kind === 'loading' && (
         <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>

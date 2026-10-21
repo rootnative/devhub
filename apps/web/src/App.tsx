@@ -1,11 +1,17 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
-import { Column, Container, Grid, Layout } from '@rootnative/components/layout'
+import {
+  Column,
+  Container,
+  Grid,
+  Layout,
+  Row,
+} from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
-import { ThemeProvider, useTheme } from '@rootnative/core'
+import { ThemeProvider, useBreakpointValue, useTheme } from '@rootnative/core'
 import { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native'
 import { NO_TOKEN, getJson, postJson } from './api/client'
@@ -25,9 +31,10 @@ import { Mark } from './components/Mark'
 import { Notice } from './components/Notice'
 import { SetupSection, type DoctorState } from './components/SetupSection'
 import { SyncCard, type SyncState } from './components/SyncCard'
+import { SyncControls } from './components/SyncControls'
 import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
-import type { BuildRow } from './logic/view'
+import { storeLine, type BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
 import { darkTheme, lightTheme } from './theme'
 
@@ -70,6 +77,9 @@ function Dashboard({ token }: { token: string }) {
   const [failure, setFailure] = useState({ visible: false, message: '' })
   const [sync, setSync] = useState<SyncState>({ kind: 'idle' })
   const [checks, setChecks] = useState<DoctorState>({ running: false })
+  // Below the expanded breakpoint, the EAS chip and Sync do not fit next to
+  // the title, so they go above the sections.
+  const wide = useBreakpointValue({ compact: false, expanded: true })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -123,24 +133,43 @@ function Dashboard({ token }: { token: string }) {
     }
   }
 
+  const syncControls = (
+    <SyncControls
+      eas={easStatus(eas.state)}
+      syncing={sync.kind === 'running'}
+      onSync={() => void runSync()}
+    />
+  )
+  const refreshButton = (
+    <Button
+      variant="text"
+      loading={builds.busy || devices.busy || eas.busy}
+      onPress={refresh}
+    >
+      Refresh
+    </Button>
+  )
+
   return (
     <>
       <AppBar
         title={TITLE}
         leading={<Mark />}
-        subtitle="Stored builds and devices"
+        subtitle={storeLine(builds.state)}
         trailing={
-          <Button
-            variant="text"
-            loading={builds.busy || devices.busy || eas.busy}
-            onPress={refresh}
-          >
-            Refresh
-          </Button>
+          wide ? (
+            <Row gap="sm" align="center">
+              {syncControls}
+              {refreshButton}
+            </Row>
+          ) : (
+            refreshButton
+          )
         }
       />
       <ScrollView>
         <Container width="large" p="lg">
+          {!wide && <Row pb="lg">{syncControls}</Row>}
           <Grid columns={{ compact: 1, expanded: 3 }} gap="lg">
             <Grid.Cell span={1}>
               <Column gap="xl">
@@ -159,9 +188,6 @@ function Dashboard({ token }: { token: string }) {
                 }
                 installing={installing}
                 onInstall={(row, device) => void install(row, device)}
-                syncing={sync.kind === 'running'}
-                onSync={() => void runSync()}
-                eas={easStatus(eas.state)}
                 syncResult={
                   <SyncCard
                     state={sync}

@@ -43,6 +43,8 @@ devhub list
 ```
 
 ```text
+Store: /Users/you/Library/Application Support/devhub
+
 ID        PROJECT  PLATFORM       PROFILE                VERSION  COMMIT   CREATED     EAS EXPIRY
 b8d0f2a4  my-app   android        development            1.5.0    8b1f2c3  2026-10-12  2026-11-11
 a7e3b0c4  my-app   ios simulator  development-simulator  1.4.0    8b1f2c3  2026-10-12  2026-11-11

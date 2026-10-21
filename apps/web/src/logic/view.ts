@@ -1,4 +1,5 @@
 import type { BuildList, Device, ListedBuild } from '../api/types'
+import type { ApiState } from '../api/useApi'
 import { formatBytes, formatDate, platformLabel, shortIds } from './format'
 import { deviceLabel } from './install'
 import { buildSummary } from './summary'
@@ -57,6 +58,18 @@ function expiryText(iso: string | undefined, now: Date): string {
   return Date.parse(iso) <= now.getTime()
     ? `EAS deleted its copy on ${formatDate(iso)}`
     : `EAS deletes its copy on ${formatDate(iso)}`
+}
+
+/** The subtitle of the app bar: the store that the page shows. */
+export function storeLine(state: ApiState<BuildList>): string {
+  switch (state.kind) {
+    case 'loading':
+      return 'Reading the store.'
+    case 'error':
+      return 'DevHub cannot read the store.'
+    case 'ok':
+      return `Store: ${state.value.store}`
+  }
 }
 
 /** The notes of `devhub list` about build folders that it cannot show. */

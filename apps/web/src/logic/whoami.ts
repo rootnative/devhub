@@ -2,7 +2,7 @@ import type { WhoamiReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
 
 export type EasStatus = {
-  /** One line under the Builds title, for example "EAS: signed in as ana". */
+  /** The text of the EAS chip, for example "EAS: signed in as ana". */
   label: string
   tone: 'ok' | 'warn' | 'pending'
   /** `true` only with a login. The Sync button is off otherwise. */

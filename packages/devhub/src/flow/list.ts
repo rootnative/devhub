@@ -39,6 +39,8 @@ export type ListedBuild = ListedEasBuild | ListedLocalBuild
 
 /** The JSON of `devhub list --json`. */
 export type BuildList = {
+  /** The absolute path of the store folder. */
+  store: string
   /** Sorted by project, and then newest first. */
   builds: ListedBuild[]
   /** Build folders with no build.json. The next sync replaces them. */
@@ -60,6 +62,7 @@ export async function listBuilds(
   return {
     kind: 'ok',
     value: {
+      store: home,
       builds: scan.builds
         .map((build) => listedBuild(build, platform))
         .sort(compareBuilds),

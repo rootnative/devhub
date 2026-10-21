@@ -131,6 +131,8 @@ describe('devhub list', () => {
 
     expect(out.join('\n')).toBe(
       [
+        `Store: ${home}`,
+        '',
         'ID        PROJECT  PLATFORM       PROFILE                VERSION  COMMIT   CREATED     EAS EXPIRY',
         'bbbb2222  my-app   ios simulator  development-simulator  2.1.0    0123456  2026-10-05  2026-11-04',
         'cccc3333  my-app   ios device     development            1.0.0    -        2026-09-01  2026-10-31',
@@ -152,6 +154,7 @@ describe('devhub list', () => {
     )
 
     expect(JSON.parse(out.join('\n'))).toEqual({
+      store: home,
       builds: [
         {
           id: ID_A,
@@ -175,6 +178,8 @@ describe('devhub list', () => {
 
     expect(await run(['list'], testContext({ io, home }))).toBe(EXIT_CODE.ok)
     expect(out).toEqual([
+      `Store: ${home}`,
+      '',
       'The store has no builds. Run devhub sync in a project folder.',
     ])
   })
@@ -196,7 +201,7 @@ describe('devhub list', () => {
     const ids = out
       .join('\n')
       .split('\n')
-      .slice(1)
+      .slice(3)
       .map((line) => line.split(' ')[0])
     expect(ids.sort()).toEqual(['abcd1234-567', 'abcd1234-569'])
   })
@@ -221,6 +226,8 @@ describe('devhub list with local builds', () => {
 
     expect(out.join('\n')).toBe(
       [
+        `Store: ${home}`,
+        '',
         'ID        PROJECT  PLATFORM       PROFILE      VERSION  COMMIT   CREATED     EAS EXPIRY',
         'bbbb2222  my-app   android        local debug  1.2.0    89abcde  2026-10-17  -',
         'cccc3333  my-app   ios simulator  local Debug  1.2.0    89abcde  2026-10-17  -',

@@ -104,7 +104,8 @@ desktop app. They are the plan only.
 - `devhub ui --json` prints `{ "url": string, "port": number }`, and the
   server then runs until Ctrl+C.
 
-Each path is absolute. Each date is an ISO 8601 string. A build in
+Each path is absolute. Each date is an ISO 8601 string.
+`devhub list --json` names the store folder in `store`. A build in
 `devhub list --json` has `source`: `"eas"` for a build that `devhub sync`
 downloaded, and `"local"` for a build that `npx expo run:*` made. An EAS
 build has `eas`, the record of `eas build:list --json` without changes, so
