@@ -1,10 +1,13 @@
 import type { WhoamiReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
+import type { IconName } from '../icons'
 
 export type EasStatus = {
   /** The text of the EAS chip, for example "EAS: signed in as ana". */
   label: string
   tone: 'ok' | 'warn' | 'pending'
+  /** No icon while the check runs. */
+  icon?: IconName
   /** `true` only with a login. The Sync button is off otherwise. */
   canSync: boolean
   /** Why a sync cannot run, as the tooltip of the Sync button. */
@@ -27,6 +30,7 @@ export function easStatus(state: ApiState<WhoamiReport>): EasStatus {
     return {
       label: 'EAS: the login check failed',
       tone: 'warn',
+      icon: 'status-warn',
       canSync: false,
       reason: state.message,
     }
@@ -40,12 +44,14 @@ export function easStatus(state: ApiState<WhoamiReport>): EasStatus {
             ? 'EAS: signed in'
             : `EAS: signed in as ${report.user}`,
         tone: 'ok',
+        icon: 'eas-signed-in',
         canSync: true,
       }
     case 'signed-out':
       return {
         label: 'EAS: not signed in',
         tone: 'warn',
+        icon: 'status-warn',
         canSync: false,
         reason: report.message ?? 'Run eas login in a terminal.',
       }
@@ -53,6 +59,7 @@ export function easStatus(state: ApiState<WhoamiReport>): EasStatus {
       return {
         label: 'EAS: eas-cli is not installed',
         tone: 'warn',
+        icon: 'status-warn',
         canSync: false,
         reason: report.message ?? 'Put eas or npx on PATH.',
       }
@@ -60,6 +67,7 @@ export function easStatus(state: ApiState<WhoamiReport>): EasStatus {
       return {
         label: 'EAS: the login check failed',
         tone: 'warn',
+        icon: 'status-warn',
         canSync: false,
         reason: report.message ?? 'eas whoami failed.',
       }

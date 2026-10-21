@@ -17,7 +17,12 @@ describe('easStatus', () => {
         kind: 'ok',
         value: { state: 'signed-in', cli: 'npx', user: 'ana' },
       }),
-    ).toEqual({ label: 'EAS: signed in as ana', tone: 'ok', canSync: true })
+    ).toEqual({
+      label: 'EAS: signed in as ana',
+      tone: 'ok',
+      icon: 'eas-signed-in',
+      canSync: true,
+    })
     expect(
       easStatus({ kind: 'ok', value: { state: 'signed-in', cli: 'eas' } }),
     ).toMatchObject({ label: 'EAS: signed in', canSync: true })
@@ -33,6 +38,7 @@ describe('easStatus', () => {
     ).toEqual({
       label: 'EAS: not signed in',
       tone: 'warn',
+      icon: 'status-warn',
       canSync: false,
       reason: message,
     })
@@ -64,6 +70,7 @@ describe('easStatus', () => {
     ).toEqual({
       label: 'EAS: the login check failed',
       tone: 'warn',
+      icon: 'status-warn',
       canSync: false,
       reason: 'The token is wrong.',
     })

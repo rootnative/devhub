@@ -346,8 +346,10 @@ describe('deviceRow', () => {
       id: 'emulator-5554',
       title: 'Pixel_Light_34',
       kind: 'Android emulator',
+      kindIcon: 'device-virtual',
       deviceId: 'emulator-5554',
       status: 'Ready',
+      statusIcon: 'status-ok',
       ready: true,
       problem: undefined,
     })
@@ -367,7 +369,9 @@ describe('deviceRow', () => {
     expect(row).toMatchObject({
       title: 'R58M12ABCDE',
       kind: 'Android device',
+      kindIcon: 'device-physical',
       status: 'unauthorized',
+      statusIcon: 'status-warn',
       ready: false,
       problem: 'Accept the USB debugging prompt on the device.',
     })
@@ -388,6 +392,7 @@ describe('deviceRow', () => {
     ).toMatchObject({
       title: 'iPhone 16 Pro (iOS 18.6)',
       kind: 'iOS simulator',
+      kindIcon: 'device-virtual',
       deviceId: '188FFDBB',
     })
   })

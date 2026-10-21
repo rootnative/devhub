@@ -32,8 +32,8 @@ const COLUMNS: readonly Column[] = [
   { key: 'size', label: 'Size', width: 64, end: true },
 ]
 
-const PROFILE_MIN_WIDTH = 104
-const INSTALL_WIDTH = 76
+const PROFILE_MIN_WIDTH = 96
+const INSTALL_WIDTH = 88
 const GAP = 8
 const SIDE_PADDING = 16
 

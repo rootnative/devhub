@@ -6,8 +6,11 @@ import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import type { ApiResult } from '../api/client'
 import type { DoctorReport } from '../api/types'
+import type { IconName } from '../icons'
 import { SETUP_INTRO, doctorView } from '../logic/doctor'
 import { Notice } from './Notice'
+
+const CHECK_ICON: IconName = 'setup-check'
 
 /** The last result stays on the page while the checks run again. */
 export type DoctorState = {
@@ -32,6 +35,7 @@ export function SetupSection({
         </Typography>
         <Button
           variant="tonal"
+          leadingIcon={CHECK_ICON}
           loading={state.running}
           onPress={onRun}
           accessibilityLabel="Check the tools and the store that DevHub uses"
@@ -76,6 +80,7 @@ function DoctorResult({ report }: { report: DoctorReport }) {
             duration={0}
             anchor={
               <Chip
+                leadingIcon={row.icon}
                 contentColor={row.problem ? colors.error : undefined}
                 accessibilityLabel={`${row.chip}. ${row.detail}`}
               >

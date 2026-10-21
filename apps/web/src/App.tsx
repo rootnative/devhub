@@ -1,6 +1,7 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
+import { IconButton } from '@rootnative/components/icon-button'
 import { Container, Grid, Layout, Row } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
@@ -30,14 +31,19 @@ import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import { storeLine, type BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
+import { iconResolver, type IconName } from './icons'
 import { darkTheme, lightTheme } from './theme'
 
 const TITLE = 'DevHub by Root Native'
+const REFRESH_ICON: IconName = 'refresh'
 
 export function App() {
   const [token] = useState(takeToken)
   return (
-    <ThemeProvider theme={{ light: lightTheme, dark: darkTheme }}>
+    <ThemeProvider
+      theme={{ light: lightTheme, dark: darkTheme }}
+      iconResolver={iconResolver}
+    >
       <PortalHost>
         <SnackbarProvider>
           <Layout>
@@ -74,6 +80,8 @@ function Dashboard({ token }: { token: string }) {
   // Below the expanded breakpoint, the EAS chip and Sync do not fit next to
   // the title, so they go above the sections.
   const wide = useBreakpointValue({ compact: false, expanded: true })
+  // On a phone width, the label of Refresh cuts the title.
+  const compact = useBreakpointValue({ compact: true, medium: false })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -134,10 +142,20 @@ function Dashboard({ token }: { token: string }) {
       onSync={() => void runSync()}
     />
   )
-  const refreshButton = (
+  const refreshing = builds.busy || devices.busy || eas.busy
+  const refreshButton = compact ? (
+    <IconButton
+      variant="standard"
+      icon={REFRESH_ICON}
+      disabled={refreshing}
+      onPress={refresh}
+      accessibilityLabel="Refresh"
+    />
+  ) : (
     <Button
       variant="text"
-      loading={builds.busy || devices.busy || eas.busy}
+      leadingIcon={REFRESH_ICON}
+      loading={refreshing}
       onPress={refresh}
     >
       Refresh

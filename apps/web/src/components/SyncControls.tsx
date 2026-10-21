@@ -3,7 +3,10 @@ import { Chip } from '@rootnative/components/chip'
 import { Row } from '@rootnative/components/layout'
 import { Tooltip } from '@rootnative/components/tooltip'
 import { useTheme } from '@rootnative/core'
+import type { IconName } from '../icons'
 import type { EasStatus } from '../logic/whoami'
+
+const SYNC_ICON: IconName = 'sync'
 
 /** The EAS login state, and the Sync button that needs the login. */
 export function SyncControls({
@@ -19,6 +22,7 @@ export function SyncControls({
   const syncButton = (
     <Button
       variant="tonal"
+      leadingIcon={SYNC_ICON}
       loading={syncing}
       disabled={!eas.canSync}
       onPress={onSync}
@@ -31,6 +35,7 @@ export function SyncControls({
   return (
     <Row gap="sm" align="center">
       <Chip
+        leadingIcon={eas.icon}
         contentColor={eas.tone === 'warn' ? colors.error : undefined}
         accessibilityLiveRegion="polite"
       >

@@ -1,5 +1,6 @@
 import { Card } from '@rootnative/components/card'
 import { Chip } from '@rootnative/components/chip'
+import { Icon } from '@rootnative/components/icon'
 import { Column, Row } from '@rootnative/components/layout'
 import { ListDivider } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
@@ -62,24 +63,31 @@ export function DevicesSection({ state }: { state: ApiState<DeviceReport> }) {
 }
 
 /**
- * One device. The chip goes next to the name when both fit, and the fix has
- * no line limit, so a narrow column cuts no text.
+ * One device. The chip goes next to the name when both fit, and under it
+ * when they do not. The fix has no line limit, so a narrow column cuts no
+ * text.
  */
 function Device({ row }: { row: DeviceRow }) {
   const { colors } = useTheme()
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 4 }}>
-      <Row justify="space-between" align="center" gap="sm">
+      <Row wrap justify="space-between" align="center" gap="sm">
         <Typography variant="bodyLarge" style={{ flexShrink: 1 }}>
           {row.title}
         </Typography>
-        <Chip contentColor={row.ready ? undefined : colors.error}>
+        <Chip
+          leadingIcon={row.statusIcon}
+          contentColor={row.ready ? undefined : colors.error}
+        >
           {row.status}
         </Chip>
       </Row>
-      <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
-        {row.kind}
-      </Typography>
+      <Row align="center" gap="xs">
+        <Icon source={row.kindIcon} size={16} color={colors.onSurfaceVariant} />
+        <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
+          {row.kind}
+        </Typography>
+      </Row>
       {row.deviceId !== undefined && (
         <Typography
           variant="bodySmall"

@@ -1,9 +1,17 @@
 // The same states and words as `devhub doctor`, so the page and the terminal
 // agree.
 import type { DoctorReport, DoctorStatus } from '../api/types'
+import type { IconName } from '../icons'
 
 export const SETUP_INTRO =
   'Check Node, the store, eas-cli, adb, and Xcode on this machine, and get the fix for each problem. The EAS check can use the network.'
+
+const STATUS_ICON: Record<DoctorStatus, IconName> = {
+  ok: 'status-ok',
+  warn: 'status-warn',
+  fail: 'status-fail',
+  skip: 'status-skip',
+}
 
 const STATUS_LABEL: Record<DoctorStatus, string> = {
   ok: 'OK',
@@ -19,6 +27,7 @@ export type DoctorRow = {
   status: string
   /** The chip text, for example "EAS: Warning". */
   chip: string
+  icon: IconName
   /** `true` for a warning and a failure. */
   problem: boolean
   /** What DevHub found, for example "Node 24.11.0". */
@@ -44,6 +53,7 @@ export function doctorView(report: DoctorReport): DoctorView {
       title: check.label,
       status,
       chip: `${check.label}: ${status}`,
+      icon: STATUS_ICON[check.status],
       problem: check.status === 'warn' || check.status === 'fail',
       detail: check.detail,
     }

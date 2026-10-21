@@ -34,6 +34,10 @@ notes name each one.
   its full name, its ID, and its fix, and each build shows its full
   profile. The setup checks show as one chip for each check, with the fix
   of each warning and failure under the chips.
+- The `devhub ui` page shows icons: on Refresh, Sync, Install, and Check,
+  on the state chips of the devices, the setup checks, and the EAS login,
+  and for the kind of each device. The icons are SVG, and the page bundles
+  only the icons that it uses, so the package gets no font file.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 

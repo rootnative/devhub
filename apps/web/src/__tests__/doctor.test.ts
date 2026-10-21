@@ -39,6 +39,7 @@ describe('doctorView', () => {
         title: 'Node',
         status: 'OK',
         chip: 'Node: OK',
+        icon: 'status-ok',
         problem: false,
         detail: 'Node 24.11.0',
       },
@@ -47,6 +48,7 @@ describe('doctorView', () => {
         title: 'iOS',
         status: 'Skipped',
         chip: 'iOS: Skipped',
+        icon: 'status-skip',
         problem: false,
         detail: 'iOS simulators need macOS.',
       },
@@ -65,6 +67,7 @@ describe('doctorView', () => {
       title: 'EAS',
       status: 'Warning',
       chip: 'EAS: Warning',
+      icon: 'status-warn',
       problem: true,
       detail: 'Not signed in (eas on PATH)',
       fix: 'eas-cli has no login. Run "eas login" in a terminal.',
@@ -86,6 +89,7 @@ describe('doctorView', () => {
     )
     expect(view.rows[0]).toMatchObject({
       chip: 'Node: Failed',
+      icon: 'status-fail',
       problem: true,
       fix: 'DevHub needs Node 20.19.0.',
     })

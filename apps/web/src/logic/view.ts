@@ -1,5 +1,6 @@
 import type { BuildList, Device, ListedBuild } from '../api/types'
 import type { ApiState } from '../api/useApi'
+import type { IconName } from '../icons'
 import { formatBytes, formatDate, platformLabel, shortIds } from './format'
 import { deviceLabel } from './install'
 import { buildSummary } from './summary'
@@ -145,10 +146,13 @@ export type DeviceRow = {
   title: string
   /** For example "Android emulator". */
   kind: string
+  /** A phone for a USB device, a phone on a screen for an emulator. */
+  kindIcon: IconName
   /** The ID that `--device` takes. Absent when the title is the ID. */
   deviceId?: string
   /** "Ready", or the state as the device tool prints it. */
   status: string
+  statusIcon: IconName
   ready: boolean
   problem?: string
 }
@@ -166,7 +170,9 @@ export function deviceRow(device: Device): DeviceRow {
     id: device.id,
     title,
     kind: `${platform} ${KIND_LABEL[device.kind]}`,
+    kindIcon: device.kind === 'physical' ? 'device-physical' : 'device-virtual',
     status: device.ready ? 'Ready' : device.state,
+    statusIcon: device.ready ? 'status-ok' : 'status-warn',
     ready: device.ready,
     problem: device.problem,
   }

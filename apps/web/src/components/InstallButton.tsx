@@ -1,7 +1,10 @@
 import { Button } from '@rootnative/components/button'
 import { Menu } from '@rootnative/components/menu'
 import type { Device, ListedBuild } from '../api/types'
+import type { IconName } from '../icons'
 import { deviceLabel, installChoice } from '../logic/install'
+
+const INSTALL_ICON: IconName = 'install'
 
 const KIND_LABEL: Record<Device['kind'], string> = {
   emulator: 'emulator',
@@ -42,6 +45,7 @@ export function InstallButton({
           <Button
             variant="tonal"
             size={size}
+            leadingIcon={INSTALL_ICON}
             accessibilityLabel={`Install the build ${shortId}. Select the device.`}
           >
             Install
@@ -64,6 +68,7 @@ export function InstallButton({
     <Button
       variant="tonal"
       size={size}
+      leadingIcon={INSTALL_ICON}
       loading={installing}
       disabled={locked || choice.kind === 'no-device'}
       accessibilityLabel={
