@@ -29,9 +29,20 @@ The app bar shows the store folder under the title. On its right are the
 EAS login state, Sync, and Refresh. In a narrow window, the EAS login state
 and Sync are above the sections.
 
-The page has a devices section, a setup section, and a builds section,
-with one card for each project. It reads the devices again when you return to the window,
-and when you click Refresh. It does not poll.
+The page has a builds section, with one card for each project, and a
+devices section and a setup section. In a wide window, the devices and
+the setup are in a column next to the builds. Otherwise they are under
+the builds. The page reads the devices again when you return to the
+window, and when you click Refresh. It does not poll.
+
+In a wide window, each project card is a table with one row for each
+build: the ID, the platform, the profile, the version, the commit, the
+date, the EAS expiry, the fingerprint, and the size. The fingerprint
+column shows the start of the native fingerprint hash. Put the pointer on
+it to see the full hash. Builds with the same hash have the same native
+code. An expiry date in the past has a line through it: EAS deleted its
+copy, and the copy in the store stays. In a narrow window, each build
+shows on two lines.
 
 ### Install a build
 

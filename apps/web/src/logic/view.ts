@@ -15,6 +15,55 @@ export type BuildRow = {
   /** When EAS deletes, or deleted, its copy. Empty when EAS gives no date. */
   expiry: string
   size: string
+  /** The cells of the build in the table. */
+  cells: BuildCells
+}
+
+/** The text of each cell of a build in the table. `-` is no value. */
+export type BuildCells = {
+  id: string
+  platform: string
+  profile: string
+  version: string
+  commit: string
+  /** The EAS build date, or the store date of a local build. */
+  created: string
+  expiry: string
+  /** `true` when EAS deleted its copy. The copy in the store stays. */
+  expired: boolean
+  /** The start of the fingerprint hash. */
+  fingerprint: string
+  /** The full hash, for the tooltip. Absent when the record has none. */
+  fingerprintHash?: string
+  size: string
+}
+
+const FINGERPRINT_LENGTH = 8
+
+export function buildColumns(
+  build: ListedBuild,
+  shortId: string,
+  now: Date,
+): BuildCells {
+  const summary = buildSummary(build)
+  const expiry = summary.expirationDate
+  const hash = summary.fingerprintHash
+  const cells: BuildCells = {
+    id: shortId,
+    platform: platformLabel(summary.platform, summary.isForIosSimulator),
+    profile: summary.profile ?? '-',
+    version: summary.appVersion ?? '-',
+    commit: summary.gitCommitHash?.slice(0, 7) ?? '-',
+    created: formatDate(summary.createdAt),
+    expiry: formatDate(expiry),
+    expired:
+      expiry !== undefined &&
+      !Number.isNaN(Date.parse(expiry)) &&
+      Date.parse(expiry) <= now.getTime(),
+    fingerprint: hash?.slice(0, FINGERPRINT_LENGTH) ?? '-',
+    size: formatBytes(build.size),
+  }
+  return hash === undefined ? cells : { ...cells, fingerprintHash: hash }
 }
 
 export type ProjectGroup = { project: string; builds: BuildRow[] }
@@ -46,6 +95,7 @@ export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
       ].join(' · '),
       expiry: expiryText(summary.expirationDate, now),
       size: formatBytes(build.size),
+      cells: buildColumns(build, shortId(build.id), now),
     })
   }
   return groups

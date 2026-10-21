@@ -268,7 +268,8 @@ URL in your browser. Press Ctrl+C to stop the server.
 - `--json` prints the URL and the port as JSON.
 
 The page shows the stored builds of each project and the devices that run
-now. It reads the devices again when you return to the window, and when
+now. In a wide window, the builds are a table with the start of the
+fingerprint of each build. It reads the devices again when you return to the window, and when
 you click Refresh.
 
 Click Install on a build to install it on the ready device of its platform.

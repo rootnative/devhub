@@ -9,7 +9,13 @@ import type {
 import { formatBytes, platformLabel, shortIds } from '../logic/format'
 import { installChoice, installedMessage } from '../logic/install'
 import { resolveToken } from '../logic/token'
-import { deviceRow, groupBuilds, storeLine, storeNotes } from '../logic/view'
+import {
+  buildColumns,
+  deviceRow,
+  groupBuilds,
+  storeLine,
+  storeNotes,
+} from '../logic/view'
 
 const NOW = new Date('2026-10-18T12:00:00.000Z')
 
@@ -154,6 +160,7 @@ describe('groupBuilds', () => {
       details: 'Version 2.3.2 · commit b44e6ca · created 2026-10-06',
       expiry: 'EAS deletes its copy on 2026-10-20',
       size: '214.8 MB',
+      cells: buildColumns(build, 'aaaa1111', NOW),
     })
   })
 
@@ -178,6 +185,79 @@ describe('groupBuilds', () => {
       expiry: 'EAS deleted its copy on 2026-10-01',
     })
     expect(group?.builds[1]?.expiry).toBe('')
+  })
+})
+
+describe('buildColumns', () => {
+  it('gives each cell of an EAS build', () => {
+    const hash = 'd27c0622a1b2c3d4e5f60718293a4b5c6d7e8f90'
+    const build = listed('aaaa1111-0000', { fingerprint: { hash } })
+
+    expect(buildColumns(build, 'aaaa1111', NOW)).toEqual({
+      id: 'aaaa1111',
+      platform: 'Android',
+      profile: 'development',
+      version: '2.3.2',
+      commit: 'b44e6ca',
+      created: '2026-10-06',
+      expiry: '2026-10-20',
+      expired: false,
+      fingerprint: 'd27c0622',
+      fingerprintHash: hash,
+      size: '214.8 MB',
+    })
+  })
+
+  it('gives - for each value that the record does not have', () => {
+    const build = listed('aaaa1111-0000', {
+      platform: 'IOS',
+      isForIosSimulator: true,
+      buildProfile: undefined,
+      appVersion: undefined,
+      gitCommitHash: undefined,
+      expirationDate: undefined,
+    })
+
+    const cells = buildColumns(build, 'aaaa1111', NOW)
+
+    expect(cells).toMatchObject({
+      platform: 'iOS simulator',
+      profile: '-',
+      version: '-',
+      commit: '-',
+      expiry: '-',
+      expired: false,
+      fingerprint: '-',
+    })
+    expect('fingerprintHash' in cells).toBe(false)
+  })
+
+  it('marks an expiry date in the past', () => {
+    const build = listed('aaaa1111-0000', {
+      expirationDate: '2026-10-01T00:00:00.000Z',
+    })
+
+    expect(buildColumns(build, 'aaaa1111', NOW)).toMatchObject({
+      expiry: '2026-10-01',
+      expired: true,
+    })
+  })
+
+  it('gives the store date and the fingerprint of a local build', () => {
+    const build = listedLocal('bbbb2222-0000')
+
+    expect(buildColumns(build, 'bbbb2222', NOW)).toMatchObject({
+      platform: 'Android',
+      profile: 'local debug',
+      version: '2.4.0',
+      commit: '89abcde',
+      created: '2026-10-17',
+      expiry: '-',
+      expired: false,
+      fingerprint: '33333333',
+      fingerprintHash: '3333333333333333333333333333333333333333',
+      size: '98.5 MB',
+    })
   })
 })
 

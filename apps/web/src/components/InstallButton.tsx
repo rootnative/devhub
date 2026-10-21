@@ -10,6 +10,7 @@ const KIND_LABEL: Record<Device['kind'], string> = {
 }
 
 export function InstallButton({
+  size,
   build,
   shortId,
   devices,
@@ -17,6 +18,8 @@ export function InstallButton({
   locked,
   onInstall,
 }: {
+  /** The size of the button. The default is the `Button` default. */
+  size?: 'extraSmall' | 'small'
   build: ListedBuild
   shortId: string
   /** `undefined` while the page has no device list. */
@@ -38,6 +41,7 @@ export function InstallButton({
         anchor={
           <Button
             variant="tonal"
+            size={size}
             accessibilityLabel={`Install the build ${shortId}. Select the device.`}
           >
             Install
@@ -59,6 +63,7 @@ export function InstallButton({
   return (
     <Button
       variant="tonal"
+      size={size}
       loading={installing}
       disabled={locked || choice.kind === 'no-device'}
       accessibilityLabel={

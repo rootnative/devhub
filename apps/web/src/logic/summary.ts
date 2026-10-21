@@ -11,6 +11,7 @@ export type BuildSummary = {
   profile: string | undefined
   appVersion: string | undefined
   gitCommitHash: string | undefined
+  fingerprintHash: string | undefined
   createdAt: string | undefined
   expirationDate: string | undefined
 }
@@ -25,6 +26,7 @@ export function buildSummary(build: ListedBuild): BuildSummary {
       profile: `local ${local.variant}`,
       appVersion: local.appVersion,
       gitCommitHash: local.gitCommitHash,
+      fingerprintHash: local.fingerprintHash,
       createdAt: build.storedAt,
       expirationDate: undefined,
     }
@@ -37,6 +39,7 @@ export function buildSummary(build: ListedBuild): BuildSummary {
     profile: eas.buildProfile,
     appVersion: eas.appVersion,
     gitCommitHash: eas.gitCommitHash,
+    fingerprintHash: eas.fingerprint?.hash,
     createdAt: eas.createdAt,
     expirationDate: eas.expirationDate,
   }

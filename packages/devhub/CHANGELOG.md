@@ -21,6 +21,11 @@ notes name each one.
 - The app bar of the `devhub ui` page shows the store folder under the
   title, and the EAS login state, Sync, and Refresh on the right. In a
   narrow window, the EAS login state and Sync are above the sections.
+- In a wide window, the `devhub ui` page shows the builds of each project
+  as a table, with one row for each build and a column for the start of
+  its fingerprint. The full hash shows when you put the pointer on it. The
+  builds come first, and the devices and the setup checks are next to them
+  or under them.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 

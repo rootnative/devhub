@@ -13,6 +13,7 @@ export type EasBuild = {
   createdAt?: string
   expirationDate?: string
   app?: { slug?: string; name?: string }
+  fingerprint?: { hash?: string }
 }
 
 /** A build that `npx expo run:*` made, and the cache provider stored. */

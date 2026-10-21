@@ -1,13 +1,7 @@
 import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
-import {
-  Column,
-  Container,
-  Grid,
-  Layout,
-  Row,
-} from '@rootnative/components/layout'
+import { Container, Grid, Layout, Row } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
@@ -170,14 +164,11 @@ function Dashboard({ token }: { token: string }) {
       <ScrollView>
         <Container width="large" p="lg">
           {!wide && <Row pb="lg">{syncControls}</Row>}
-          <Grid columns={{ compact: 1, expanded: 3 }} gap="lg">
-            <Grid.Cell span={1}>
-              <Column gap="xl">
-                <DevicesSection state={devices.state} />
-                <SetupSection state={checks} onRun={() => void runChecks()} />
-              </Column>
-            </Grid.Cell>
-            <Grid.Cell span={{ compact: 1, expanded: 2 }}>
+          {/* The build table needs the width. From the large breakpoint,
+              the devices and the setup go in a side column at the end.
+              Below it, they go under the builds. */}
+          <Grid columns={{ compact: 1, large: 4 }} gap="lg">
+            <Grid.Cell span={{ compact: 1, large: 3 }}>
               <BuildsSection
                 state={builds.state}
                 now={new Date()}
@@ -195,6 +186,12 @@ function Dashboard({ token }: { token: string }) {
                   />
                 }
               />
+            </Grid.Cell>
+            <Grid.Cell span={1}>
+              <Grid columns={{ compact: 1, medium: 2, large: 1 }} gap="xl">
+                <DevicesSection state={devices.state} />
+                <SetupSection state={checks} onRun={() => void runChecks()} />
+              </Grid>
             </Grid.Cell>
           </Grid>
         </Container>
