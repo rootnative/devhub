@@ -6,9 +6,8 @@ import { Fragment } from 'react'
 import { View, type TextStyle, type ViewStyle } from 'react-native'
 import type { Device } from '../api/types'
 import type { BuildCells, BuildRow, ProjectGroup } from '../logic/view'
+import { MONO_FONT } from '../theme'
 import { InstallButton } from './InstallButton'
-
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
 type TextKey = Exclude<keyof BuildCells, 'expired' | 'fingerprintHash'>
 
@@ -154,7 +153,7 @@ function Cell({ column, cells }: { column: Column; cells: BuildCells }) {
   const { colors } = useTheme()
   const expired = column.key === 'expiry' && cells.expired
   const style: TextStyle = {
-    ...(column.mono ? { fontFamily: MONO, letterSpacing: 0 } : {}),
+    ...(column.mono ? { fontFamily: MONO_FONT, letterSpacing: 0 } : {}),
     ...(column.end ? { textAlign: 'right' } : {}),
     ...(expired ? { textDecorationLine: 'line-through' } : {}),
   }

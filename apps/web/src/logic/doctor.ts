@@ -15,12 +15,16 @@ const STATUS_LABEL: Record<DoctorStatus, string> = {
 export type DoctorRow = {
   id: string
   title: string
-  /** The chip text, for example "Warning". */
+  /** The state, for example "Warning". */
   status: string
+  /** The chip text, for example "EAS: Warning". */
+  chip: string
   /** `true` for a warning and a failure. */
   problem: boolean
-  /** What DevHub found, and the fix on the next line. */
-  text: string
+  /** What DevHub found, for example "Node 24.11.0". */
+  detail: string
+  /** With a warning and a failure: what is wrong, and the fix. */
+  fix?: string
 }
 
 export type DoctorView = {
@@ -33,14 +37,18 @@ export type DoctorView = {
 export function doctorView(report: DoctorReport): DoctorView {
   const failures = count(report, 'fail')
   const warnings = count(report, 'warn')
-  const rows = report.checks.map((check) => ({
-    id: check.id,
-    title: check.label,
-    status: STATUS_LABEL[check.status],
-    problem: check.status === 'warn' || check.status === 'fail',
-    text:
-      check.fix === undefined ? check.detail : `${check.detail}\n${check.fix}`,
-  }))
+  const rows = report.checks.map((check): DoctorRow => {
+    const status = STATUS_LABEL[check.status]
+    const row: DoctorRow = {
+      id: check.id,
+      title: check.label,
+      status,
+      chip: `${check.label}: ${status}`,
+      problem: check.status === 'warn' || check.status === 'fail',
+      detail: check.detail,
+    }
+    return check.fix === undefined ? row : { ...row, fix: check.fix }
+  })
   if (failures > 0) {
     return {
       summary: `${plural(failures, 'check failed', 'checks failed')}. DevHub cannot work until you do the fix.`,

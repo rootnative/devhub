@@ -38,20 +38,22 @@ describe('doctorView', () => {
         id: 'node',
         title: 'Node',
         status: 'OK',
+        chip: 'Node: OK',
         problem: false,
-        text: 'Node 24.11.0',
+        detail: 'Node 24.11.0',
       },
       {
         id: 'ios',
         title: 'iOS',
         status: 'Skipped',
+        chip: 'iOS: Skipped',
         problem: false,
-        text: 'iOS simulators need macOS.',
+        detail: 'iOS simulators need macOS.',
       },
     ])
   })
 
-  it('counts the warnings, and puts the fix below the detail', () => {
+  it('counts the warnings, and keeps the fix of each one', () => {
     const view = doctorView({ checks: [NODE, EAS_WARN] })
 
     expect(view.tone).toBe('warn')
@@ -62,8 +64,10 @@ describe('doctorView', () => {
       id: 'eas',
       title: 'EAS',
       status: 'Warning',
+      chip: 'EAS: Warning',
       problem: true,
-      text: 'Not signed in (eas on PATH)\neas-cli has no login. Run "eas login" in a terminal.',
+      detail: 'Not signed in (eas on PATH)',
+      fix: 'eas-cli has no login. Run "eas login" in a terminal.',
     })
   })
 
@@ -80,6 +84,10 @@ describe('doctorView', () => {
     expect(view.summary).toBe(
       '1 check failed. DevHub cannot work until you do the fix.',
     )
-    expect(view.rows[0]?.status).toBe('Failed')
+    expect(view.rows[0]).toMatchObject({
+      chip: 'Node: Failed',
+      problem: true,
+      fix: 'DevHub needs Node 20.19.0.',
+    })
   })
 })

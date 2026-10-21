@@ -1,9 +1,10 @@
 import { Card } from '@rootnative/components/card'
-import { Box, Column } from '@rootnative/components/layout'
-import { List, ListDivider, ListItem } from '@rootnative/components/list'
+import { Column, Row } from '@rootnative/components/layout'
+import { ListDivider } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Fragment, useState, type ReactNode } from 'react'
+import { View } from 'react-native'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import {
@@ -12,6 +13,7 @@ import {
   type BuildRow,
   type ProjectGroup,
 } from '../logic/view'
+import { MONO_FONT } from '../theme'
 import { BuildTable, TABLE_MIN_WIDTH } from './BuildTable'
 import { InstallButton } from './InstallButton'
 import { Notice } from './Notice'
@@ -87,7 +89,10 @@ export function BuildsSection({
   )
 }
 
-/** A project with its builds as two-line list rows, for a narrow window. */
+/**
+ * A project with its builds as stacked rows, for a narrow window. `ListItem`
+ * cuts its headline at one line, so the rows are plain views.
+ */
 function BuildCard({
   group,
   devices,
@@ -100,43 +105,60 @@ function BuildCard({
   onInstall: (row: BuildRow, device: Device) => void
 }) {
   const { colors } = useTheme()
+  const muted = colors.onSurfaceVariant
   return (
     <Card variant="outlined">
-      <List headline={group.project} headingLevel={3}>
-        {group.builds.map((row, index) => (
-          <Fragment key={row.id}>
-            {index > 0 && <ListDivider />}
-            <ListItem
-              overlineText={row.shortId}
-              headlineText={row.title}
-              supportingText={
-                row.expiry === ''
-                  ? row.details
-                  : `${row.details}\n${row.expiry}`
-              }
-              supportingTextNumberOfLines={4}
-              trailingSupportingText={row.size}
-              trailingContent={
-                <InstallButton
-                  build={row.build}
-                  shortId={row.shortId}
-                  devices={devices}
-                  installing={installing === row.id}
-                  locked={installing !== undefined && installing !== row.id}
-                  onInstall={(device) => onInstall(row, device)}
-                />
-              }
-            />
-            {row.build.installProblem !== undefined && (
-              <Box px="md" pb="md">
-                <Typography variant="bodySmall" color={colors.error} selectable>
-                  {row.build.installProblem}
-                </Typography>
-              </Box>
+      <View style={{ padding: 16, paddingBottom: 4 }}>
+        <Typography variant="titleSmall" level={3}>
+          {group.project}
+        </Typography>
+      </View>
+      {group.builds.map((row, index) => (
+        <Fragment key={row.id}>
+          {index > 0 && <ListDivider />}
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 4 }}>
+            <Row justify="space-between" gap="sm">
+              <Typography
+                variant="labelMedium"
+                color={muted}
+                style={{ fontFamily: MONO_FONT, letterSpacing: 0 }}
+                selectable
+              >
+                {row.shortId}
+              </Typography>
+              <Typography variant="labelMedium" color={muted}>
+                {row.size}
+              </Typography>
+            </Row>
+            <Row justify="space-between" align="center" gap="sm">
+              <Typography variant="bodyLarge" style={{ flexShrink: 1 }}>
+                {row.title}
+              </Typography>
+              <InstallButton
+                build={row.build}
+                shortId={row.shortId}
+                devices={devices}
+                installing={installing === row.id}
+                locked={installing !== undefined && installing !== row.id}
+                onInstall={(device) => onInstall(row, device)}
+              />
+            </Row>
+            <Typography variant="bodyMedium" color={muted}>
+              {row.details}
+            </Typography>
+            {row.expiry !== '' && (
+              <Typography variant="bodyMedium" color={muted}>
+                {row.expiry}
+              </Typography>
             )}
-          </Fragment>
-        ))}
-      </List>
+            {row.build.installProblem !== undefined && (
+              <Typography variant="bodySmall" color={colors.error} selectable>
+                {row.build.installProblem}
+              </Typography>
+            )}
+          </View>
+        </Fragment>
+      ))}
     </Card>
   )
 }

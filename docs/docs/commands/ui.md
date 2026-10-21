@@ -42,7 +42,7 @@ column shows the start of the native fingerprint hash. Put the pointer on
 it to see the full hash. Builds with the same hash have the same native
 code. An expiry date in the past has a line through it: EAS deleted its
 copy, and the copy in the store stays. In a narrow window, each build
-shows on two lines.
+shows the same values on more than one line.
 
 ### Install a build
 
@@ -79,8 +79,9 @@ second tab, the page shows that message.
 
 Click Check in the Setup section to run the checks of
 [`devhub doctor`](./doctor.md): Node, the store, eas-cli and its login,
-adb, and on macOS Xcode. The page shows the state of each check, and the
-fix below each warning and failure. The page runs the checks only on a
+adb, and on macOS Xcode. The page shows one chip for each check, with its
+state. Put the pointer on a chip to see what DevHub found. The fix of each
+warning and failure is under the chips. The page runs the checks only on a
 click, because the EAS check can use the network. Click Check again after
 a fix.
 

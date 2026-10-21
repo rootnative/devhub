@@ -143,8 +143,10 @@ export type DeviceRow = {
   id: string
   /** The name, and the iOS version of a simulator. */
   title: string
-  /** For example "Android emulator · emulator-5554". */
-  details: string
+  /** For example "Android emulator". */
+  kind: string
+  /** The ID that `--device` takes. Absent when the title is the ID. */
+  deviceId?: string
   /** "Ready", or the state as the device tool prints it. */
   status: string
   ready: boolean
@@ -159,12 +161,14 @@ const KIND_LABEL: Record<Device['kind'], string> = {
 
 export function deviceRow(device: Device): DeviceRow {
   const platform = device.platform === 'ios' ? 'iOS' : 'Android'
-  return {
+  const title = deviceLabel(device)
+  const row: DeviceRow = {
     id: device.id,
-    title: deviceLabel(device),
-    details: `${platform} ${KIND_LABEL[device.kind]} · ${device.id}`,
+    title,
+    kind: `${platform} ${KIND_LABEL[device.kind]}`,
     status: device.ready ? 'Ready' : device.state,
     ready: device.ready,
     problem: device.problem,
   }
+  return title === device.id ? row : { ...row, deviceId: device.id }
 }

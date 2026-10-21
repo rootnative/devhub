@@ -1,11 +1,9 @@
 import { Button } from '@rootnative/components/button'
-import { Card } from '@rootnative/components/card'
 import { Chip } from '@rootnative/components/chip'
 import { Column, Row } from '@rootnative/components/layout'
-import { List, ListDivider, ListItem } from '@rootnative/components/list'
+import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Fragment } from 'react'
 import type { ApiResult } from '../api/client'
 import type { DoctorReport } from '../api/types'
 import { SETUP_INTRO, doctorView } from '../logic/doctor'
@@ -24,6 +22,7 @@ export function SetupSection({
   state: DoctorState
   onRun: () => void
 }) {
+  const { colors } = useTheme()
   const { result } = state
   return (
     <Column gap="md">
@@ -40,7 +39,11 @@ export function SetupSection({
           {result === undefined ? 'Check' : 'Check again'}
         </Button>
       </Row>
-      {result === undefined && <Notice>{SETUP_INTRO}</Notice>}
+      {result === undefined && (
+        <Typography variant="bodySmall" color={colors.onSurfaceVariant}>
+          {SETUP_INTRO}
+        </Typography>
+      )}
       {result?.kind === 'error' && (
         <Notice tone="error">{result.message}</Notice>
       )}
@@ -49,6 +52,10 @@ export function SetupSection({
   )
 }
 
+/**
+ * One chip for each check, with what DevHub found as its tooltip, and the
+ * fix of each warning and failure under the chips.
+ */
 function DoctorResult({ report }: { report: DoctorReport }) {
   const { colors } = useTheme()
   const view = doctorView(report)
@@ -61,26 +68,38 @@ function DoctorResult({ report }: { report: DoctorReport }) {
       >
         {view.summary}
       </Typography>
-      <Card variant="outlined">
-        <List>
-          {view.rows.map((row, index) => (
-            <Fragment key={row.id}>
-              {index > 0 && <ListDivider />}
-              <ListItem
-                headlineText={row.title}
-                supportingText={row.text}
-                // 0 is no limit, so the page never cuts a fix.
-                supportingTextNumberOfLines={0}
-                trailingContent={
-                  <Chip contentColor={row.problem ? colors.error : undefined}>
-                    {row.status}
-                  </Chip>
-                }
-              />
-            </Fragment>
-          ))}
-        </List>
-      </Card>
+      <Row wrap gap="sm">
+        {view.rows.map((row) => (
+          <Tooltip
+            key={row.id}
+            side="bottom"
+            duration={0}
+            anchor={
+              <Chip
+                contentColor={row.problem ? colors.error : undefined}
+                accessibilityLabel={`${row.chip}. ${row.detail}`}
+              >
+                {row.chip}
+              </Chip>
+            }
+          >
+            {row.detail}
+          </Tooltip>
+        ))}
+      </Row>
+      {view.rows.map(
+        (row) =>
+          row.fix !== undefined && (
+            <Column key={row.id} gap="xs">
+              <Typography variant="labelLarge" color={colors.error}>
+                {`${row.title}: ${row.detail}`}
+              </Typography>
+              <Typography variant="bodySmall" selectable>
+                {row.fix}
+              </Typography>
+            </Column>
+          ),
+      )}
     </>
   )
 }

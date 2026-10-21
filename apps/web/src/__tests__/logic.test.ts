@@ -345,29 +345,33 @@ describe('deviceRow', () => {
     expect(deviceRow(emulator)).toEqual({
       id: 'emulator-5554',
       title: 'Pixel_Light_34',
-      details: 'Android emulator · emulator-5554',
+      kind: 'Android emulator',
+      deviceId: 'emulator-5554',
       status: 'Ready',
       ready: true,
       problem: undefined,
     })
   })
 
-  it('shows the state and the fix of a device that is not ready', () => {
-    expect(
-      deviceRow({
-        ...emulator,
-        kind: 'physical',
-        id: 'R58M12ABCDE',
-        name: 'R58M12ABCDE',
-        state: 'unauthorized',
-        ready: false,
-        problem: 'Accept the USB debugging prompt on the device.',
-      }),
-    ).toMatchObject({
-      details: 'Android device · R58M12ABCDE',
-      status: 'unauthorized',
+  it('shows the state and the fix of a device that is not ready, and the ID once', () => {
+    const row = deviceRow({
+      ...emulator,
+      kind: 'physical',
+      id: 'R58M12ABCDE',
+      name: 'R58M12ABCDE',
+      state: 'unauthorized',
+      ready: false,
       problem: 'Accept the USB debugging prompt on the device.',
     })
+
+    expect(row).toMatchObject({
+      title: 'R58M12ABCDE',
+      kind: 'Android device',
+      status: 'unauthorized',
+      ready: false,
+      problem: 'Accept the USB debugging prompt on the device.',
+    })
+    expect('deviceId' in row).toBe(false)
   })
 
   it('shows the iOS version of a simulator', () => {
@@ -383,7 +387,8 @@ describe('deviceRow', () => {
       }),
     ).toMatchObject({
       title: 'iPhone 16 Pro (iOS 18.6)',
-      details: 'iOS simulator · 188FFDBB',
+      kind: 'iOS simulator',
+      deviceId: '188FFDBB',
     })
   })
 })

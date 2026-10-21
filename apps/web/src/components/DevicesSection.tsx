@@ -1,17 +1,27 @@
 import { Card } from '@rootnative/components/card'
 import { Chip } from '@rootnative/components/chip'
-import { Column } from '@rootnative/components/layout'
-import { List, ListDivider, ListItem } from '@rootnative/components/list'
+import { Column, Row } from '@rootnative/components/layout'
+import { ListDivider } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Fragment } from 'react'
+import { View, type TextStyle } from 'react-native'
 import type { DeviceReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
-import { deviceRow } from '../logic/view'
+import { deviceRow, type DeviceRow } from '../logic/view'
+import { MONO_FONT } from '../theme'
 import { Notice } from './Notice'
 
 const NO_DEVICE =
   'No device runs now. Start an emulator, or connect an Android device with USB debugging on. On macOS, you can also boot a simulator.'
+
+// react-native-web passes wordBreak to the browser, but the React Native
+// type does not have it. A simulator UDID has no space to break at.
+const DEVICE_ID_STYLE = {
+  fontFamily: MONO_FONT,
+  letterSpacing: 0,
+  wordBreak: 'break-all',
+} as TextStyle
 
 export function DevicesSection({ state }: { state: ApiState<DeviceReport> }) {
   const { colors } = useTheme()
@@ -37,33 +47,54 @@ export function DevicesSection({ state }: { state: ApiState<DeviceReport> }) {
             state.value.warnings.length === 0 && <Notice>{NO_DEVICE}</Notice>
           ) : (
             <Card variant="outlined">
-              <List>
-                {state.value.devices.map(deviceRow).map((row, index) => (
-                  <Fragment key={row.id}>
-                    {index > 0 && <ListDivider />}
-                    <ListItem
-                      headlineText={row.title}
-                      supportingText={
-                        row.problem === undefined
-                          ? row.details
-                          : `${row.details}\n${row.problem}`
-                      }
-                      supportingTextNumberOfLines={4}
-                      trailingContent={
-                        <Chip
-                          contentColor={row.ready ? undefined : colors.error}
-                        >
-                          {row.status}
-                        </Chip>
-                      }
-                    />
-                  </Fragment>
-                ))}
-              </List>
+              {state.value.devices.map(deviceRow).map((row, index) => (
+                <Fragment key={row.id}>
+                  {index > 0 && <ListDivider />}
+                  <Device row={row} />
+                </Fragment>
+              ))}
             </Card>
           )}
         </>
       )}
     </Column>
+  )
+}
+
+/**
+ * One device. The chip goes next to the name when both fit, and the fix has
+ * no line limit, so a narrow column cuts no text.
+ */
+function Device({ row }: { row: DeviceRow }) {
+  const { colors } = useTheme()
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12, gap: 4 }}>
+      <Row justify="space-between" align="center" gap="sm">
+        <Typography variant="bodyLarge" style={{ flexShrink: 1 }}>
+          {row.title}
+        </Typography>
+        <Chip contentColor={row.ready ? undefined : colors.error}>
+          {row.status}
+        </Chip>
+      </Row>
+      <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
+        {row.kind}
+      </Typography>
+      {row.deviceId !== undefined && (
+        <Typography
+          variant="bodySmall"
+          color={colors.onSurfaceVariant}
+          style={DEVICE_ID_STYLE}
+          selectable
+        >
+          {row.deviceId}
+        </Typography>
+      )}
+      {row.problem !== undefined && (
+        <Typography variant="bodySmall" color={colors.error} selectable>
+          {row.problem}
+        </Typography>
+      )}
+    </View>
   )
 }

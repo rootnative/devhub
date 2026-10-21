@@ -19,3 +19,7 @@ const themes = createMaterialTheme(LIGHT_TONES.soft, {
 
 export const lightTheme = themes.lightTheme
 export const darkTheme = themes.darkTheme
+
+/** For IDs and hashes, so each character has the same width. */
+export const MONO_FONT =
+  'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'

@@ -26,6 +26,10 @@ notes name each one.
   its fingerprint. The full hash shows when you put the pointer on it. The
   builds come first, and the devices and the setup checks are next to them
   or under them.
+- The `devhub ui` page cuts no text in a narrow column: each device shows
+  its full name, its ID, and its fix, and each build shows its full
+  profile. The setup checks show as one chip for each check, with the fix
+  of each warning and failure under the chips.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 
