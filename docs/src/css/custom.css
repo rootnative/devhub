@@ -35,7 +35,8 @@
   --rn-fg-muted: #52525b;
   --rn-fg-subtle: #71717a;
   /* The two accent tokens are the tones of the mark: LIGHT_TONES and
-     DARK_TONES in scripts/build-brand.mjs. Change them together.
+     DARK_TONES in scripts/build-brand.mjs and apps/web/src/theme.ts.
+     Change them together.
      `--rn-accent` is only 2.1:1 on white. A focus ring or a border must
      meet WCAG 1.4.11, so it takes `--rn-accent-strong` at 5.0:1. */
   --rn-accent: #f59e0b;

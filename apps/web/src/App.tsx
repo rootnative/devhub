@@ -5,12 +5,7 @@ import { Column, Container, Grid, Layout } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Typography } from '@rootnative/components/typography'
-import {
-  ThemeProvider,
-  darkTheme,
-  lightTheme,
-  useTheme,
-} from '@rootnative/core'
+import { ThemeProvider, useTheme } from '@rootnative/core'
 import { useEffect, useState } from 'react'
 import { ScrollView } from 'react-native'
 import { NO_TOKEN, getJson, postJson } from './api/client'
@@ -26,6 +21,7 @@ import type {
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
+import { Mark } from './components/Mark'
 import { Notice } from './components/Notice'
 import { SetupSection, type DoctorState } from './components/SetupSection'
 import { SyncCard, type SyncState } from './components/SyncCard'
@@ -33,6 +29,7 @@ import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import type { BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
+import { darkTheme, lightTheme } from './theme'
 
 const TITLE = 'DevHub by Root Native'
 
@@ -45,7 +42,7 @@ export function App() {
           <Layout>
             {token === undefined ? (
               <>
-                <AppBar title={TITLE} />
+                <AppBar title={TITLE} leading={<Mark />} />
                 <Container width="large" p="lg">
                   <Notice tone="error">{NO_TOKEN}</Notice>
                 </Container>
@@ -130,6 +127,7 @@ function Dashboard({ token }: { token: string }) {
     <>
       <AppBar
         title={TITLE}
+        leading={<Mark />}
         subtitle="Stored builds and devices"
         trailing={
           <Button

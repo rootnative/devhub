@@ -44,7 +44,8 @@ const BRAND_DIR = path.join(ROOT, 'assets', 'brand')
 const DOCS_IMG_DIR = path.join(ROOT, 'docs', 'static', 'img')
 
 // The docs tokens --rn-accent and --rn-accent-strong in
-// docs/src/css/custom.css hold the same values. Change them together.
+// docs/src/css/custom.css, and the tones in apps/web/src/theme.ts, hold the
+// same values. Change them together.
 const LIGHT_TONES = { soft: '#f59e0b', strong: '#b45309' }
 const DARK_TONES = { soft: '#fde68a', strong: '#fbbf24' }
 

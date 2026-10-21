@@ -8,6 +8,11 @@ notes name each one.
 
 ## [Unreleased]
 
+### Changed
+
+- The `devhub ui` page uses the colors of DevHub: an amber accent on grey
+  surfaces, in light and dark mode. The app bar shows the DevHub mark.
+
 ## [0.0.0-alpha.1] - 2026-10-20
 
 The second alpha. DevHub finds the stored build that matches the native
