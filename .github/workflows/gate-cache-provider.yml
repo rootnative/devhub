@@ -83,7 +83,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # React Native 0.86 builds with NDK 27.1.12297006, and the image has
+      # React Native 0.88 builds with NDK 27.1.12297006, and the image has
       # 27.3 as the default. The action installs the NDK first.
       - name: Run the gate on an emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
