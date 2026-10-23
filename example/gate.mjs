@@ -15,7 +15,7 @@ const root = path.dirname(fileURLToPath(import.meta.url))
 const store = path.join(root, '.devhub')
 const appJson = path.join(root, 'app.json')
 
-// Expo SDK 57 has Swift packages with Swift tools 6.2 (Xcode 26). Expo CLI
+// Expo SDK 58 has Swift packages with Swift tools 6.2 (Xcode 26). Expo CLI
 // does not check it, and xcodebuild fails late with code 65.
 const MIN_SWIFT = [6, 2]
 
@@ -128,7 +128,7 @@ function checkSwift() {
   const found = version(text.match(/Swift version [\d.]+/)?.[0] ?? '')
   check(
     compareVersions(found, MIN_SWIFT) >= 0,
-    `Expo SDK 57 needs Swift ${MIN_SWIFT.join('.')} or later (Xcode 26), and this Mac has Swift ${found.join('.') || 'unknown'}. Select Xcode 26 with xcode-select.`,
+    `Expo SDK 58 needs Swift ${MIN_SWIFT.join('.')} or later (Xcode 26), and this Mac has Swift ${found.join('.') || 'unknown'}. Select Xcode 26 with xcode-select.`,
   )
 }
 

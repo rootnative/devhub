@@ -43,7 +43,7 @@ Run each command in this folder.
 
 For iOS, use `pnpm ios`, and delete the `ios` folder, in steps 1 to 5.
 Xcode builds the app in place of Gradle. Expo CLI uses the provider only for
-a simulator, not for an iOS device. Expo SDK 57 needs Xcode 26 for a local
+a simulator, not for an iOS device. Expo SDK 58 needs Xcode 26 for a local
 iOS build.
 
 `node gate.mjs android` and `node gate.mjs ios` do steps 1 to 6 with no

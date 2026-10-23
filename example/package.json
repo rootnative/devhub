@@ -14,14 +14,14 @@
     "clean": "node -e \"for (const p of ['.devhub', '.expo', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
   },
   "dependencies": {
-    "expo": "~57.0.21",
-    "expo-dev-client": "~57.0.20",
-    "react": "19.2.3",
-    "react-native": "0.86.3"
+    "expo": "~58.0.17",
+    "expo-dev-client": "~58.0.14",
+    "react": "19.3.0",
+    "react-native": "0.88.0"
   },
   "devDependencies": {
     "@rootnative/devhub": "workspace:*",
-    "@types/react": "~19.2.0",
+    "@types/react": "~19.3.0",
     "typescript": "^5.9.3"
   }
 }

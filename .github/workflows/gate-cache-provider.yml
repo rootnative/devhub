@@ -18,7 +18,7 @@ concurrency:
 jobs:
   ios:
     name: iOS simulator
-    # Expo SDK 57 needs Xcode 26 (Swift 6.2). The macos-26 image has it as
+    # Expo SDK 58 needs Xcode 26 (Swift 6.2). The macos-26 image has it as
     # the default Xcode.
     runs-on: macos-26
     timeout-minutes: 90
