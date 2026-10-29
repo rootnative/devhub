@@ -13,10 +13,10 @@
     "clean": "node -e \"for (const p of ['dist', '.expo', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
   },
   "dependencies": {
-    "@rootnative/components": "0.0.0-alpha.29",
-    "@rootnative/core": "0.0.0-alpha.29",
-    "@rootnative/icons": "0.0.0-alpha.29",
-    "@rootnative/inertia": "0.0.20",
+    "@rootnative/components": "0.0.0-alpha.31",
+    "@rootnative/core": "0.0.0-alpha.31",
+    "@rootnative/icons": "0.0.0-alpha.31",
+    "@rootnative/inertia": "0.0.22",
     "expo": "~58.0.17",
     "lucide-react-native": "1.52.0",
     "react": "19.3.0",
