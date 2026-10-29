@@ -90,8 +90,10 @@ export function BuildsSection({
 }
 
 /**
- * A project with its builds as stacked rows, for a narrow window. `ListItem`
- * cuts its headline at one line, so the rows are plain views.
+ * A project with its builds as stacked rows, for a narrow window. The rows
+ * are plain views, not `ListItem`: its text slots take a string only, and a
+ * row needs a monospace, selectable ID and an install problem in the error
+ * colour.
  */
 function BuildCard({
   group,
