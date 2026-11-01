@@ -1,4 +1,6 @@
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, nativeTheme, shell } from 'electron'
+import { desktopPageUrl } from './announcement'
+import { frameOptions } from './chrome'
 import { devhubBin, startUiChild, type UiChild } from './child'
 import { decideNavigation } from './navigation'
 
@@ -48,7 +50,7 @@ async function start(): Promise<void> {
       )
     }
   })
-  openWindow(url)
+  openWindow(desktopPageUrl(url))
 }
 
 function openWindow(url: string): void {
@@ -59,12 +61,26 @@ function openWindow(url: string): void {
     minHeight: 480,
     show: false,
     title: 'DevHub by Root Native',
+    ...frameOptions(process.platform, nativeTheme.shouldUseDarkColors),
     webPreferences: {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
     },
   })
+  const onThemeUpdated = () => {
+    const frame = frameOptions(
+      process.platform,
+      nativeTheme.shouldUseDarkColors,
+    )
+    window.setBackgroundColor(frame.backgroundColor)
+    // setTitleBarOverlay exists on Windows and Linux only.
+    if (process.platform !== 'darwin') {
+      window.setTitleBarOverlay(frame.titleBarOverlay)
+    }
+  }
+  nativeTheme.on('updated', onThemeUpdated)
+  window.once('closed', () => nativeTheme.off('updated', onThemeUpdated))
   window.once('ready-to-show', () => window.show())
   window.webContents.on('will-navigate', (event, target) => {
     const decision = decideNavigation(url, target)

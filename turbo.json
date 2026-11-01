@@ -57,9 +57,19 @@
     "@rootnative/devhub-example#typecheck": {
       "outputs": []
     },
+    "@rootnative/devhub-web#typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/desktop/src/chrome.ts"]
+    },
     "test": {
       "dependsOn": ["^build"],
       "outputs": []
+    },
+    "@rootnative/devhub-web#test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/desktop/src/chrome.ts"]
     },
     "lint": {
       "outputs": []

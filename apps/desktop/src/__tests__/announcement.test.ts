@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readAnnouncement } from '../announcement'
+import { desktopPageUrl, readAnnouncement } from '../announcement'
 
 const ANNOUNCEMENT = JSON.stringify(
   { url: 'http://127.0.0.1:51234/#token=abc', port: 51234 },
@@ -43,5 +43,22 @@ describe('readAnnouncement', () => {
     expect(readAnnouncement('{"error":"nope"}')).toBeUndefined()
     expect(readAnnouncement('{"url":1,"port":"5"}')).toBeUndefined()
     expect(readAnnouncement('[]')).toBeUndefined()
+  })
+})
+
+describe('desktopPageUrl', () => {
+  it('adds host=desktop next to the token', () => {
+    expect(desktopPageUrl('http://127.0.0.1:51234/#token=abc-_1')).toBe(
+      'http://127.0.0.1:51234/#token=abc-_1&host=desktop',
+    )
+  })
+
+  it('replaces a host value, and adds a fragment when the URL has none', () => {
+    expect(desktopPageUrl('http://127.0.0.1:51234/#host=browser')).toBe(
+      'http://127.0.0.1:51234/#host=desktop',
+    )
+    expect(desktopPageUrl('http://127.0.0.1:51234/')).toBe(
+      'http://127.0.0.1:51234/#host=desktop',
+    )
   })
 })

@@ -1,10 +1,10 @@
-import { AppBar } from '@rootnative/components/appbar'
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
 import { IconButton } from '@rootnative/components/icon-button'
 import { Container, Grid, Layout, Row } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
+import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { ThemeProvider, useBreakpointValue, useTheme } from '@rootnative/core'
 import { useEffect, useState } from 'react'
@@ -22,11 +22,12 @@ import type {
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
-import { Mark } from './components/Mark'
 import { Notice } from './components/Notice'
 import { SetupSection, type DoctorState } from './components/SetupSection'
 import { SyncCard, type SyncState } from './components/SyncCard'
 import { SyncControls } from './components/SyncControls'
+import { TitleBar } from './components/TitleBar'
+import { HOST_KEY, resolveHost, type Host } from './logic/host'
 import { installedMessage } from './logic/install'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import { storeLine, type BuildRow } from './logic/view'
@@ -34,11 +35,12 @@ import { easStatus } from './logic/whoami'
 import { iconResolver, type IconName } from './icons'
 import { darkTheme, lightTheme } from './theme'
 
-const TITLE = 'DevHub by Root Native'
+const TITLE = 'DevHub'
 const REFRESH_ICON: IconName = 'refresh'
+const REFRESH_HINT = 'Read the builds, the devices, and the EAS status again.'
 
 export function App() {
-  const [token] = useState(takeToken)
+  const [{ token, host }] = useState(takeSession)
   return (
     <ThemeProvider
       theme={{ light: lightTheme, dark: darkTheme }}
@@ -49,13 +51,13 @@ export function App() {
           <Layout>
             {token === undefined ? (
               <>
-                <AppBar title={TITLE} leading={<Mark />} />
+                <TitleBar host={host} title={TITLE} />
                 <Container width="large" p="lg">
                   <Notice tone="error">{NO_TOKEN}</Notice>
                 </Container>
               </>
             ) : (
-              <Dashboard token={token} />
+              <Dashboard token={token} host={host} />
             )}
           </Layout>
         </SnackbarProvider>
@@ -64,7 +66,7 @@ export function App() {
   )
 }
 
-function Dashboard({ token }: { token: string }) {
+function Dashboard({ token, host }: { token: string; host: Host }) {
   const { colors } = useTheme()
   const snackbar = useSnackbar()
   const builds = useApi<BuildList>('/api/builds', token)
@@ -80,8 +82,6 @@ function Dashboard({ token }: { token: string }) {
   // Below the expanded breakpoint, the EAS chip and Sync do not fit next to
   // the title, so they go above the sections.
   const wide = useBreakpointValue({ compact: false, expanded: true })
-  // On a phone width, the label of Refresh cuts the title.
-  const compact = useBreakpointValue({ compact: true, medium: false })
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -143,30 +143,30 @@ function Dashboard({ token }: { token: string }) {
     />
   )
   const refreshing = builds.busy || devices.busy || eas.busy
-  const refreshButton = compact ? (
-    <IconButton
-      variant="standard"
-      icon={REFRESH_ICON}
-      disabled={refreshing}
-      onPress={refresh}
-      accessibilityLabel="Refresh"
-    />
-  ) : (
-    <Button
-      variant="text"
-      leadingIcon={REFRESH_ICON}
-      loading={refreshing}
-      onPress={refresh}
+  const refreshButton = (
+    <Tooltip
+      side="bottom"
+      align="end"
+      anchor={
+        <IconButton
+          variant="standard"
+          icon={REFRESH_ICON}
+          disabled={refreshing}
+          onPress={refresh}
+          accessibilityLabel="Refresh"
+          accessibilityHint={REFRESH_HINT}
+        />
+      }
     >
-      Refresh
-    </Button>
+      {REFRESH_HINT}
+    </Tooltip>
   )
 
   return (
     <>
-      <AppBar
+      <TitleBar
+        host={host}
         title={TITLE}
-        leading={<Mark />}
         subtitle={storeLine(builds.state)}
         trailing={
           wide ? (
@@ -243,20 +243,25 @@ function Dashboard({ token }: { token: string }) {
 }
 
 /**
- * Takes the token from the URL fragment that devhub ui printed, keeps it in
- * sessionStorage, and removes it from the address bar.
+ * Takes the token and the host from the URL fragment that devhub ui printed,
+ * keeps them in sessionStorage, and removes them from the address bar.
  */
-function takeToken(): string | undefined {
-  let stored: string | null = null
+function takeSession(): { token: string | undefined; host: Host } {
+  let storedToken: string | null = null
+  let storedHost: string | null = null
   try {
-    stored = window.sessionStorage.getItem(TOKEN_KEY)
+    storedToken = window.sessionStorage.getItem(TOKEN_KEY)
+    storedHost = window.sessionStorage.getItem(HOST_KEY)
   } catch {
     // The browser can block storage. The token then lives in memory only.
   }
-  const { token, fromHash } = resolveToken(window.location.hash, stored)
+  const hash = window.location.hash
+  const { token, fromHash } = resolveToken(hash, storedToken)
+  const host = resolveHost(hash, storedHost)
   if (fromHash && token !== undefined) {
     try {
       window.sessionStorage.setItem(TOKEN_KEY, token)
+      window.sessionStorage.setItem(HOST_KEY, host)
     } catch {
       // The browser can block storage. A reload then needs the URL again.
     }
@@ -266,5 +271,5 @@ function takeToken(): string | undefined {
       window.location.pathname + window.location.search,
     )
   }
-  return token
+  return { token, host }
 }

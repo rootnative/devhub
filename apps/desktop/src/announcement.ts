@@ -29,6 +29,18 @@ export function readAnnouncement(stdout: string): UiAnnouncement | undefined {
   return undefined
 }
 
+/**
+ * The URL that the window loads: the announced URL with `host=desktop` next
+ * to the token in the fragment. The page then draws the title bar parts.
+ */
+export function desktopPageUrl(announced: string): string {
+  const url = new URL(announced)
+  const fragment = new URLSearchParams(url.hash.slice(1))
+  fragment.set('host', 'desktop')
+  url.hash = fragment.toString()
+  return url.href
+}
+
 function parseAnnouncement(text: string): UiAnnouncement | undefined {
   let value: unknown
   try {
