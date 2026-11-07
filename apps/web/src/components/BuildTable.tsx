@@ -54,11 +54,14 @@ function columnStyle(column: Column): ViewStyle {
 }
 
 export function BuildTable({
+  titled,
   group,
   devices,
   installing,
   onInstall,
 }: {
+  /** `false` when the heading of the page names the project. */
+  titled: boolean
   group: ProjectGroup
   devices: readonly Device[] | undefined
   installing: string | undefined
@@ -77,11 +80,13 @@ export function BuildTable({
   }
   return (
     <Card variant="outlined">
-      <View style={{ padding: SIDE_PADDING, paddingBottom: 8 }}>
-        <Typography variant="titleSmall" level={3}>
-          {group.project}
-        </Typography>
-      </View>
+      {titled && (
+        <View style={{ padding: SIDE_PADDING, paddingBottom: 8 }}>
+          <Typography variant="titleSmall" level={3}>
+            {group.project}
+          </Typography>
+        </View>
+      )}
       <View role="table" aria-label={`Builds of ${group.project}`}>
         <View role="row" style={[rowStyle, { paddingVertical: 8 }]}>
           {COLUMNS.map((column) => (

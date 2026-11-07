@@ -1,14 +1,14 @@
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
 import { IconButton } from '@rootnative/components/icon-button'
-import { Container, Grid, Layout, Row } from '@rootnative/components/layout'
+import { Column, Container, Layout, Row } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { ThemeProvider, useBreakpointValue, useTheme } from '@rootnative/core'
 import { useEffect, useState } from 'react'
-import { ScrollView } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { NO_TOKEN, getJson, postJson } from './api/client'
 import type {
   BuildList,
@@ -24,13 +24,15 @@ import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
 import { Notice } from './components/Notice'
 import { SetupSection, type DoctorState } from './components/SetupSection'
+import { Sidebar, SidebarDrawer } from './components/Sidebar'
 import { SyncCard, type SyncState } from './components/SyncCard'
 import { SyncControls } from './components/SyncControls'
 import { TitleBar } from './components/TitleBar'
 import { HOST_KEY, resolveHost, type Host } from './logic/host'
 import { installedMessage } from './logic/install'
+import { keepProject, type Page } from './logic/sidebar'
 import { TOKEN_KEY, resolveToken } from './logic/token'
-import { storeLine, type BuildRow } from './logic/view'
+import type { BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
 import { iconResolver, type IconName } from './icons'
 import { darkTheme, lightTheme } from './theme'
@@ -38,6 +40,14 @@ import { darkTheme, lightTheme } from './theme'
 const TITLE = 'DevHub'
 const REFRESH_ICON: IconName = 'refresh'
 const REFRESH_HINT = 'Read the builds, the devices, and the EAS status again.'
+const MENU_ICON: IconName = 'menu'
+const MENU_LABEL = 'Show the builds, the devices, and the setup'
+
+const styles = StyleSheet.create({
+  body: { flex: 1, flexDirection: 'row' },
+  main: { flex: 1 },
+  mainContent: { padding: 16 },
+})
 
 export function App() {
   const [{ token, host }] = useState(takeSession)
@@ -79,9 +89,22 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   const [failure, setFailure] = useState({ visible: false, message: '' })
   const [sync, setSync] = useState<SyncState>({ kind: 'idle' })
   const [checks, setChecks] = useState<DoctorState>({ running: false })
-  // Below the expanded breakpoint, the EAS chip and Sync do not fit next to
-  // the title, so they go above the sections.
+  const [page, setPage] = useState<Page>('builds')
+  const [selectedProject, setSelectedProject] = useState<string>()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  // Below the expanded breakpoint, the sidebar is a modal drawer, and the EAS
+  // chip and Sync do not fit next to the title, so they go above the page.
   const wide = useBreakpointValue({ compact: false, expanded: true })
+  if (wide && drawerOpen) {
+    setDrawerOpen(false)
+  }
+  const project = keepProject(
+    selectedProject,
+    builds.state.kind === 'ok' ? builds.state.value : undefined,
+  )
+  if (project !== selectedProject) {
+    setSelectedProject(project)
+  }
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -150,6 +173,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
       anchor={
         <IconButton
           variant="standard"
+          size="extraSmall"
           icon={REFRESH_ICON}
           disabled={refreshing}
           onPress={refresh}
@@ -162,12 +186,37 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     </Tooltip>
   )
 
+  // No tooltip: the drawer opens over the button, and the tooltip of the
+  // button stays above the drawer until the pointer moves.
+  const menuButton = (
+    <IconButton
+      variant="standard"
+      size="extraSmall"
+      icon={MENU_ICON}
+      onPress={() => setDrawerOpen(true)}
+      accessibilityLabel={MENU_LABEL}
+    />
+  )
+  const sidebar = {
+    page,
+    onPage: setPage,
+    project,
+    onProject: (next: string | undefined) => {
+      setSelectedProject(next)
+      setPage('builds')
+      setDrawerOpen(false)
+    },
+    builds: builds.state,
+    devices: devices.state,
+    checks,
+  }
+
   return (
     <>
       <TitleBar
         host={host}
         title={TITLE}
-        subtitle={storeLine(builds.state)}
+        leading={wide ? undefined : menuButton}
         trailing={
           wide ? (
             <Row gap="sm" align="center">
@@ -179,16 +228,19 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
           )
         }
       />
-      <ScrollView>
-        <Container width="large" p="lg">
-          {!wide && <Row pb="lg">{syncControls}</Row>}
-          {/* The build table needs the width. From the large breakpoint,
-              the devices and the setup go in a side column at the end.
-              Below it, they go under the builds. */}
-          <Grid columns={{ compact: 1, large: 4 }} gap="lg">
-            <Grid.Cell span={{ compact: 1, large: 3 }}>
+      <View style={styles.body}>
+        {wide && <Sidebar {...sidebar} />}
+        <ScrollView
+          style={[styles.main, { backgroundColor: colors.surface }]}
+          contentContainerStyle={styles.mainContent}
+        >
+          <Column gap="lg">
+            {!wide && <Row>{syncControls}</Row>}
+            <SyncCard state={sync} onClose={() => setSync({ kind: 'idle' })} />
+            {page === 'builds' && (
               <BuildsSection
                 state={builds.state}
+                project={project}
                 now={new Date()}
                 devices={
                   devices.state.kind === 'ok'
@@ -197,23 +249,22 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
                 }
                 installing={installing}
                 onInstall={(row, device) => void install(row, device)}
-                syncResult={
-                  <SyncCard
-                    state={sync}
-                    onClose={() => setSync({ kind: 'idle' })}
-                  />
-                }
               />
-            </Grid.Cell>
-            <Grid.Cell span={1}>
-              <Grid columns={{ compact: 1, medium: 2, large: 1 }} gap="xl">
-                <DevicesSection state={devices.state} />
-                <SetupSection state={checks} onRun={() => void runChecks()} />
-              </Grid>
-            </Grid.Cell>
-          </Grid>
-        </Container>
-      </ScrollView>
+            )}
+            {page === 'devices' && <DevicesSection state={devices.state} />}
+            {page === 'setup' && (
+              <SetupSection state={checks} onRun={() => void runChecks()} />
+            )}
+          </Column>
+        </ScrollView>
+      </View>
+      {!wide && (
+        <SidebarDrawer
+          {...sidebar}
+          visible={drawerOpen}
+          onDismiss={() => setDrawerOpen(false)}
+        />
+      )}
       <Dialog
         visible={failure.visible}
         onDismiss={() => setFailure({ ...failure, visible: false })}

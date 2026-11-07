@@ -6,23 +6,15 @@ import { ListDivider } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import { Fragment } from 'react'
-import { View, type TextStyle } from 'react-native'
+import { View } from 'react-native'
 import type { DeviceReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import { deviceRow, type DeviceRow } from '../logic/view'
-import { MONO_FONT } from '../theme'
+import { MONO_WRAP } from '../theme'
 import { Notice } from './Notice'
 
 const NO_DEVICE =
   'No device runs now. Start an emulator, or connect an Android device with USB debugging on. On macOS, you can also boot a simulator.'
-
-// react-native-web passes wordBreak to the browser, but the React Native
-// type does not have it. A simulator UDID has no space to break at.
-const DEVICE_ID_STYLE = {
-  fontFamily: MONO_FONT,
-  letterSpacing: 0,
-  wordBreak: 'break-all',
-} as TextStyle
 
 export function DevicesSection({ state }: { state: ApiState<DeviceReport> }) {
   const { colors } = useTheme()
@@ -92,7 +84,7 @@ function Device({ row }: { row: DeviceRow }) {
         <Typography
           variant="bodySmall"
           color={colors.onSurfaceVariant}
-          style={DEVICE_ID_STYLE}
+          style={MONO_WRAP}
           selectable
         >
           {row.deviceId}

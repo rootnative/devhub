@@ -268,7 +268,9 @@ URL in your browser. Press Ctrl+C to stop the server.
 - `--json` prints the URL and the port as JSON.
 
 The page shows the stored builds of each project and the devices that run
-now. In a wide window, the builds are a table with the start of the
+now. A card at the top of the sidebar selects the project, or all
+projects. The sidebar also lists the devices and Setup, and shows the
+store folder. In a wide window, the builds are a table with the start of the
 fingerprint of each build. It reads the devices again when you return to the window, and when
 you click Refresh.
 
@@ -278,14 +280,14 @@ button is off when no device of the platform is ready. A build that
 `devhub install` refuses has no button, and shows the reason and the fix.
 When an install fails, the page shows the same message as the CLI.
 
-The app bar shows the store folder, the EAS login state, and the Sync
-button. Sync is off without a login, with the fix in its tooltip. Click Sync to
+The toolbar shows the EAS login state and the Sync button. Sync is off without a login, with the fix in its tooltip. Click Sync to
 run `devhub sync --all`. The terminal of `devhub ui` shows
 the progress, and the page shows the result of each project when the sync
 ends. Only one sync runs at a time: while a sync runs from the terminal or
 from a second tab, the page shows that message.
 
-Click Check in the Setup section to run the checks of `devhub doctor`.
+Open Setup in the sidebar, and click Check to run the checks of
+`devhub doctor`.
 The page shows the fix below each warning and failure. It runs the checks
 only on a click, because the EAS check can use the network.
 

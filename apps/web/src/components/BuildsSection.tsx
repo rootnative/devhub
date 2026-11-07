@@ -3,10 +3,12 @@ import { Column, Row } from '@rootnative/components/layout'
 import { ListDivider } from '@rootnative/components/list'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Fragment, useState, type ReactNode } from 'react'
+import { Fragment, useState } from 'react'
 import { View } from 'react-native'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
+import { buildCount } from '../logic/sidebar'
+import { ALL_PROJECTS } from './Sidebar'
 import {
   groupBuilds,
   storeNotes,
@@ -20,38 +22,56 @@ import { Notice } from './Notice'
 
 const NO_BUILD = 'The store has no builds. Run devhub sync in a project folder.'
 
+/**
+ * The builds of all projects, one card for each, or the builds of one
+ * project in one table with no card title.
+ */
 export function BuildsSection({
   state,
+  project,
   now,
   devices,
   installing,
   onInstall,
-  syncResult,
 }: {
   state: ApiState<BuildList>
+  /** `undefined` for all projects. */
+  project: string | undefined
   now: Date
   /** `undefined` while the page has no device list. */
   devices: readonly Device[] | undefined
   /** The ID of the build that installs now. */
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
-  /** The state of the last sync, above the builds. */
-  syncResult: ReactNode
 }) {
   const { colors } = useTheme()
-  // The section measures its own width, because the grid gives it a
-  // different part of the window at each breakpoint.
+  // The section measures its own width, because a classic scrollbar takes a
+  // part of the main pane that the page cannot know.
   const [width, setWidth] = useState(0)
   const table = width >= TABLE_MIN_WIDTH
+  const all = project === undefined
+  const groups =
+    state.kind === 'ok'
+      ? groupBuilds(state.value, now).filter(
+          (group) => all || group.project === project,
+        )
+      : []
+  const count = groups.reduce((sum, group) => sum + group.builds.length, 0)
   return (
     <Column
       gap="md"
       onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
     >
-      <Typography variant="titleLarge" level={2}>
-        Builds
-      </Typography>
-      {syncResult}
+      <Row justify="space-between" align="baseline" gap="md">
+        <Typography variant="titleLarge" level={2} style={{ flexShrink: 1 }}>
+          {all ? ALL_PROJECTS : project}
+        </Typography>
+        {state.kind === 'ok' && (
+          <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
+            {buildCount(count)}
+          </Typography>
+        )}
+      </Row>
       {state.kind === 'loading' && (
         <Typography variant="bodyMedium" color={colors.onSurfaceVariant}>
           Reading the store.
@@ -60,14 +80,18 @@ export function BuildsSection({
       {state.kind === 'error' && <Notice tone="error">{state.message}</Notice>}
       {state.kind === 'ok' && (
         <>
-          {storeNotes(state.value).map((note) => (
-            <Notice key={note}>{note}</Notice>
-          ))}
-          {state.value.builds.length === 0 && <Notice>{NO_BUILD}</Notice>}
-          {groupBuilds(state.value, now).map((group) =>
+          {all &&
+            storeNotes(state.value).map((note) => (
+              <Notice key={note}>{note}</Notice>
+            ))}
+          {all && state.value.builds.length === 0 && (
+            <Notice>{NO_BUILD}</Notice>
+          )}
+          {groups.map((group) =>
             table ? (
               <BuildTable
                 key={group.project}
+                titled={all}
                 group={group}
                 devices={devices}
                 installing={installing}
@@ -76,6 +100,7 @@ export function BuildsSection({
             ) : (
               <BuildCard
                 key={group.project}
+                titled={all}
                 group={group}
                 devices={devices}
                 installing={installing}
@@ -96,11 +121,14 @@ export function BuildsSection({
  * colour.
  */
 function BuildCard({
+  titled,
   group,
   devices,
   installing,
   onInstall,
 }: {
+  /** `false` when the heading of the page names the project. */
+  titled: boolean
   group: ProjectGroup
   devices: readonly Device[] | undefined
   installing: string | undefined
@@ -110,11 +138,13 @@ function BuildCard({
   const muted = colors.onSurfaceVariant
   return (
     <Card variant="outlined">
-      <View style={{ padding: 16, paddingBottom: 4 }}>
-        <Typography variant="titleSmall" level={3}>
-          {group.project}
-        </Typography>
-      </View>
+      {titled && (
+        <View style={{ padding: 16, paddingBottom: 4 }}>
+          <Typography variant="titleSmall" level={3}>
+            {group.project}
+          </Typography>
+        </View>
+      )}
       {group.builds.map((row, index) => (
         <Fragment key={row.id}>
           {index > 0 && <ListDivider />}

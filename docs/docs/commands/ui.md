@@ -25,18 +25,32 @@ server stops after it ends. Press Ctrl+C again to stop the server at once.
 
 ## The page
 
-The app bar shows the store folder under the title. On its right are the
-EAS login state, Sync, and Refresh. In a narrow window, the EAS login state
-and Sync are above the sections.
+The toolbar shows the EAS login state, Sync, and Refresh. In a narrow
+window, the EAS login state and Sync are at the top of the page.
 
-The page has a builds section, with one card for each project, and a
-devices section and a setup section. In a wide window, the devices and
-the setup are in a column next to the builds. Otherwise they are under
-the builds. The page reads the devices again when you return to the
+The sidebar shows these items. Click an item to open its page.
+
+- **The project:** the card at the top shows the selected project, or All
+  projects. Click it to see the other projects, and click a project to
+  show its builds. Put the pointer on a project to see its name.
+- **Builds:** the builds of the selected project, with the count.
+- **Devices:** one item for each device that runs now. A filled dot shows
+  a ready device. A ring in the error color shows a device that is not
+  ready. A warning icon on Devices shows that the Devices page has a
+  warning.
+- **Setup:** after a check, the count of warnings and failures.
+- **Store:** the store folder.
+
+The sidebar and the page scroll separately. In a narrow window, click the
+menu button at the start of the toolbar to open the sidebar.
+
+With All projects, the builds page shows one card for each project. With
+a project, it shows the builds of that project. When a sync removes the
+selected project, the page shows All projects. The page reads the devices again when you return to the
 window, and when you click Refresh. It does not poll.
 
-In a wide window, each project card is a table with one row for each
-build: the ID, the platform, the profile, the version, the commit, the
+In a wide window, the builds of a project are in a table with one row for
+each build: the ID, the platform, the profile, the version, the commit, the
 date, the EAS expiry, the fingerprint, and the size. The fingerprint
 column shows the start of the native fingerprint hash. Put the pointer on
 it to see the full hash. Builds with the same hash have the same native
@@ -60,7 +74,7 @@ Only one install runs at a time.
 
 ### Sync
 
-The chip in the app bar shows the EAS login state of
+The chip in the toolbar shows the EAS login state of
 [`devhub whoami`](./whoami.md): signed in with the user name, not signed
 in, eas-cli not installed, or the check failed. The page runs that check
 when it opens, on Refresh, and after a sync that eas-cli refused. Without
@@ -77,7 +91,7 @@ second tab, the page shows that message.
 
 ### Setup
 
-Click Check in the Setup section to run the checks of
+Open Setup in the sidebar, and click Check to run the checks of
 [`devhub doctor`](./doctor.md): Node, the store, eas-cli and its login,
 adb, and on macOS Xcode. The page shows one chip for each check, with its
 state. Put the pointer on a chip to see what DevHub found. The fix of each

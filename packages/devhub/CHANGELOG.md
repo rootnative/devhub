@@ -21,15 +21,19 @@ notes name each one.
   and the page shows it under the row of the build. `devhub install` still
   names the full ID in its own message, because there the ID is the input.
 - The `devhub ui` page uses the colors of DevHub: an amber accent on grey
-  surfaces, in light and dark mode. The app bar shows the DevHub mark.
-- The app bar of the `devhub ui` page shows the store folder under the
-  title, and the EAS login state, Sync, and Refresh on the right. In a
-  narrow window, the EAS login state and Sync are above the sections.
+  surfaces, in light and dark mode. The toolbar shows the DevHub mark.
+- The `devhub ui` page has a sidebar. A card at the top selects one
+  project or all projects, from a panel with the initials of each project.
+  Under it are the builds of the selection with their count, each device
+  with its state, Setup with the count of warnings and failures, and the
+  store folder. Each item opens its page, and the sidebar and the page
+  scroll separately. The toolbar shows the
+  EAS login state, Sync, and Refresh. In a narrow window, a menu button
+  opens the sidebar, and the EAS login state and Sync are at the top of
+  the page.
 - In a wide window, the `devhub ui` page shows the builds of each project
   as a table, with one row for each build and a column for the start of
-  its fingerprint. The full hash shows when you put the pointer on it. The
-  builds come first, and the devices and the setup checks are next to them
-  or under them.
+  its fingerprint. The full hash shows when you put the pointer on it.
 - The `devhub ui` page cuts no text in a narrow column: each device shows
   its full name, its ID, and its fix, and each build shows its full
   profile. The setup checks show as one chip for each check, with the fix

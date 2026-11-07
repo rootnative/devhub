@@ -9,13 +9,7 @@ import type {
 import { formatBytes, platformLabel, shortIds } from '../logic/format'
 import { installChoice, installedMessage } from '../logic/install'
 import { resolveToken } from '../logic/token'
-import {
-  buildColumns,
-  deviceRow,
-  groupBuilds,
-  storeLine,
-  storeNotes,
-} from '../logic/view'
+import { buildColumns, deviceRow, groupBuilds, storeNotes } from '../logic/view'
 
 const NOW = new Date('2026-10-18T12:00:00.000Z')
 
@@ -315,19 +309,6 @@ describe('storeNotes', () => {
     expect(storeNotes(list([], { incomplete: ['x', 'z'] }))).toEqual([
       'The store has 2 incomplete build folders. The next devhub sync replaces them.',
     ])
-  })
-})
-
-describe('storeLine', () => {
-  it('names the store folder of the list', () => {
-    expect(storeLine({ kind: 'ok', value: list([]) })).toBe(`Store: ${STORE}`)
-  })
-
-  it('says when the page reads or cannot read the store', () => {
-    expect(storeLine({ kind: 'loading' })).toBe('Reading the store.')
-    expect(storeLine({ kind: 'error', message: 'EACCES' })).toBe(
-      'DevHub cannot read the store.',
-    )
   })
 })
 

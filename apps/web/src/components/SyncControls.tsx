@@ -22,6 +22,7 @@ export function SyncControls({
   const syncButton = (
     <Button
       variant="tonal"
+      size="extraSmall"
       leadingIcon={SYNC_ICON}
       loading={syncing}
       disabled={!eas.canSync}

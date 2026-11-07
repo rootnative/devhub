@@ -1,4 +1,4 @@
-import { Column, Row } from '@rootnative/components/layout'
+import { Row } from '@rootnative/components/layout'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
 import type { ReactNode } from 'react'
@@ -24,8 +24,9 @@ const WINDOW = StyleSheet.create({
 
 const styles = StyleSheet.create({
   bar: { height: TITLE_BAR_HEIGHT },
-  end: { flexShrink: 0 },
+  control: { flexShrink: 0 },
   rule: { height: 1 },
+  title: { flexShrink: 1 },
 })
 
 /**
@@ -35,41 +36,35 @@ const styles = StyleSheet.create({
 export function TitleBar({
   host,
   title,
-  subtitle,
+  leading,
   trailing,
 }: {
   host: Host
   title: string
-  /** One line under the title. */
-  subtitle?: string
+  /** Before the mark. */
+  leading?: ReactNode
   trailing?: ReactNode
 }) {
   const { colors } = useTheme()
   const desktop = host === 'desktop'
+  const control = desktop ? WINDOW.noDrag : styles.control
   return (
     <View style={{ backgroundColor: colors.surface }}>
       <View style={desktop ? WINDOW.drag : undefined}>
         <Row px="lg" gap="md" align="center" style={styles.bar}>
+          {leading !== undefined && <View style={control}>{leading}</View>}
           <Row flex={1} gap="sm" align="center">
             <Mark size={24} />
-            <Column flex={1}>
-              <Typography variant="titleMedium" level={1} numberOfLines={1}>
-                {title}
-              </Typography>
-              {subtitle !== undefined && (
-                <Typography
-                  variant="labelMedium"
-                  color={colors.onSurfaceVariant}
-                  numberOfLines={1}
-                >
-                  {subtitle}
-                </Typography>
-              )}
-            </Column>
+            <Typography
+              variant="titleMedium"
+              level={1}
+              numberOfLines={1}
+              style={styles.title}
+            >
+              {title}
+            </Typography>
           </Row>
-          {trailing !== undefined && (
-            <View style={desktop ? WINDOW.noDrag : styles.end}>{trailing}</View>
-          )}
+          {trailing !== undefined && <View style={control}>{trailing}</View>}
         </Row>
       </View>
       <View style={[styles.rule, { backgroundColor: colors.outlineVariant }]} />
