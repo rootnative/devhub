@@ -186,16 +186,22 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     </Tooltip>
   )
 
-  // No tooltip: the drawer opens over the button, and the tooltip of the
-  // button stays above the drawer until the pointer moves.
   const menuButton = (
-    <IconButton
-      variant="standard"
-      size="extraSmall"
-      icon={MENU_ICON}
-      onPress={() => setDrawerOpen(true)}
-      accessibilityLabel={MENU_LABEL}
-    />
+    <Tooltip
+      side="bottom"
+      align="start"
+      anchor={
+        <IconButton
+          variant="standard"
+          size="extraSmall"
+          icon={MENU_ICON}
+          onPress={() => setDrawerOpen(true)}
+          accessibilityLabel={MENU_LABEL}
+        />
+      }
+    >
+      {MENU_LABEL}
+    </Tooltip>
   )
   const sidebar = {
     page,
