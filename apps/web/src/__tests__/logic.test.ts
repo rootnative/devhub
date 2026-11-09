@@ -6,12 +6,20 @@ import type {
   ListedBuild,
   LocalBuild,
 } from '../api/types'
-import { formatBytes, platformLabel, shortIds } from '../logic/format'
+import {
+  dateText,
+  formatBytes,
+  formatDate,
+  platformLabel,
+  shortIds,
+} from '../logic/format'
 import { installChoice, installedMessage } from '../logic/install'
 import { resolveToken } from '../logic/token'
 import { buildColumns, deviceRow, groupBuilds, storeNotes } from '../logic/view'
 
 const NOW = new Date('2026-10-18T12:00:00.000Z')
+// A 24-hour locale: the AM/PM space differs between ICU versions.
+const DATES = { locale: 'en-GB', timeZone: 'UTC' }
 
 function listed(id: string, eas: Partial<EasBuild> = {}): ListedBuild {
   return {
@@ -119,6 +127,60 @@ describe('format', () => {
   })
 })
 
+describe('formatDate', () => {
+  it.each([
+    ['2026-10-18T11:59:30.000Z', 'now'],
+    ['2026-10-18T11:15:00.000Z', '45 minutes ago'],
+    ['2026-10-18T09:00:00.000Z', '3 hours ago'],
+    ['2026-10-18T14:30:00.000Z', 'in 2 hours'],
+    ['2026-10-17T10:00:00.000Z', 'yesterday'],
+    ['2026-10-16T23:00:00.000Z', '2 days ago'],
+    ['2026-10-23T08:00:00.000Z', 'in 5 days'],
+    ['2026-10-11T12:00:00.000Z', '11 Oct'],
+    ['2026-12-24T08:00:00.000Z', '24 Dec'],
+    ['2025-08-02T08:00:00.000Z', '2 Aug 2025'],
+  ])('gives %s as %s', (iso, text) => {
+    expect(formatDate(iso, NOW, DATES)).toBe(text)
+  })
+
+  it('gives - when the timestamp is not valid', () => {
+    expect(formatDate(undefined, NOW, DATES)).toBe('-')
+    expect(formatDate('not a date', NOW, DATES)).toBe('-')
+  })
+
+  it('counts calendar days and the year in the time zone', () => {
+    const losAngeles = { locale: 'en-GB', timeZone: 'America/Los_Angeles' }
+    expect(formatDate('2026-10-17T05:00:00.000Z', NOW, DATES)).toBe('yesterday')
+    expect(formatDate('2026-10-17T05:00:00.000Z', NOW, losAngeles)).toBe(
+      '2 days ago',
+    )
+    const tokyo = { locale: 'en-GB', timeZone: 'Asia/Tokyo' }
+    expect(formatDate('2025-12-31T20:00:00.000Z', NOW, DATES)).toBe(
+      '31 Dec 2025',
+    )
+    expect(formatDate('2025-12-31T20:00:00.000Z', NOW, tokyo)).toBe('1 Jan')
+  })
+
+  it('follows the locale', () => {
+    const us = { locale: 'en-US', timeZone: 'UTC' }
+    expect(formatDate('2026-10-11T12:00:00.000Z', NOW, us)).toBe('Oct 11')
+    expect(formatDate('2025-08-02T08:00:00.000Z', NOW, us)).toBe('Aug 2, 2025')
+  })
+
+  it('says if the text is relative, and gives the full date and time', () => {
+    expect(dateText('2026-10-11T12:00:00.000Z', NOW, DATES)).toEqual({
+      text: '11 Oct',
+      relative: false,
+      full: '11 Oct 2026, 12:00',
+    })
+    expect(dateText('2026-10-17T10:00:00.000Z', NOW, DATES)).toEqual({
+      text: 'yesterday',
+      relative: true,
+      full: '17 Oct 2026, 10:00',
+    })
+  })
+})
+
 describe('groupBuilds', () => {
   it('groups the builds by project in the order of the list', () => {
     const groups = groupBuilds(
@@ -129,6 +191,7 @@ describe('groupBuilds', () => {
         listed('dddd4444-0000', { app: undefined }),
       ]),
       NOW,
+      DATES,
     )
 
     expect(groups.map((group) => group.project)).toEqual([
@@ -144,17 +207,17 @@ describe('groupBuilds', () => {
 
   it('gives each row the fields of devhub list', () => {
     const build = listed('aaaa1111-0000')
-    const [group] = groupBuilds(list([build]), NOW)
+    const [group] = groupBuilds(list([build]), NOW, DATES)
 
     expect(group?.builds[0]).toEqual({
       id: 'aaaa1111-0000',
       build,
       shortId: 'aaaa1111',
       title: 'Android · development',
-      details: 'Version 2.3.2 · commit b44e6ca · created 2026-10-06',
-      expiry: 'EAS deletes its copy on 2026-10-20',
+      details: 'Version 2.3.2 · commit b44e6ca · created 6 Oct',
+      expiry: 'EAS deletes its copy in 2 days',
       size: '214.8 MB',
-      cells: buildColumns(build, 'aaaa1111', NOW),
+      cells: buildColumns(build, 'aaaa1111', NOW, DATES),
     })
   })
 
@@ -171,12 +234,13 @@ describe('groupBuilds', () => {
         listed('bbbb2222-0000', { expirationDate: undefined }),
       ]),
       NOW,
+      DATES,
     )
 
     expect(group?.builds[0]).toMatchObject({
       title: 'iOS simulator · development',
-      details: 'Version - · commit - · created 2026-10-06',
-      expiry: 'EAS deleted its copy on 2026-10-01',
+      details: 'Version - · commit - · created 6 Oct',
+      expiry: 'EAS deleted its copy on 1 Oct',
     })
     expect(group?.builds[1]?.expiry).toBe('')
   })
@@ -187,14 +251,16 @@ describe('buildColumns', () => {
     const hash = 'd27c0622a1b2c3d4e5f60718293a4b5c6d7e8f90'
     const build = listed('aaaa1111-0000', { fingerprint: { hash } })
 
-    expect(buildColumns(build, 'aaaa1111', NOW)).toEqual({
+    expect(buildColumns(build, 'aaaa1111', NOW, DATES)).toEqual({
       id: 'aaaa1111',
       platform: 'Android',
       profile: 'development',
       version: '2.3.2',
       commit: 'b44e6ca',
-      created: '2026-10-06',
-      expiry: '2026-10-20',
+      created: '6 Oct',
+      createdFull: '6 Oct 2026, 08:00',
+      expiry: 'in 2 days',
+      expiryFull: '20 Oct 2026, 08:00',
       expired: false,
       fingerprint: 'd27c0622',
       fingerprintHash: hash,
@@ -212,7 +278,7 @@ describe('buildColumns', () => {
       expirationDate: undefined,
     })
 
-    const cells = buildColumns(build, 'aaaa1111', NOW)
+    const cells = buildColumns(build, 'aaaa1111', NOW, DATES)
 
     expect(cells).toMatchObject({
       platform: 'iOS simulator',
@@ -224,6 +290,7 @@ describe('buildColumns', () => {
       fingerprint: '-',
     })
     expect('fingerprintHash' in cells).toBe(false)
+    expect('expiryFull' in cells).toBe(false)
   })
 
   it('marks an expiry date in the past', () => {
@@ -231,8 +298,8 @@ describe('buildColumns', () => {
       expirationDate: '2026-10-01T00:00:00.000Z',
     })
 
-    expect(buildColumns(build, 'aaaa1111', NOW)).toMatchObject({
-      expiry: '2026-10-01',
+    expect(buildColumns(build, 'aaaa1111', NOW, DATES)).toMatchObject({
+      expiry: '1 Oct',
       expired: true,
     })
   })
@@ -240,12 +307,12 @@ describe('buildColumns', () => {
   it('gives the store date and the fingerprint of a local build', () => {
     const build = listedLocal('bbbb2222-0000')
 
-    expect(buildColumns(build, 'bbbb2222', NOW)).toMatchObject({
+    expect(buildColumns(build, 'bbbb2222', NOW, DATES)).toMatchObject({
       platform: 'Android',
       profile: 'local debug',
       version: '2.4.0',
       commit: '89abcde',
-      created: '2026-10-17',
+      created: 'yesterday',
       expiry: '-',
       expired: false,
       fingerprint: '33333333',
@@ -268,6 +335,7 @@ describe('groupBuilds with local builds', () => {
         }),
       ]),
       NOW,
+      DATES,
     )
 
     expect(groups.map((group) => group.project)).toEqual([
@@ -276,7 +344,7 @@ describe('groupBuilds with local builds', () => {
     ])
     expect(groups[0]?.builds[1]).toMatchObject({
       title: 'Android · local debug',
-      details: 'Version 2.4.0 · commit 89abcde · stored 2026-10-17',
+      details: 'Version 2.4.0 · commit 89abcde · stored yesterday',
       expiry: '',
     })
     expect(groups[1]?.builds[0]?.title).toBe('iOS simulator · local Debug')
@@ -286,6 +354,7 @@ describe('groupBuilds with local builds', () => {
     const [group] = groupBuilds(
       list([listedLocal('aaaa1111-0000', { slug: 'sample-app' })]),
       NOW,
+      DATES,
     )
 
     expect(group?.project).toBe('sample-app')

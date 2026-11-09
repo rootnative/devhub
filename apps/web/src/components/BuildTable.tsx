@@ -12,7 +12,16 @@ import { HueIcon, PlatformIcon, useHue } from './IconTile'
 import { InstallButton } from './InstallButton'
 import { ProjectBadge } from './ProjectBadge'
 
-type TextKey = Exclude<keyof BuildCells, 'expired' | 'fingerprintHash'>
+type TextKey = Exclude<
+  keyof BuildCells,
+  'expired' | 'fingerprintHash' | 'createdFull' | 'expiryFull'
+>
+
+const TOOLTIP_KEY: Partial<Record<TextKey, keyof BuildCells>> = {
+  created: 'createdFull',
+  expiry: 'expiryFull',
+  fingerprint: 'fingerprintHash',
+}
 
 type Column = {
   key: TextKey
@@ -274,9 +283,7 @@ function Cell({ column, row }: { column: Column; row: BuildRow }) {
       numberOfLines={1}
       style={style}
       selectable={column.key === 'id'}
-      aria-label={
-        expired ? `EAS deleted its copy on ${cells.expiry}` : undefined
-      }
+      aria-label={expired ? row.expiry : undefined}
     >
       {cells[column.key]}
     </Typography>
@@ -302,12 +309,14 @@ function Cell({ column, row }: { column: Column; row: BuildRow }) {
       </View>
     )
   }
-  if (column.key !== 'fingerprint' || cells.fingerprintHash === undefined) {
+  const tooltipKey = TOOLTIP_KEY[column.key]
+  const tooltip = tooltipKey === undefined ? undefined : cells[tooltipKey]
+  if (typeof tooltip !== 'string') {
     return text
   }
   return (
     <Tooltip side="top" duration={0} anchor={text}>
-      {cells.fingerprintHash}
+      {tooltip}
     </Tooltip>
   )
 }

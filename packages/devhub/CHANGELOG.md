@@ -57,6 +57,11 @@ notes name each one.
   bottom of the window, not in a card above the builds, so the page does
   not move. When the sync ends, Show opens the project of a new build, and
   Details shows the message of a project or a build that failed.
+- The `devhub ui` page shows a date in the 7 days before or after today as
+  a relative time, for example "3 hours ago" or "in 5 days", and other
+  dates as a short date in the format of the system. In the table, the
+  full date and time show when you put the pointer on a date. The CLI
+  keeps ISO dates.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 

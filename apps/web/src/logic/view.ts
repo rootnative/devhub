@@ -1,6 +1,13 @@
 import type { BuildList, Device, ListedBuild } from '../api/types'
 import type { IconName } from '../icons'
-import { formatBytes, formatDate, platformLabel, shortIds } from './format'
+import type { DateOptions } from './format'
+import {
+  dateText,
+  formatBytes,
+  formatDate,
+  platformLabel,
+  shortIds,
+} from './format'
 import { deviceLabel } from './install'
 import { buildSummary } from './summary'
 
@@ -28,7 +35,11 @@ export type BuildCells = {
   commit: string
   /** The EAS build date, or the store date of a local build. */
   created: string
+  /** The date and the time of `created`, for the tooltip. */
+  createdFull?: string
   expiry: string
+  /** The date and the time of `expiry`, for the tooltip. */
+  expiryFull?: string
   /** `true` when EAS deleted its copy. The copy in the store stays. */
   expired: boolean
   /** The start of the fingerprint hash. */
@@ -44,18 +55,23 @@ export function buildColumns(
   build: ListedBuild,
   shortId: string,
   now: Date,
+  dates: DateOptions = {},
 ): BuildCells {
   const summary = buildSummary(build)
   const expiry = summary.expirationDate
   const hash = summary.fingerprintHash
+  const created = dateText(summary.createdAt, now, dates)
+  const expires = dateText(expiry, now, dates)
   const cells: BuildCells = {
     id: shortId,
     platform: platformLabel(summary.platform, summary.isForIosSimulator),
     profile: summary.profile ?? '-',
     version: summary.appVersion ?? '-',
     commit: summary.gitCommitHash?.slice(0, 7) ?? '-',
-    created: formatDate(summary.createdAt),
-    expiry: formatDate(expiry),
+    created: created?.text ?? '-',
+    ...(created === undefined ? {} : { createdFull: created.full }),
+    expiry: expires?.text ?? '-',
+    ...(expires === undefined ? {} : { expiryFull: expires.full }),
     expired:
       expiry !== undefined &&
       !Number.isNaN(Date.parse(expiry)) &&
@@ -69,7 +85,11 @@ export function buildColumns(
 export type ProjectGroup = { project: string; builds: BuildRow[] }
 
 /** Groups the builds by project, in the order of `devhub list`. */
-export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
+export function groupBuilds(
+  list: BuildList,
+  now: Date,
+  dates: DateOptions = {},
+): ProjectGroup[] {
   const shortId = shortIds(list.builds.map((build) => build.id))
   const groups: ProjectGroup[] = []
   for (const build of list.builds) {
@@ -91,23 +111,29 @@ export function groupBuilds(list: BuildList, now: Date): ProjectGroup[] {
       details: [
         `Version ${summary.appVersion ?? '-'}`,
         `commit ${summary.gitCommitHash?.slice(0, 7) ?? '-'}`,
-        `${build.source === 'local' ? 'stored' : 'created'} ${formatDate(summary.createdAt)}`,
+        `${build.source === 'local' ? 'stored' : 'created'} ${formatDate(summary.createdAt, now, dates)}`,
       ].join(' · '),
-      expiry: expiryText(summary.expirationDate, now),
+      expiry: expiryText(summary.expirationDate, now, dates),
       size: formatBytes(build.size),
-      cells: buildColumns(build, shortId(build.id), now),
+      cells: buildColumns(build, shortId(build.id), now, dates),
     })
   }
   return groups
 }
 
-function expiryText(iso: string | undefined, now: Date): string {
-  if (iso === undefined || Number.isNaN(Date.parse(iso))) {
+function expiryText(
+  iso: string | undefined,
+  now: Date,
+  dates: DateOptions,
+): string {
+  const date = dateText(iso, now, dates)
+  if (iso === undefined || date === undefined) {
     return ''
   }
+  const when = date.relative ? date.text : `on ${date.text}`
   return Date.parse(iso) <= now.getTime()
-    ? `EAS deleted its copy on ${formatDate(iso)}`
-    : `EAS deletes its copy on ${formatDate(iso)}`
+    ? `EAS deleted its copy ${when}`
+    : `EAS deletes its copy ${when}`
 }
 
 /** The notes of `devhub list` about build folders that it cannot show. */

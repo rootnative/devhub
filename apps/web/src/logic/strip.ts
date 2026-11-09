@@ -4,6 +4,7 @@ import type { BuildList, Device, DeviceReport, DoctorCheck } from '../api/types'
 import type { IconName } from '../icons'
 import type { Hue } from '../theme'
 import type { DoctorState } from './doctor'
+import type { DateOptions } from './format'
 import { formatBytes, formatDate } from './format'
 import { deviceLabel } from './install'
 import { setupHue } from './sidebar'
@@ -25,6 +26,7 @@ export function buildCells(
   list: BuildList,
   project: string | undefined,
   now: Date,
+  dates: DateOptions = {},
 ): StripCell[] {
   const builds = list.builds
     .map((build) => ({ build, summary: buildSummary(build) }))
@@ -67,7 +69,10 @@ export function buildCells(
     {
       key: 'latest',
       label: 'Latest build',
-      value: latest === undefined ? '-' : formatDate(latest.summary.createdAt),
+      value:
+        latest === undefined
+          ? '-'
+          : formatDate(latest.summary.createdAt, now, dates),
       detail:
         latest === undefined
           ? 'No builds'
@@ -91,7 +96,7 @@ export function buildCells(
     {
       key: 'expiry',
       label: 'Next EAS expiry',
-      value: next === undefined ? '-' : formatDate(next),
+      value: next === undefined ? '-' : formatDate(next, now, dates),
       detail:
         easCount === 0
           ? 'No EAS builds'

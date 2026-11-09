@@ -73,6 +73,12 @@ code. An expiry date in the past is red, with a line through it: EAS
 deleted its copy, and the copy in the store stays. In a narrow window,
 each build shows the same values on more than one line.
 
+A date in the 7 days before or after today shows as a relative time, for
+example "3 hours ago" or "in 5 days". Other dates show as a short date in
+the format of your system, with the year only when it is not the current
+year. Put the pointer on a date in the table to see the full date and
+time. The CLI shows ISO dates (`2026-11-09`).
+
 ### Install a build
 
 Click Install on a build to install it on the ready device of its

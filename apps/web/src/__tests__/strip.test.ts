@@ -4,6 +4,7 @@ import { buildCells, clock, deviceCells, setupCells } from '../logic/strip'
 import { platformOf } from '../logic/summary'
 
 const NOW = new Date('2026-11-09T12:00:00.000Z')
+const DATES = { locale: 'en-GB', timeZone: 'UTC' }
 
 function eas(
   id: string,
@@ -81,7 +82,7 @@ const STORE = list([
 
 describe('buildCells', () => {
   it('gives the facts of one project', () => {
-    expect(buildCells(STORE, 'shop-app', NOW)).toEqual([
+    expect(buildCells(STORE, 'shop-app', NOW, DATES)).toEqual([
       {
         key: 'builds',
         label: 'Builds',
@@ -93,7 +94,7 @@ describe('buildCells', () => {
       {
         key: 'latest',
         label: 'Latest build',
-        value: '2026-11-09',
+        value: '3 hours ago',
         detail: 'Version 1.4.0 · commit 7c9e2f1',
         hue: 'sky',
         icon: 'latest',
@@ -109,7 +110,7 @@ describe('buildCells', () => {
       {
         key: 'expiry',
         label: 'Next EAS expiry',
-        value: '2026-12-09',
+        value: '9 Dec',
         detail: 'EAS deleted 1 copy',
         hue: 'red',
         icon: 'expiry',
@@ -119,21 +120,27 @@ describe('buildCells', () => {
   })
 
   it('names the project of the latest build for all projects', () => {
-    const [builds, latest, , expiry] = buildCells(STORE, undefined, NOW)
+    const [builds, latest, , expiry] = buildCells(STORE, undefined, NOW, DATES)
     expect(builds?.value).toBe('4')
     expect(latest?.detail).toBe('notes · 2.0.1')
-    expect(expiry?.value).toBe('2026-11-20')
+    expect(latest?.value).toBe('1 hour ago')
+    expect(expiry?.value).toBe('20 Nov')
   })
 
   it('says when no build or no EAS build is in the selection', () => {
-    const cells = buildCells(list([local('c', 'app', 'IOS')]), 'app', NOW)
+    const cells = buildCells(
+      list([local('c', 'app', 'IOS')]),
+      'app',
+      NOW,
+      DATES,
+    )
     expect(cells.map((cell) => cell.detail)).toEqual([
       '0 Android · 1 iOS',
       'Version 1.4.0 · commit -',
       'Largest: 3.0 MB',
       'No EAS builds',
     ])
-    const empty = buildCells(list([]), undefined, NOW)
+    const empty = buildCells(list([]), undefined, NOW, DATES)
     expect(empty.map((cell) => [cell.value, cell.detail])).toEqual([
       ['0', '0 Android · 0 iOS'],
       ['-', 'No builds'],
@@ -143,7 +150,7 @@ describe('buildCells', () => {
   })
 
   it('says that EAS keeps each copy when none expired', () => {
-    const [, , , expiry] = buildCells(STORE, 'notes', NOW)
+    const [, , , expiry] = buildCells(STORE, 'notes', NOW, DATES)
     expect(expiry).toMatchObject({
       detail: 'EAS keeps each copy',
       hue: 'slate',
