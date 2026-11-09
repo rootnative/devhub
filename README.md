@@ -26,9 +26,11 @@
 <p align="center">
   <a href="https://rootnative.github.io/devhub/"><b>Read the docs</b></a>
   ·
+  <a href="#-commands">Commands</a>
+  ·
   <a href="#-quick-start">Quick start</a>
   ·
-  <a href="#-commands">Commands</a>
+  <a href="https://rootnative.github.io/devhub/introduction/">Documentation</a>
   ·
   <a href="https://rootnative.github.io/devhub/llms.txt">LLM docs</a>
 </p>
@@ -36,59 +38,46 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/page-dark.jpg" />
-    <img src="assets/docs/screenshots/page-light.jpg" alt="The devhub ui page: three projects with their builds in tables, three ready devices, and the setup check" width="100%" />
+    <img src="assets/docs/screenshots/page-light.jpg" alt="The devhub ui page: a sidebar with the projects, three ready devices, and the setup, a summary of the builds, and the builds of four projects in one table with an Install button on each row" width="100%" />
   </picture>
-  <br />
-  <sub>The <code>devhub ui</code> page on <code>main</code>, with made-up projects. The next release ships this design.</sub>
 </p>
 
-> **Status:** alpha. The CLI, the local page, and the Expo build cache
-> provider are on npm. The desktop app and the launch of an app are not
+> **Status:** an alpha. The CLI, the local page, and the Expo build cache
+> provider are on npm. The desktop app and the launch of an app aren't
 > released yet. Each alpha can change the CLI and its JSON output. The
-> [CHANGELOG](packages/devhub/CHANGELOG.md) lists what each version has.
+> [changelog](packages/devhub/CHANGELOG.md) lists what each version has.
 
 ## ✨ Features
 
-| Feature | What it does | State |
-| --- | --- | --- |
-| **Keep your EAS builds** | `devhub sync` downloads each finished EAS dev client build before EAS deletes it. `devhub sync --all` syncs each project that `devhub sync` saw before. | On npm |
-| **One library for all projects** | One store folder, outside your projects, holds every build of every project. | On npm |
-| **Match by fingerprint** | `devhub match` calculates the native fingerprint with the project's own `@expo/fingerprint`, and shows the stored builds with the same hash. | On npm |
-| **Keep your local builds** | As an Expo build cache provider, DevHub stores each build of `npx expo run:*`, and installs a stored build when the native code did not change. | On npm |
-| **Install in one step** | `devhub install` installs a stored build on a ready emulator, a USB Android device, or a booted iOS simulator. It checks the SHA-256 of the file first. | On npm |
-| **The local page** | `devhub ui` opens a page with the builds, the devices, an install button, and a sync button. | On npm |
-| **Setup checks** | `devhub doctor` checks Node, the store, eas-cli, adb, and Xcode, and gives the fix for each problem. | On npm |
-| **JSON for scripts and agents** | Each command takes `--json`. The `llms.txt` file in the package gives the help, the JSON types, and the API. | On npm |
-| **No telemetry** | DevHub uses the network only for EAS. It never reads, asks for, or stores your EAS token. | On npm |
-| **Desktop app** | The local page in a desktop window, with a daily sync in the background. | In code, not released |
-| **Launch** | Boot a device, install the build, and open the app with Metro or an EAS Update, in one action. | Planned |
-| **Profiles, prune, and import** | Saved pairs of a device and a build, rules that delete old builds, and the import of an `.apk`, `.aab`, or `.app` file. | Planned |
+| Feature | What it does |
+| --- | --- |
+| **Keep your EAS builds** | `devhub sync` downloads each finished EAS dev client build before EAS deletes it. `devhub sync --all` syncs each project that `devhub sync` saw before. |
+| **One library for all projects** | One store folder, outside your projects, holds every build of every project. |
+| **Match by fingerprint** | `devhub match` calculates the native fingerprint with the project's own `@expo/fingerprint`, and shows the stored builds with the same hash. |
+| **Keep your local builds** | As an Expo build cache provider, DevHub stores each build of `npx expo run:*`, and installs a stored build when the native code didn't change. |
+| **Install in one step** | `devhub install` installs a stored build on a ready emulator, a USB Android device, or a booted iOS simulator. It checks the SHA-256 of the file first. |
+| **The local page** | `devhub ui` opens a page with the builds, the devices, an install button, and a sync button. |
+| **Setup checks** | `devhub doctor` checks Node, the store, eas-cli, adb, and Xcode, and gives the fix for each problem. |
+| **JSON for scripts and agents** | Each command takes `--json`. The `llms.txt` file in the package gives the help, the JSON types, and the API. |
+| **No telemetry** | DevHub uses the network only for EAS. It never reads, asks for, or stores your EAS token. |
 
-Android works on macOS, Windows, and Linux. iOS works on macOS.
+## 💻 Commands
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/docs/screenshots/page-narrow-dark.jpg" />
-    <img src="assets/docs/screenshots/page-narrow-light.jpg" alt="The devhub ui page in a narrow window: each build is a row with its version, its commit, its EAS expiry date, and an Install button" width="40%" />
-  </picture>
-  <br />
-  <sub>In a narrow window, each build is a row.</sub>
-</p>
+| Command | What it does |
+| --- | --- |
+| [`devhub sync`](https://rootnative.github.io/devhub/commands/sync/) | Downloads each finished EAS dev client build of the project in the current folder that the store doesn't have. `--all` syncs each project. |
+| [`devhub list`](https://rootnative.github.io/devhub/commands/list/) | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
+| [`devhub where <id>`](https://rootnative.github.io/devhub/commands/where/) | Prints the path of a stored build file. |
+| [`devhub devices`](https://rootnative.github.io/devhub/commands/devices/) | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators. |
+| [`devhub install <id>`](https://rootnative.github.io/devhub/commands/install/) | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator. |
+| [`devhub match`](https://rootnative.github.io/devhub/commands/match/) | Calculates the native fingerprint of the current project, and shows the stored builds with the same fingerprint. |
+| [`devhub ui`](https://rootnative.github.io/devhub/commands/ui/) | Starts a local server, and opens the DevHub page in the browser. |
+| [`devhub whoami`](https://rootnative.github.io/devhub/commands/whoami/) | Shows the EAS login state. |
+| [`devhub doctor`](https://rootnative.github.io/devhub/commands/doctor/) | Checks the tools and the store, and gives the fix for each problem. |
 
-## 💡 Why
-
-Expo recommends a development build in place of Expo Go. When you work on
-many Expo projects, you get these problems:
-
-- Each project needs its own dev client for each platform.
-- EAS deletes old builds after a retention period.
-- A native build takes minutes. But most of the time the native code did not
-  change, and the old build still works.
-- Nothing shows which builds you have, and which one matches your branch.
-
-A dev client needs a rebuild only when the native fingerprint changes.
-DevHub stores each build with its fingerprint. When your code matches a
-stored build, DevHub uses that build, and you do not build again.
+Each command takes `--json`. Results go to stdout, and progress and warnings
+go to stderr. The exit code is `0` for success, `1` for a failure, and `2`
+for a usage error.
 
 ## 🚀 Quick start
 
@@ -109,7 +98,7 @@ To run one command with no install, use `npx @rootnative/devhub <command>`.
 
 > [!NOTE]
 > A dev client is a debug build. Its JavaScript runs in development mode, so
-> it does not show the real speed of your app in production.
+> it doesn't show the real speed of your app in production.
 
 ### Keep your local builds
 
@@ -129,7 +118,7 @@ npm install --save-dev @rootnative/devhub
 
 The first `npx expo run:android` builds the app, and DevHub stores the APK.
 The next run with the same native code installs the stored APK, and Gradle
-does not run. iOS works the same for a simulator. Read
+doesn't run. iOS works the same for a simulator. Read
 [Keep your local builds](https://rootnative.github.io/devhub/guides/local-builds/)
 for each rule.
 
@@ -139,23 +128,20 @@ for each rule.
 > [Sync every day](https://rootnative.github.io/devhub/guides/daily-sync/)
 > shows the setup for cron, launchd, and Task Scheduler.
 
-## 🧰 Commands
+## 💡 Why DevHub
 
-| Command | What it does |
-| --- | --- |
-| [`devhub sync`](https://rootnative.github.io/devhub/commands/sync/) | Downloads each finished EAS dev client build of the project in the current folder that the store does not have. `--all` syncs each project. |
-| [`devhub list`](https://rootnative.github.io/devhub/commands/list/) | Shows the stored builds: project, platform, profile, app version, git commit, date, and the EAS expiry date. |
-| [`devhub where <id>`](https://rootnative.github.io/devhub/commands/where/) | Prints the path of a stored build file. |
-| [`devhub devices`](https://rootnative.github.io/devhub/commands/devices/) | Lists the Android emulators and devices that adb sees, and on macOS the booted iOS simulators. |
-| [`devhub install <id>`](https://rootnative.github.io/devhub/commands/install/) | Installs a stored build on a ready Android emulator or device, or on a booted iOS simulator. |
-| [`devhub match`](https://rootnative.github.io/devhub/commands/match/) | Calculates the native fingerprint of the current project, and shows the stored builds with the same fingerprint. |
-| [`devhub ui`](https://rootnative.github.io/devhub/commands/ui/) | Starts a local server, and opens the DevHub page in the browser. |
-| [`devhub whoami`](https://rootnative.github.io/devhub/commands/whoami/) | Shows the EAS login state. |
-| [`devhub doctor`](https://rootnative.github.io/devhub/commands/doctor/) | Checks the tools and the store, and gives the fix for each problem. |
+Expo recommends a development build in place of Expo Go. When you work on
+many Expo projects, you get these problems:
 
-Each command takes `--json`. Results go to stdout, and progress and warnings
-go to stderr. The exit code is `0` for success, `1` for a failure, and `2`
-for a usage error.
+- Each project needs its own dev client for each platform.
+- EAS deletes old builds after a retention period.
+- A native build takes minutes. But most of the time the native code didn't
+  change, and the old build still works.
+- Nothing shows which builds you have, and which one matches your branch.
+
+A dev client needs a rebuild only when the native fingerprint changes.
+DevHub stores each build with its fingerprint. When your code matches a
+stored build, DevHub uses that build, and you don't build again.
 
 ## 🧭 How it works
 
@@ -179,11 +165,25 @@ flowchart LR
 - **One store for all projects.** The store is plain files in the data
   folder of your system, never inside a project. `DEVHUB_HOME` moves it.
 - **Commands as arrays.** DevHub runs adb, simctl, and eas-cli with an array
-  of arguments, never a shell string. A space or a quote in a path cannot
+  of arguments, never a shell string. A space or a quote in a path can't
   change a command.
 - **Public eas-cli commands only.** DevHub never calls a private EAS API.
 - **A local page.** The `devhub ui` server listens on `127.0.0.1` only. Each
   run makes a new token, and each API call must send it.
+
+## 📅 Requirements
+
+| Tool | Necessary for |
+| --- | --- |
+| Node 20.19 or later | Each command |
+| Expo SDK 52 or later in the project | `devhub match` |
+| eas-cli, with a login | `devhub sync` |
+| adb (Android SDK Platform-Tools) | Android emulators and devices |
+| Xcode | iOS simulators |
+
+Android works on macOS, Windows, and Linux. iOS works on macOS.
+[Installation](https://rootnative.github.io/devhub/installation/) shows the
+setup of each tool.
 
 ## 🗺️ Roadmap
 
@@ -198,15 +198,18 @@ DevHub grows in small milestones. Each one gives you one useful result.
 | Local page | `devhub ui` opens a page with the list, the devices, an install button, and a sync button | On npm. A new design is on `main`. |
 | Doctor | `devhub doctor` checks the tools and the store, and gives the fix for each problem | On npm |
 | Desktop | The local page in a desktop app, with a daily sync in the background | In code, not released |
+| Launch | Boot a device, install the build, and open the app with Metro or an EAS Update, in one action | Planned |
+| Profiles, prune, and import | Saved pairs of a device and a build, rules that delete old builds, and the import of an `.apk`, `.aab`, or `.app` file | Planned |
 
 ## 🤖 Docs for AI agents
 
 Each command takes `--json`, so an agent reads the same output as the local
-page. The package ships `llms.txt` with the help of each command, the type of
-each JSON output, and the core API of the installed version:
-`node_modules/@rootnative/devhub/llms.txt`. The docs site serves the same
-file at [llms.txt](https://rootnative.github.io/devhub/llms.txt). Read
-[For AI agents](https://rootnative.github.io/devhub/reference/ai-agents/).
+page. The package ships an [llms.txt](https://llmstxt.org/) file with the
+help of each command, the type of each JSON output, and the core API of its
+version: `node_modules/@rootnative/devhub/llms.txt`. The docs site serves the
+same file at [llms.txt](https://rootnative.github.io/devhub/llms.txt). The
+[For AI agents](https://rootnative.github.io/devhub/reference/ai-agents/)
+page explains how to use it.
 
 ## 📚 Documentation
 
@@ -222,20 +225,22 @@ file at [llms.txt](https://rootnative.github.io/devhub/llms.txt). Read
 | [Security and privacy](https://rootnative.github.io/devhub/reference/security/) | Learn what DevHub reads, writes, and sends |
 | [Package README](packages/devhub/README.md) | Read the full CLI reference |
 
-## 🔧 Tech stack
+## 🧰 Tech stack
 
 | Layer | Technology |
 | --- | --- |
-| CLI and core | Node 20.19 or later, TypeScript 5.9 in strict mode, ESM |
+| Runtime | Node 20.19 or later, ESM |
 | Runtime dependencies | `cross-spawn` and `json5`, nothing else |
-| Build | tsup, Turborepo 2 |
+| Language | TypeScript 5, strict mode |
+| Build | tsup (ESM output), Turborepo |
+| Package manager | pnpm 10 |
 | Tests | Vitest 3, on Linux, macOS, and Windows |
 | Local page | An Expo SDK 58 app, exported for the web, and shipped inside the package |
 | Desktop app | Electron 44 |
 | Docs | Docusaurus 3 |
 | Delivery | GitHub Actions, GitHub Pages, and npm with trusted publishing |
 
-## 🛠 Development
+## 🔧 Development
 
 You need Node.js 24 (the version in `.nvmrc`) and pnpm 10.
 
@@ -266,7 +271,7 @@ node packages/devhub/dist/bin.js --help
 node packages/devhub/dist/bin.js ui
 ```
 
-To run one test file:
+To run one test file, name the package first:
 
 ```bash
 pnpm --filter @rootnative/devhub test -- src/__tests__/cli.test.ts
@@ -281,7 +286,7 @@ pnpm --filter @rootnative/devhub test -- src/__tests__/cli.test.ts
 | [apps/web/](apps/web/) | The `devhub ui` page. Private. The package ships its build. |
 | [apps/desktop/](apps/desktop/) | The Electron app. Private. |
 | [docs/](docs/) | The Docusaurus docs site. Private. |
-| [example/](example/) | The Expo app that the cache provider check builds. Run it through `example/with-store.mjs`, so a test build does not go into your own store. |
+| [example/](example/) | The Expo app that the cache provider check builds. Run it through `example/with-store.mjs`, so a test build doesn't go into your own store. |
 | [scripts/](scripts/) | The `llms.txt` generator, the package and release checks, and the brand generator |
 
 </details>
@@ -291,6 +296,13 @@ pnpm --filter @rootnative/devhub test -- src/__tests__/cli.test.ts
 To report a vulnerability, read [SECURITY.md](SECURITY.md). To learn what
 DevHub reads, writes, and sends, read
 [Security and privacy](https://rootnative.github.io/devhub/reference/security/).
+
+## 🙏 Credits
+
+- [`@expo/fingerprint`](https://www.npmjs.com/package/@expo/fingerprint) by
+  Expo calculates the native fingerprint that matches a build to your code.
+- [EAS CLI](https://github.com/expo/eas-cli) by Expo lists and downloads the
+  EAS builds.
 
 ## 📄 License
 
