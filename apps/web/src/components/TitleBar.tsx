@@ -25,13 +25,13 @@ const WINDOW = StyleSheet.create({
 const styles = StyleSheet.create({
   bar: { height: TITLE_BAR_HEIGHT },
   control: { flexShrink: 0 },
-  rule: { height: 1 },
   title: { flexShrink: 1 },
 })
 
 /**
- * The toolbar of the page. In the desktop app, it is the title bar of the
- * window: it moves the window, and it keeps clear of the window buttons.
+ * The toolbar of the page, on the frame color of the sidebar. In the desktop
+ * app, it is the title bar of the window: it moves the window, and it keeps
+ * clear of the window buttons.
  */
 export function TitleBar({
   host,
@@ -49,14 +49,14 @@ export function TitleBar({
   const desktop = host === 'desktop'
   const control = desktop ? WINDOW.noDrag : styles.control
   return (
-    <View style={{ backgroundColor: colors.surface }}>
+    <View style={{ backgroundColor: colors.surfaceContainerLow }}>
       <View style={desktop ? WINDOW.drag : undefined}>
         <Row px="lg" gap="md" align="center" style={styles.bar}>
           {leading !== undefined && <View style={control}>{leading}</View>}
           <Row flex={1} gap="sm" align="center">
-            <Mark size={24} />
+            <Mark size={18} />
             <Typography
-              variant="titleMedium"
+              variant="titleSmall"
               level={1}
               numberOfLines={1}
               style={styles.title}
@@ -67,7 +67,6 @@ export function TitleBar({
           {trailing !== undefined && <View style={control}>{trailing}</View>}
         </Row>
       </View>
-      <View style={[styles.rule, { backgroundColor: colors.outlineVariant }]} />
     </View>
   )
 }

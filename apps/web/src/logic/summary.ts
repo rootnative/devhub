@@ -45,6 +45,11 @@ export function buildSummary(build: ListedBuild): BuildSummary {
   }
 }
 
+/** The platform of a build, as `devhub devices` names it. */
+export function platformOf(build: ListedBuild): 'android' | 'ios' {
+  return buildSummary(build).platform === 'IOS' ? 'ios' : 'android'
+}
+
 /** The last part of a macOS, Linux, or Windows path. */
 function folderName(folder: string): string {
   return folder.split(/[\\/]/).filter(Boolean).at(-1) ?? folder

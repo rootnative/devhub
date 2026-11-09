@@ -1,13 +1,18 @@
 import { Button } from '@rootnative/components/button'
 import { Dialog } from '@rootnative/components/dialog'
 import { IconButton } from '@rootnative/components/icon-button'
-import { Column, Container, Layout, Row } from '@rootnative/components/layout'
+import { Container, Layout, Row } from '@rootnative/components/layout'
 import { PortalHost } from '@rootnative/components/portal'
 import { SnackbarProvider, useSnackbar } from '@rootnative/components/snackbar'
 import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
-import { ThemeProvider, useBreakpointValue, useTheme } from '@rootnative/core'
-import { useEffect, useState } from 'react'
+import {
+  ThemeProvider,
+  useBreakpointValue,
+  useTheme,
+  type ThemeMode,
+} from '@rootnative/core'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { NO_TOKEN, getJson, postJson } from './api/client'
 import type {
@@ -22,15 +27,34 @@ import type {
 import { useApi } from './api/useApi'
 import { BuildsSection } from './components/BuildsSection'
 import { DevicesSection } from './components/DevicesSection'
+import { IconTile } from './components/IconTile'
 import { Notice } from './components/Notice'
-import { SetupSection, type DoctorState } from './components/SetupSection'
-import { Sidebar, SidebarDrawer } from './components/Sidebar'
-import { SyncCard, type SyncState } from './components/SyncCard'
+import { PageHeader } from './components/PageHeader'
+import { ProjectBadge } from './components/ProjectBadge'
+import { SettingsDialog } from './components/SettingsDialog'
+import { CheckButton, SetupSection } from './components/SetupSection'
+import { ALL_PROJECTS, Sidebar, SidebarDrawer } from './components/Sidebar'
+import { SummaryStrip } from './components/SummaryStrip'
 import { SyncControls } from './components/SyncControls'
+import { SyncDetailsDialog } from './components/SyncDetailsDialog'
 import { TitleBar } from './components/TitleBar'
+import type { DoctorState } from './logic/doctor'
 import { HOST_KEY, resolveHost, type Host } from './logic/host'
 import { installedMessage } from './logic/install'
-import { keepProject, type Page } from './logic/sidebar'
+import {
+  devicesWarning,
+  keepProject,
+  setupHue,
+  type Page,
+} from './logic/sidebar'
+import { buildCells, deviceCells, setupCells } from './logic/strip'
+import { buildSummary } from './logic/summary'
+import { SYNCING, syncMessage, type SyncDetails } from './logic/sync'
+import {
+  isThemeMode,
+  parseThemeMode,
+  themeModeCookie,
+} from './logic/themeCookie'
 import { TOKEN_KEY, resolveToken } from './logic/token'
 import type { BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
@@ -43,18 +67,67 @@ const REFRESH_HINT = 'Read the builds, the devices, and the EAS status again.'
 const MENU_ICON: IconName = 'menu'
 const MENU_LABEL = 'Show the builds, the devices, and the setup'
 
+// The main pane is a panel inset in the frame. Its space and its border are
+// part of the width budget of the build table (SIDEBAR_WIDTH).
 const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row' },
+  panel: {
+    flex: 1,
+    minWidth: 0,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginEnd: 8,
+    marginBottom: 8,
+  },
+  panelNarrow: { marginStart: 8 },
   main: { flex: 1 },
-  mainContent: { padding: 16 },
+  narrowControls: { paddingHorizontal: 16, paddingVertical: 12 },
+  // It floats on the top edge, so the status of a sync moves nothing.
+  progress: {
+    position: 'absolute',
+    top: 0,
+    start: 0,
+    end: 0,
+    height: 2,
+    opacity: 0.8,
+  },
 })
+
+// ThemeProvider names a storage key, and the page keeps one value only, so
+// the cookie has its own name.
+const THEME_STORAGE = {
+  getItem: () => readThemeMode() ?? null,
+  setItem: (_key: string, value: string) => {
+    if (!isThemeMode(value)) {
+      return
+    }
+    try {
+      document.cookie = themeModeCookie(value)
+    } catch {
+      // The browser can block cookies. The choice then lasts until the page
+      // closes.
+    }
+  },
+}
+
+function readThemeMode(): ThemeMode | undefined {
+  try {
+    return parseThemeMode(document.cookie)
+  } catch {
+    return undefined
+  }
+}
 
 export function App() {
   const [{ token, host }] = useState(takeSession)
+  // Read at once, so the first paint already has the chosen mode.
+  const [initialMode] = useState(readThemeMode)
   return (
     <ThemeProvider
       theme={{ light: lightTheme, dark: darkTheme }}
       iconResolver={iconResolver}
+      defaultMode={initialMode ?? 'system'}
+      storage={THEME_STORAGE}
     >
       <PortalHost>
         <SnackbarProvider>
@@ -77,7 +150,7 @@ export function App() {
 }
 
 function Dashboard({ token, host }: { token: string; host: Host }) {
-  const { colors } = useTheme()
+  const { colors, shape } = useTheme()
   const snackbar = useSnackbar()
   const builds = useApi<BuildList>('/api/builds', token)
   const devices = useApi<DeviceReport>('/api/devices', token)
@@ -87,21 +160,30 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   const [installing, setInstalling] = useState<string>()
   // The message stays while the dialog runs its exit animation.
   const [failure, setFailure] = useState({ visible: false, message: '' })
-  const [sync, setSync] = useState<SyncState>({ kind: 'idle' })
+  const [syncing, setSyncing] = useState(false)
+  // The snackbar callbacks run after a render, and read the sync state here.
+  const syncingRef = useRef(false)
+  const [syncDetails, setSyncDetails] = useState<{
+    visible: boolean
+    details?: SyncDetails
+  }>({ visible: false })
   const [checks, setChecks] = useState<DoctorState>({ running: false })
   const [page, setPage] = useState<Page>('builds')
   const [selectedProject, setSelectedProject] = useState<string>()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   // Below the expanded breakpoint, the sidebar is a modal drawer, and the EAS
-  // chip and Sync do not fit next to the title, so they go above the page.
+  // state and Sync do not fit next to the title, so they go above the page.
   const wide = useBreakpointValue({ compact: false, expanded: true })
   if (wide && drawerOpen) {
     setDrawerOpen(false)
   }
-  const project = keepProject(
-    selectedProject,
-    builds.state.kind === 'ok' ? builds.state.value : undefined,
-  )
+  const list = builds.state.kind === 'ok' ? builds.state.value : undefined
+  const listRef = useRef(list)
+  useEffect(() => {
+    listRef.current = list
+  }, [list])
+  const project = keepProject(selectedProject, list)
   if (project !== selectedProject) {
     setSelectedProject(project)
   }
@@ -120,18 +202,61 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     void eas.reload()
   }
 
+  const showSyncing = () =>
+    snackbar.show({
+      message: SYNCING,
+      duration: 'indefinite',
+      showCloseIcon: true,
+      replace: true,
+    })
+
+  // The builds of the project of the first new build, from the list that the
+  // sync reloaded.
+  const showNewBuilds = (ids: readonly string[]) => {
+    const build = listRef.current?.builds.find((candidate) =>
+      ids.includes(candidate.id),
+    )
+    setSelectedProject(
+      build === undefined ? undefined : buildSummary(build).project,
+    )
+    setPage('builds')
+  }
+
   // The request returns when the sync ends, which can take minutes. The
   // server holds the sync lock, so a sync from the CLI or from a second tab
   // gets the lock message.
   const runSync = async () => {
-    setSync({ kind: 'running' })
+    syncingRef.current = true
+    setSyncing(true)
+    showSyncing()
     const result = await postJson<SyncReport>('/api/sync', token, {})
-    setSync({ kind: 'done', result })
+    syncingRef.current = false
+    setSyncing(false)
     void builds.reload()
     // A sync that eas-cli refused, for example after a logout, changes the
     // login state.
     if (result.kind === 'error') {
       void eas.reload()
+    }
+    const { message, added, details } = syncMessage(result)
+    if (details !== undefined) {
+      snackbar.show({
+        message,
+        replace: true,
+        actionLabel: 'Details',
+        showCloseIcon: true,
+        onAction: () => setSyncDetails({ visible: true, details }),
+      })
+    } else if (added.length > 0) {
+      snackbar.show({
+        message,
+        replace: true,
+        duration: 'long',
+        actionLabel: 'Show',
+        onAction: () => showNewBuilds(added),
+      })
+    } else {
+      snackbar.show({ message, replace: true })
     }
   }
 
@@ -140,7 +265,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   const runChecks = async () => {
     setChecks((current) => ({ ...current, running: true }))
     const result = await getJson<DoctorReport>('/api/doctor', token)
-    setChecks({ running: false, result })
+    setChecks({ running: false, result, checkedAt: new Date() })
   }
 
   const install = async (row: BuildRow, device: Device) => {
@@ -152,7 +277,17 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     setInstalling(undefined)
     void devices.reload()
     if (result.kind === 'ok') {
-      snackbar.show({ message: installedMessage(row.shortId, device) })
+      snackbar.show({
+        message: installedMessage(row.shortId, device),
+        replace: true,
+        // During a sync, this message takes the place of "Syncing" for its
+        // time, and "Syncing" comes back after it.
+        onDismiss: (reason) => {
+          if (reason !== 'replaced' && syncingRef.current) {
+            showSyncing()
+          }
+        },
+      })
     } else {
       setFailure({ visible: true, message: result.message })
     }
@@ -161,7 +296,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   const syncControls = (
     <SyncControls
       eas={easStatus(eas.state)}
-      syncing={sync.kind === 'running'}
+      syncing={syncing}
       onSync={() => void runSync()}
     />
   )
@@ -174,6 +309,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
         <IconButton
           variant="standard"
           size="extraSmall"
+          shape="square"
           icon={REFRESH_ICON}
           disabled={refreshing}
           onPress={refresh}
@@ -194,6 +330,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
         <IconButton
           variant="standard"
           size="extraSmall"
+          shape="square"
           icon={MENU_ICON}
           onPress={() => setDrawerOpen(true)}
           accessibilityLabel={MENU_LABEL}
@@ -205,7 +342,10 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   )
   const sidebar = {
     page,
-    onPage: setPage,
+    onPage: (next: Page) => {
+      setPage(next)
+      setDrawerOpen(false)
+    },
     project,
     onProject: (next: string | undefined) => {
       setSelectedProject(next)
@@ -215,7 +355,55 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     builds: builds.state,
     devices: devices.state,
     checks,
+    settingsOpen,
+    onSettings: () => {
+      setDrawerOpen(false)
+      setSettingsOpen(true)
+    },
   }
+
+  const now = new Date()
+  const header: {
+    leading: ReactNode
+    title: string
+    subtitle?: string
+    trailing?: ReactNode
+  } =
+    page === 'builds'
+      ? {
+          leading: <ProjectBadge project={project} size={20} />,
+          title: project ?? ALL_PROJECTS,
+          subtitle: 'Builds',
+        }
+      : page === 'devices'
+        ? {
+            leading: (
+              <IconTile
+                icon="device-virtual"
+                hue={devicesWarning(devices.state) ? 'red' : 'blue'}
+              />
+            ),
+            title: 'Devices',
+          }
+        : {
+            leading: (
+              <IconTile icon="setup-check" hue={setupHue(checks.result)} />
+            ),
+            title: 'Setup',
+            trailing: (
+              <CheckButton state={checks} onRun={() => void runChecks()} />
+            ),
+          }
+  const cells =
+    page === 'builds'
+      ? list === undefined
+        ? undefined
+        : buildCells(list, project, now)
+      : page === 'devices'
+        ? devices.state.kind === 'ok'
+          ? deviceCells(devices.state.value)
+          : undefined
+        : setupCells(checks)
 
   return (
     <>
@@ -234,20 +422,30 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
           )
         }
       />
-      <View style={styles.body}>
+      <View
+        style={[styles.body, { backgroundColor: colors.surfaceContainerLow }]}
+      >
         {wide && <Sidebar {...sidebar} />}
-        <ScrollView
-          style={[styles.main, { backgroundColor: colors.surface }]}
-          contentContainerStyle={styles.mainContent}
+        <View
+          style={[
+            styles.panel,
+            !wide && styles.panelNarrow,
+            {
+              backgroundColor: colors.surfaceContainerLowest,
+              borderColor: colors.outlineVariant,
+              borderRadius: shape.cornerMedium,
+            },
+          ]}
         >
-          <Column gap="lg">
-            {!wide && <Row>{syncControls}</Row>}
-            <SyncCard state={sync} onClose={() => setSync({ kind: 'idle' })} />
+          <PageHeader {...header} />
+          {cells !== undefined && <SummaryStrip cells={cells} />}
+          <ScrollView style={styles.main}>
+            {!wide && <View style={styles.narrowControls}>{syncControls}</View>}
             {page === 'builds' && (
               <BuildsSection
                 state={builds.state}
                 project={project}
-                now={new Date()}
+                now={now}
                 devices={
                   devices.state.kind === 'ok'
                     ? devices.state.value.devices
@@ -258,11 +456,15 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
               />
             )}
             {page === 'devices' && <DevicesSection state={devices.state} />}
-            {page === 'setup' && (
-              <SetupSection state={checks} onRun={() => void runChecks()} />
-            )}
-          </Column>
-        </ScrollView>
+            {page === 'setup' && <SetupSection state={checks} />}
+          </ScrollView>
+          {syncing && (
+            <View
+              aria-hidden
+              style={[styles.progress, { backgroundColor: colors.primary }]}
+            />
+          )}
+        </View>
       </View>
       {!wide && (
         <SidebarDrawer
@@ -271,6 +473,18 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
           onDismiss={() => setDrawerOpen(false)}
         />
       )}
+      <SettingsDialog
+        visible={settingsOpen}
+        onDismiss={() => setSettingsOpen(false)}
+        store={list?.store}
+      />
+      <SyncDetailsDialog
+        visible={syncDetails.visible}
+        details={syncDetails.details}
+        onDismiss={() =>
+          setSyncDetails((current) => ({ ...current, visible: false }))
+        }
+      />
       <Dialog
         visible={failure.visible}
         onDismiss={() => setFailure({ ...failure, visible: false })}

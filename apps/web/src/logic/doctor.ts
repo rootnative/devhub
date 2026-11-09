@@ -1,7 +1,24 @@
 // The same states and words as `devhub doctor`, so the page and the terminal
 // agree.
+import type { ApiResult } from '../api/client'
 import type { DoctorReport, DoctorStatus } from '../api/types'
 import type { IconName } from '../icons'
+import type { Hue } from '../theme'
+
+/** The last result stays on the page while the checks run again. */
+export type DoctorState = {
+  running: boolean
+  result?: ApiResult<DoctorReport>
+  /** When the last result arrived. */
+  checkedAt?: Date
+}
+
+export const STATUS_HUE: Record<DoctorStatus, Hue> = {
+  ok: 'green',
+  warn: 'amber',
+  fail: 'red',
+  skip: 'slate',
+}
 
 export const SETUP_INTRO =
   'Check Node, the store, eas-cli, adb, and Xcode on this machine, and get the fix for each problem. The EAS check can use the network.'

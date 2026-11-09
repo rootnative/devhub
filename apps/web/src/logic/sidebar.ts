@@ -7,6 +7,7 @@ import type {
 } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import type { IconName } from '../icons'
+import type { Hue } from '../theme'
 import { doctorView } from './doctor'
 import { buildSummary } from './summary'
 import { deviceRow } from './view'
@@ -130,6 +131,7 @@ export function countLabel(label: string, count: number): string {
 export type SidebarDevice = {
   value: string
   label: string
+  platform: Device['platform']
   ready: boolean
   /** The name and the state, because the dot shows the state. */
   accessibilityLabel: string
@@ -141,6 +143,7 @@ export function sidebarDevices(devices: readonly Device[]): SidebarDevice[] {
     return {
       value: deviceValue(device),
       label: row.title,
+      platform: device.platform,
       ready: row.ready,
       accessibilityLabel: `${row.title}. ${row.status}`,
     }
@@ -169,6 +172,20 @@ const SETUP_ICON: Record<'ok' | 'warn' | 'fail', IconName> = {
   ok: 'status-ok',
   warn: 'status-warn',
   fail: 'status-fail',
+}
+
+/** The hue of the Setup tile: the worst state of the last check. */
+export function setupHue(result: ApiResult<DoctorReport> | undefined): Hue {
+  if (result?.kind !== 'ok') {
+    return 'slate'
+  }
+  return SETUP_HUE[doctorView(result.value).tone]
+}
+
+const SETUP_HUE: Record<'ok' | 'warn' | 'fail', Hue> = {
+  ok: 'green',
+  warn: 'amber',
+  fail: 'red',
 }
 
 /** The Setup item: the result of the last check, or no result. */

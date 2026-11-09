@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BuildOutcome, ProjectSyncResult } from '../api/types'
-import { syncView } from '../logic/sync'
+import { NO_PROJECT, syncMessage, syncView } from '../logic/sync'
 
 function outcome(
   id: string,
@@ -110,5 +110,87 @@ describe('syncView', () => {
       failed: false,
       projects: [],
     })
+  })
+})
+
+describe('syncMessage', () => {
+  it('names the new build and its project, with the IDs for Show', () => {
+    const message = syncMessage({
+      kind: 'ok',
+      value: {
+        dryRun: false,
+        projects: [
+          project({
+            project: '/work/shop-app',
+            builds: [outcome('new-1', 'downloaded'), outcome('old', 'stored')],
+          }),
+          project({ project: '/work/notes', builds: [outcome('n', 'stored')] }),
+        ],
+      },
+    })
+    expect(message).toEqual({
+      message: 'Sync done. 1 new build in shop-app.',
+      added: ['new-1'],
+    })
+  })
+
+  it('counts the projects when more than one got a build', () => {
+    const message = syncMessage({
+      kind: 'ok',
+      value: {
+        dryRun: false,
+        projects: [
+          project({ project: '/work/a', builds: [outcome('1', 'downloaded')] }),
+          project({
+            project: '/work/b',
+            builds: [outcome('2', 'downloaded'), outcome('3', 'downloaded')],
+          }),
+        ],
+      },
+    })
+    expect(message.message).toBe('Sync done. 3 new builds in 2 projects.')
+    expect(message.added).toEqual(['1', '2', '3'])
+  })
+
+  it('says when no build is new', () => {
+    expect(
+      syncMessage({
+        kind: 'ok',
+        value: {
+          dryRun: false,
+          projects: [project({ builds: [outcome('a', 'stored')] })],
+        },
+      }),
+    ).toEqual({ message: 'Sync done. No new builds.', added: [] })
+  })
+
+  it('gives the details of a failed project or build', () => {
+    const message = syncMessage({
+      kind: 'ok',
+      value: {
+        dryRun: false,
+        projects: [project({ status: 'failed', error: 'eas-cli failed.' })],
+      },
+    })
+    expect(message.message).toBe(
+      'Sync done. No new builds. Some projects or builds failed.',
+    )
+    expect(message.details?.kind).toBe('report')
+  })
+
+  it('gives the error of a sync that did not run as the details', () => {
+    expect(
+      syncMessage({ kind: 'error', message: 'Another sync runs now.' }),
+    ).toEqual({
+      message: 'Sync failed.',
+      added: [],
+      details: { kind: 'error', message: 'Another sync runs now.' },
+    })
+  })
+
+  it('says when DevHub knows no project folder', () => {
+    expect(
+      syncMessage({ kind: 'ok', value: { dryRun: false, projects: [] } }),
+    ).toEqual({ message: NO_PROJECT, added: [] })
   })
 })

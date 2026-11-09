@@ -43,8 +43,9 @@ export function InstallButton({
         align="end"
         anchor={
           <Button
-            variant="tonal"
+            variant="outlined"
             size={size}
+            shape="square"
             leadingIcon={INSTALL_ICON}
             accessibilityLabel={`Install the build ${shortId}. Select the device.`}
           >
@@ -66,8 +67,9 @@ export function InstallButton({
   const only = choice.kind === 'one' ? choice.device : undefined
   return (
     <Button
-      variant="tonal"
+      variant="outlined"
       size={size}
+      shape="square"
       leadingIcon={INSTALL_ICON}
       loading={installing}
       disabled={locked || choice.kind === 'no-device'}

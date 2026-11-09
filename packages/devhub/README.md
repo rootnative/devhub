@@ -268,11 +268,14 @@ URL in your browser. Press Ctrl+C to stop the server.
 - `--json` prints the URL and the port as JSON.
 
 The page shows the stored builds of each project and the devices that run
-now. A card at the top of the sidebar selects the project, or all
-projects. The sidebar also lists the devices and Setup, and shows the
-store folder. In a wide window, the builds are a table with the start of the
-fingerprint of each build. It reads the devices again when you return to the window, and when
-you click Refresh.
+now. A row at the top of the sidebar selects the project, or all
+projects. The sidebar also lists the devices and Setup, and Settings at
+its end selects the appearance (System, Light, or Dark) and shows the
+store folder. Each page starts with four facts about
+what it shows, for example the size of the builds and the next EAS
+expiry. In a wide window, the builds are a table with the start of the
+fingerprint of each build. It reads the devices again when you return to
+the window, and when you click Refresh.
 
 Click Install on a build to install it on the ready device of its platform.
 When two or more devices are ready, select the device in the menu. The
@@ -281,10 +284,12 @@ button is off when no device of the platform is ready. A build that
 When an install fails, the page shows the same message as the CLI.
 
 The toolbar shows the EAS login state and the Sync button. Sync is off without a login, with the fix in its tooltip. Click Sync to
-run `devhub sync --all`. The terminal of `devhub ui` shows
-the progress, and the page shows the result of each project when the sync
-ends. Only one sync runs at a time: while a sync runs from the terminal or
-from a second tab, the page shows that message.
+run `devhub sync --all`. A message at the bottom of the window shows that
+the sync runs, so nothing on the page moves. When the sync ends, the
+message gives the count of new builds: Show opens their project, and
+Details gives the message of a failed project. Only one sync runs at a
+time: while a sync runs from the terminal or from a second tab, the page
+shows that message.
 
 Open Setup in the sidebar, and click Check to run the checks of
 `devhub doctor`.

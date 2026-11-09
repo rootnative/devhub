@@ -11,6 +11,7 @@ import {
   projectInitials,
   projectTone,
   scopeCount,
+  setupHue,
   setupMark,
   sidebarDevices,
   switchChoices,
@@ -172,12 +173,14 @@ describe('sidebarDevices', () => {
       {
         value: 'device:emulator-5554',
         label: 'Pixel 8',
+        platform: 'android',
         ready: true,
         accessibilityLabel: 'Pixel 8. Ready',
       },
       {
         value: 'device:R5CT80',
         label: 'R5CT80',
+        platform: 'android',
         ready: false,
         accessibilityLabel: 'R5CT80. unauthorized',
       },
@@ -248,5 +251,29 @@ describe('setupMark', () => {
       problems: 0,
       accessibilityLabel: 'Setup. No problems found.',
     })
+  })
+})
+
+describe('setupHue', () => {
+  it('is slate with no result, and the worst state after a check', () => {
+    const report = (status: 'ok' | 'warn' | 'fail') => ({
+      kind: 'ok' as const,
+      value: {
+        checks: [
+          {
+            id: 'node' as const,
+            label: 'Node',
+            status: 'ok' as const,
+            detail: '',
+          },
+          { id: 'ios' as const, label: 'iOS', status, detail: '' },
+        ],
+      },
+    })
+    expect(setupHue(undefined)).toBe('slate')
+    expect(setupHue({ kind: 'error', message: 'No answer.' })).toBe('slate')
+    expect(setupHue(report('ok'))).toBe('green')
+    expect(setupHue(report('warn'))).toBe('amber')
+    expect(setupHue(report('fail'))).toBe('red')
   })
 })

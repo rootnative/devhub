@@ -30,33 +30,48 @@ window, the EAS login state and Sync are at the top of the page.
 
 The sidebar shows these items. Click an item to open its page.
 
-- **The project:** the card at the top shows the selected project, or All
+- **The project:** the row at the top shows the selected project, or All
   projects. Click it to see the other projects, and click a project to
   show its builds. Put the pointer on a project to see its name.
 - **Builds:** the builds of the selected project, with the count.
-- **Devices:** one item for each device that runs now. A filled dot shows
-  a ready device. A ring in the error color shows a device that is not
-  ready. A warning icon on Devices shows that the Devices page has a
-  warning.
+- **Devices:** one item for each device that runs now, with the icon of
+  its platform. A filled dot shows a ready device. A ring in the error
+  color shows a device that is not ready. A warning icon on Devices shows
+  that the Devices page has a warning.
 - **Setup:** after a check, the count of warnings and failures.
-- **Store:** the store folder.
+- **Settings:** at the end of the sidebar. Select the appearance: System
+  (the light or dark mode of your computer), Light, or Dark. Settings also
+  shows the store folder, with a button that copies its path. The page
+  keeps the appearance in a cookie of `127.0.0.1`, so the choice stays
+  when `devhub ui` starts again on another port.
 
 The sidebar and the page scroll separately. In a narrow window, click the
 menu button at the start of the toolbar to open the sidebar.
 
-With All projects, the builds page shows one card for each project. With
-a project, it shows the builds of that project. When a sync removes the
-selected project, the page shows All projects. The page reads the devices again when you return to the
-window, and when you click Refresh. It does not poll.
+Each page starts with four facts about what it shows:
 
-In a wide window, the builds of a project are in a table with one row for
-each build: the ID, the platform, the profile, the version, the commit, the
-date, the EAS expiry, the fingerprint, and the size. The fingerprint
+- **Builds:** the builds of each platform, the latest build, the size of
+  the builds, and the next date when EAS deletes its copy of a build.
+- **Devices:** the ready devices, the Android and the iOS devices, and the
+  devices that need a fix.
+- **Setup:** the checks and the time of the last check, and the count of
+  each state.
+
+With All projects, the builds page shows a row with the name of each
+project above its builds. With a project, it shows the builds of that
+project. When a sync removes the selected project, the page shows All
+projects. The page reads the devices again when you return to the window,
+and when you click Refresh. It does not poll.
+
+In a wide window, the builds are in a table with one row for each build:
+the ID, the platform, the profile, the version, the commit, the date, the
+EAS expiry, the fingerprint, and the size. A cloud icon on the profile
+shows an EAS build, and a laptop icon shows a local build. The fingerprint
 column shows the start of the native fingerprint hash. Put the pointer on
 it to see the full hash. Builds with the same hash have the same native
-code. An expiry date in the past has a line through it: EAS deleted its
-copy, and the copy in the store stays. In a narrow window, each build
-shows the same values on more than one line.
+code. An expiry date in the past is red, with a line through it: EAS
+deleted its copy, and the copy in the store stays. In a narrow window,
+each build shows the same values on more than one line.
 
 ### Install a build
 
@@ -74,7 +89,7 @@ Only one install runs at a time.
 
 ### Sync
 
-The chip in the toolbar shows the EAS login state of
+The toolbar shows the EAS login state of
 [`devhub whoami`](./whoami.md): signed in with the user name, not signed
 in, eas-cli not installed, or the check failed. The page runs that check
 when it opens, on Refresh, and after a sync that eas-cli refused. Without
@@ -82,9 +97,15 @@ a login, the Sync button is off, and its tooltip gives the fix: the
 `eas login` command to run in a terminal. The builds and the install need
 no login.
 
-Click Sync to run `devhub sync --all`. The terminal of `devhub ui` shows
-the progress. When the sync ends, the page shows the result of each
-project, and reads the builds again.
+Click Sync to run `devhub sync --all`. While the sync runs, a message at
+the bottom of the window says so, and a thin bar shows on the top edge of
+the page. Nothing else on the page moves. The terminal of `devhub ui`
+shows the progress. When the sync ends, the message gives the count of new
+builds, and the page reads the builds again:
+
+- Click **Show** to open the builds of the project that got a new build.
+- When the sync did not run, or a project or a build failed, click
+  **Details** to see the message of each project.
 
 Only one sync runs at a time. When a sync runs from a terminal or from a
 second tab, the page shows that message.
@@ -93,11 +114,10 @@ second tab, the page shows that message.
 
 Open Setup in the sidebar, and click Check to run the checks of
 [`devhub doctor`](./doctor.md): Node, the store, eas-cli and its login,
-adb, and on macOS Xcode. The page shows one chip for each check, with its
-state. Put the pointer on a chip to see what DevHub found. The fix of each
-warning and failure is under the chips. The page runs the checks only on a
-click, because the EAS check can use the network. Click Check again after
-a fix.
+adb, and on macOS Xcode. The page shows one row for each check, with its
+state and what DevHub found. The fix of each warning and failure is under
+its row. The page runs the checks only on a click, because the EAS check
+can use the network. Click Check again after a fix.
 
 ## Security
 

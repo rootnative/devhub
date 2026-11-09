@@ -22,26 +22,41 @@ notes name each one.
   names the full ID in its own message, because there the ID is the input.
 - The `devhub ui` page uses the colors of DevHub: an amber accent on grey
   surfaces, in light and dark mode. The toolbar shows the DevHub mark.
-- The `devhub ui` page has a sidebar. A card at the top selects one
+- The `devhub ui` page has a sidebar. A row at the top selects one
   project or all projects, from a panel with the initials of each project.
   Under it are the builds of the selection with their count, each device
-  with its state, Setup with the count of warnings and failures, and the
-  store folder. Each item opens its page, and the sidebar and the page
-  scroll separately. The toolbar shows the
-  EAS login state, Sync, and Refresh. In a narrow window, a menu button
-  opens the sidebar, and the EAS login state and Sync are at the top of
-  the page.
-- In a wide window, the `devhub ui` page shows the builds of each project
-  as a table, with one row for each build and a column for the start of
-  its fingerprint. The full hash shows when you put the pointer on it.
+  with the icon of its platform and its state, and Setup with the count of
+  warnings and failures. Settings at the end selects the appearance
+  (System, Light, or Dark), and shows the store folder with a button that
+  copies its path. The appearance stays when `devhub ui` starts again, and
+  the desktop app follows it. Each item opens its page, and the sidebar
+  and the page scroll separately. The toolbar shows the EAS login state,
+  Sync, and Refresh. In a narrow window, a menu button opens the sidebar,
+  and the EAS login state and Sync are at the top of the page.
+- Each page of `devhub ui` starts with four facts about what it shows. The
+  builds: the count for each platform, the latest build, the size of the
+  builds, and the next EAS expiry. The devices: the ready devices, each
+  platform, and the devices that need a fix. Setup: the checks, the time
+  of the last check, and the count of each state.
+- In a wide window, the `devhub ui` page shows the builds as one table,
+  with one row for each build, a row with the name of each project above
+  its builds, and a column for the start of the fingerprint. The full hash
+  shows when you put the pointer on it.
 - The `devhub ui` page cuts no text in a narrow column: each device shows
   its full name, its ID, and its fix, and each build shows its full
-  profile. The setup checks show as one chip for each check, with the fix
-  of each warning and failure under the chips.
-- The `devhub ui` page shows icons: on Refresh, Sync, Install, and Check,
-  on the state chips of the devices, the setup checks, and the EAS login,
-  and for the kind of each device. The icons are SVG, and the page bundles
-  only the icons that it uses, so the package gets no font file.
+  profile. Setup shows one row for each check, with the fix of each
+  warning and failure under its row.
+- The `devhub ui` page shows icons in color, one color for one meaning:
+  Android and iOS, an EAS or a local build, the state of each device and
+  each check, and an expired EAS copy. The icons are SVG, and the page
+  bundles only the icons that it uses, so the package gets no font file.
+- The `devhub ui` page uses smaller text and smaller corners, for a
+  desktop window. The toolbar and the sidebar share one frame color, and
+  the page sits on a panel inside the frame. Sync is a filled button.
+- The `devhub ui` page shows the state of a sync in a message at the
+  bottom of the window, not in a card above the builds, so the page does
+  not move. When the sync ends, Show opens the project of a new build, and
+  Details shows the message of a project or a build that failed.
 
 ## [0.0.0-alpha.1] - 2026-10-20
 

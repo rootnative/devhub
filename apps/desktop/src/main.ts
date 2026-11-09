@@ -1,6 +1,13 @@
-import { app, BrowserWindow, dialog, nativeTheme, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  nativeTheme,
+  session,
+  shell,
+} from 'electron'
 import { desktopPageUrl } from './announcement'
-import { frameOptions } from './chrome'
+import { THEME_COOKIE, frameOptions, themeSource } from './chrome'
 import { devhubBin, startUiChild, type UiChild } from './child'
 import { decideNavigation } from './navigation'
 
@@ -34,6 +41,7 @@ app.on('before-quit', (event) => {
 })
 
 async function start(): Promise<void> {
+  await followThemeChoice()
   child = startUiChild(devhubBin(), process.env)
   let url: string
   try {
@@ -51,6 +59,28 @@ async function start(): Promise<void> {
     }
   })
   openWindow(desktopPageUrl(url))
+}
+
+/**
+ * The page keeps its theme choice in a cookie. The app follows the cookie, so
+ * the window buttons on Windows and Linux, and System on the page, agree
+ * with the choice. The page gets no Node API for it.
+ */
+async function followThemeChoice(): Promise<void> {
+  const { cookies } = session.defaultSession
+  try {
+    const [saved] = await cookies.get({ name: THEME_COOKIE })
+    nativeTheme.themeSource = themeSource(saved?.value)
+  } catch {
+    // No cookie store yet. The window follows the OS until a choice.
+  }
+  cookies.on('changed', (_event, cookie, cause, removed) => {
+    // A new value removes the old cookie first, with the cause "overwrite".
+    if (cookie.name !== THEME_COOKIE || (removed && cause === 'overwrite')) {
+      return
+    }
+    nativeTheme.themeSource = themeSource(removed ? undefined : cookie.value)
+  })
 }
 
 function openWindow(url: string): void {

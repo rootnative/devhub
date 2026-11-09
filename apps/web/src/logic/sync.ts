@@ -1,4 +1,5 @@
 // The same text as `devhub sync`, so the page and the terminal agree.
+import type { ApiResult } from '../api/client'
 import type {
   BuildOutcome,
   BuildStatus,
@@ -9,6 +10,67 @@ import { formatBytes, platformLabel, shortIds } from './format'
 
 export const NO_PROJECT =
   'DevHub knows no project folders. Run devhub sync in a project folder first.'
+
+/** The snackbar while the sync runs. */
+export const SYNCING = 'Syncing with EAS. DevHub downloads each new build.'
+
+/** What the Details action of the snackbar shows. */
+export type SyncDetails =
+  { kind: 'error'; message: string } | { kind: 'report'; view: SyncView }
+
+/** The snackbar when the sync ends. */
+export type SyncMessage = {
+  message: string
+  /** The IDs of the new builds, for the Show action. */
+  added: string[]
+  /** Present when the sync, a project, or a build failed. */
+  details?: SyncDetails
+}
+
+export function syncMessage(result: ApiResult<SyncReport>): SyncMessage {
+  if (result.kind === 'error') {
+    return {
+      message: 'Sync failed.',
+      added: [],
+      details: { kind: 'error', message: result.message },
+    }
+  }
+  const view = syncView(result.value)
+  if (view.projects.length === 0) {
+    return { message: NO_PROJECT, added: [] }
+  }
+  const downloaded = (project: ProjectSyncResult) =>
+    project.builds.filter((build) => build.status === 'downloaded')
+  const added = result.value.projects.flatMap((project) =>
+    downloaded(project).map((build) => build.id),
+  )
+  const places = result.value.projects.filter(
+    (project) => downloaded(project).length > 0,
+  )
+  const [only] = places
+  const where =
+    only === undefined
+      ? ''
+      : places.length === 1
+        ? ` in ${projectName(only.project)}`
+        : ` in ${places.length} projects`
+  const done =
+    added.length === 0
+      ? 'Sync done. No new builds.'
+      : `Sync done. ${added.length === 1 ? '1 new build' : `${added.length} new builds`}${where}.`
+  return view.failed
+    ? {
+        message: `${done} Some projects or builds failed.`,
+        added,
+        details: { kind: 'report', view },
+      }
+    : { message: done, added }
+}
+
+/** The last part of the project folder. */
+function projectName(folder: string): string {
+  return folder.split(/[\\/]/).filter(Boolean).pop() ?? '-'
+}
 
 export type SyncProjectView = {
   /** The last part of the project folder. */
@@ -49,7 +111,7 @@ export function syncView(report: SyncReport): SyncView {
 
 function projectView(project: ProjectSyncResult): SyncProjectView {
   const view: SyncProjectView = {
-    name: project.project.split(/[\\/]/).filter(Boolean).pop() ?? '-',
+    name: projectName(project.project),
     path: project.project,
     failed:
       project.status === 'failed' ||
