@@ -157,14 +157,12 @@ export function pickerView(
     platform,
     items: devices
       .filter((device) => device.platform === platform)
-      .map(
-        (device): PickerItem => ({
-          device,
-          label: deviceLabel(device),
-          target: targets[platform]?.id === device.id,
-          ...(device.ready ? {} : { state: device.state }),
-        }),
-      ),
+      .map((device): PickerItem => ({
+        device,
+        label: deviceLabel(device),
+        target: targets[platform]?.id === device.id,
+        ...(device.ready ? {} : { state: device.state }),
+      })),
   })).filter((group) => group.items.length > 0)
   return {
     kind: 'devices',

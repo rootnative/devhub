@@ -75,9 +75,7 @@ describe('installTargets', () => {
   })
 
   it('has no target with no device list', () => {
-    expect(installTargets(undefined, { android: 'emulator-5554' })).toEqual(
-      {},
-    )
+    expect(installTargets(undefined, { android: 'emulator-5554' })).toEqual({})
     expect(installTargets([], {})).toEqual({})
   })
 })
@@ -121,9 +119,9 @@ describe('rowInstall', () => {
   it('opens the device menu when the platform has no target', () => {
     const devices = [PIXEL, TABLET]
 
-    expect(rowInstall(build('a'), installTargets(devices, {}), devices)).toEqual(
-      { kind: 'many', devices: [PIXEL, TABLET] },
-    )
+    expect(
+      rowInstall(build('a'), installTargets(devices, {}), devices),
+    ).toEqual({ kind: 'many', devices: [PIXEL, TABLET] })
   })
 
   it('has no device when none of the platform is ready', () => {
