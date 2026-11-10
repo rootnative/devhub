@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native'
 import type { StripCell } from '../logic/strip'
 import { HUES } from '../theme'
 import { IconTile } from './IconTile'
+import { RisingValue } from './Motion'
 
 const styles = StyleSheet.create({
   strip: { flexDirection: 'row', flexWrap: 'wrap', borderBottomWidth: 1 },
@@ -53,9 +54,11 @@ export function SummaryStrip({ cells }: { cells: readonly StripCell[] }) {
               <Typography variant="labelMedium" color={colors.onSurfaceVariant}>
                 {cell.label}
               </Typography>
-              <Typography variant="titleLarge" style={styles.value}>
-                {cell.value}
-              </Typography>
+              <RisingValue
+                variant="titleLarge"
+                style={styles.value}
+                value={cell.value}
+              />
               <Typography
                 variant="labelMedium"
                 color={

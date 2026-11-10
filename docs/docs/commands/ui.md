@@ -81,6 +81,11 @@ the format of your system, with the year only when it is not the current
 year. Put the pointer on a date in the table to see the full date and
 time. The CLI shows ISO dates (`2026-11-09`).
 
+The page uses short animations: a page and its rows fade in, the mark of
+the selected item moves in the sidebar, and a value rises into place when
+it changes. When the reduce motion setting of your system is on, the page
+shows each change at once.
+
 ### Install a build
 
 Click Install on a build to install it on the install target of its
@@ -121,7 +126,8 @@ Click Sync to run `devhub sync --all`. While the sync runs, a message at
 the bottom of the window says so, and a thin bar shows on the top edge of
 the page. Nothing else on the page moves. The terminal of `devhub ui`
 shows the progress. When the sync ends, the message gives the count of new
-builds, and the page reads the builds again:
+builds, and the page reads the builds again. Each new build has an amber
+tint for a short time.
 
 - Click **Show** to open the builds of the project that got a new build.
 - When the sync did not run, or a project or a build failed, click

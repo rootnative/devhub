@@ -10,6 +10,7 @@ import { NO_DEVICE } from '../logic/install'
 import { deviceRow } from '../logic/view'
 import { MONO_WRAP } from '../theme'
 import { IconTile, useHue } from './IconTile'
+import { Cascade, CascadeItem } from './Motion'
 import { Notice } from './Notice'
 
 const styles = StyleSheet.create({
@@ -60,9 +61,11 @@ export function DevicesSection({ state }: { state: ApiState<DeviceReport> }) {
             warnings.length === 0 && <Notice>{NO_DEVICE}</Notice>}
         </View>
       )}
-      {devices.map((device) => (
-        <DeviceItem key={device.id} device={device} />
-      ))}
+      <Cascade>
+        {devices.map((device) => (
+          <DeviceItem key={device.id} device={device} />
+        ))}
+      </Cascade>
     </View>
   )
 }
@@ -77,7 +80,7 @@ function DeviceItem({ device }: { device: Device }) {
   const row = deviceRow(device)
   const muted = colors.onSurfaceVariant
   return (
-    <View
+    <CascadeItem
       style={[
         styles.device,
         { borderBottomColor: colors.surfaceContainerHigh },
@@ -121,7 +124,7 @@ function DeviceItem({ device }: { device: Device }) {
           </Typography>
         )}
       </View>
-    </View>
+    </CascadeItem>
   )
 }
 

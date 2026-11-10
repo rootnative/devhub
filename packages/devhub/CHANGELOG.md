@@ -63,6 +63,12 @@ notes name each one.
   installs on the target of its platform with one click, and its tooltip
   names the device. When only one device of a platform is ready, it is
   the target. The sidebar marks each target.
+- The `devhub ui` page uses short animations. A page and its rows fade
+  in, the mark of the selected item moves in the sidebar, a value rises
+  into place when it changes, the check results show one by one, and the
+  bar on the top edge moves while a sync runs. A new build from a sync has
+  an amber tint for a short time. With the reduce motion setting of the
+  system on, the page shows each change at once.
 - The `devhub ui` page shows a date in the 7 days before or after today as
   a relative time, for example "3 hours ago" or "in 5 days", and other
   dates as a short date in the format of the system. In the table, the

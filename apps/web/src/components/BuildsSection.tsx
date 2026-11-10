@@ -1,12 +1,13 @@
 import { Row } from '@rootnative/components/layout'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import type { InstallTargets } from '../logic/install'
 import { platformOf } from '../logic/summary'
+import { tintToken, type RowTint } from '../logic/tint'
 import {
   groupBuilds,
   storeNotes,
@@ -17,6 +18,7 @@ import { MONO_FONT } from '../theme'
 import { BuildTable, GroupRow, TABLE_MIN_WIDTH } from './BuildTable'
 import { PlatformIcon } from './IconTile'
 import { InstallButton } from './InstallButton'
+import { Cascade, CascadeItem, RowTint as Tint } from './Motion'
 import { Notice } from './Notice'
 
 const NO_BUILD = 'The store has no builds. Run devhub sync in a project folder.'
@@ -44,6 +46,7 @@ export function BuildsSection({
   now,
   devices,
   targets,
+  tint,
   installing,
   onInstall,
 }: {
@@ -54,6 +57,8 @@ export function BuildsSection({
   /** `undefined` while the page has no device list. */
   devices: readonly Device[] | undefined
   targets: InstallTargets
+  /** The new builds of the last sync. */
+  tint: RowTint
   /** The ID of the build that installs now. */
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
@@ -97,6 +102,7 @@ export function BuildsSection({
             groups={groups}
             devices={devices}
             targets={targets}
+            tint={tint}
             installing={installing}
             onInstall={onInstall}
           />
@@ -106,6 +112,7 @@ export function BuildsSection({
             groups={groups}
             devices={devices}
             targets={targets}
+            tint={tint}
             installing={installing}
             onInstall={onInstall}
           />
@@ -124,6 +131,7 @@ function BuildRows({
   groups,
   devices,
   targets,
+  tint,
   installing,
   onInstall,
 }: {
@@ -131,26 +139,35 @@ function BuildRows({
   groups: readonly ProjectGroup[]
   devices: readonly Device[] | undefined
   targets: InstallTargets
+  tint: RowTint
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
 }) {
   const { colors } = useTheme()
   const muted = colors.onSurfaceVariant
   return (
-    <View>
-      {groups.map((group) => (
-        <Fragment key={group.project}>
-          {titled && (
-            <GroupRow project={group.project} count={group.builds.length} />
-          )}
-          {group.builds.map((row) => (
-            <View
+    <Cascade>
+      {groups.flatMap((group) => [
+        ...(titled
+          ? [
+              <GroupRow
+                key={`group:${group.project}`}
+                project={group.project}
+                count={group.builds.length}
+              />,
+            ]
+          : []),
+        ...group.builds.map((row) => {
+          const token = tintToken(tint, row.id)
+          return (
+            <CascadeItem
               key={row.id}
               style={[
                 styles.row,
                 { borderBottomColor: colors.surfaceContainerHigh },
               ]}
             >
+              {token !== undefined && <Tint key={token} />}
               <Row justify="space-between" gap="sm">
                 <Typography
                   variant="labelMedium"
@@ -195,10 +212,10 @@ function BuildRows({
                   {row.build.installProblem}
                 </Typography>
               )}
-            </View>
-          ))}
-        </Fragment>
-      ))}
-    </View>
+            </CascadeItem>
+          )
+        }),
+      ])}
+    </Cascade>
   )
 }

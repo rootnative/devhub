@@ -1,4 +1,5 @@
 import type { Shape, Theme, Typography } from '@rootnative/core'
+import type { NamedTransitions, TransitionConfig } from '@rootnative/inertia'
 import { createMaterialTheme } from '@rootnative/core/create-theme'
 import type { TextStyle } from 'react-native'
 
@@ -147,4 +148,44 @@ export const AVATAR_TONES: Record<'light' | 'dark', AvatarTone[]> = {
     container: colors.primary,
     content: colors.onPrimary,
   })),
+}
+
+// The components register their own names, so the names of the page join
+// the same registry.
+declare module '@rootnative/inertia' {
+  interface RegisteredTransitions {
+    fade: TransitionConfig
+    rise: TransitionConfig
+    tint: TransitionConfig
+  }
+}
+
+/** How long the tint of a new build row takes to fade, in ms. */
+export const TINT_DURATION = 2400
+
+/** The delay between two rows of a cascade, in ms. */
+export const ROW_INTERVAL = 18
+
+/** The delay between two check results, in ms. They arrive one by one. */
+export const CHECK_INTERVAL = 70
+
+/**
+ * The selection mark of the sidebar: a spring for the move, and a short fade
+ * for the mark that starts hidden.
+ */
+export const HIGHLIGHT_TRANSITION = {
+  type: 'spring',
+  tension: 420,
+  friction: 36,
+  opacity: { type: 'timing', duration: 90 },
+} as const
+
+/**
+ * The motion of the page, by name, for `MotionConfig`. Short and plain: the
+ * page is a tool, and a value must be readable at once.
+ */
+export const TRANSITIONS: NamedTransitions = {
+  fade: { type: 'timing', duration: 150 },
+  rise: { type: 'timing', duration: 220 },
+  tint: { type: 'timing', duration: TINT_DURATION },
 }

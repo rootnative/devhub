@@ -12,7 +12,9 @@ import {
   type DoctorRow,
   type DoctorState,
 } from '../logic/doctor'
+import { CHECK_INTERVAL } from '../theme'
 import { useHue } from './IconTile'
+import { Cascade, CascadeItem } from './Motion'
 import { Notice } from './Notice'
 
 const CHECK_ICON: IconName = 'setup-check'
@@ -75,7 +77,10 @@ export function SetupSection({ state }: { state: DoctorState }) {
           <Notice tone="error">{result.message}</Notice>
         </View>
       )}
-      {result?.kind === 'ok' && <DoctorResult report={result.value} />}
+      {result?.kind === 'ok' && (
+        // Each run of the checks shows its results one by one again.
+        <DoctorResult key={state.checkedAt?.getTime()} report={result.value} />
+      )}
     </View>
   )
 }
@@ -86,8 +91,8 @@ function DoctorResult({ report }: { report: DoctorReport }) {
   const view = doctorView(report)
   const tone = useHue(SUMMARY_HUE[view.tone])
   return (
-    <>
-      <View style={styles.notes}>
+    <Cascade interval={CHECK_INTERVAL}>
+      <CascadeItem key="summary" style={styles.notes}>
         <Typography
           variant="labelLarge"
           color={view.tone === 'ok' ? colors.onSurfaceVariant : tone.ink}
@@ -95,7 +100,7 @@ function DoctorResult({ report }: { report: DoctorReport }) {
         >
           {view.summary}
         </Typography>
-      </View>
+      </CascadeItem>
       {view.rows.map((row, index) => (
         <CheckRow
           key={row.id}
@@ -103,7 +108,7 @@ function DoctorResult({ report }: { report: DoctorReport }) {
           status={report.checks[index]?.status ?? 'skip'}
         />
       ))}
-    </>
+    </Cascade>
   )
 }
 
@@ -111,7 +116,7 @@ function CheckRow({ row, status }: { row: DoctorRow; status: DoctorStatus }) {
   const { colors } = useTheme()
   const tone = useHue(STATUS_HUE[status])
   return (
-    <View
+    <CascadeItem
       style={[styles.check, { borderBottomColor: colors.surfaceContainerHigh }]}
       accessible
       aria-label={`${row.chip}. ${row.detail}${row.fix === undefined ? '' : `. ${row.fix}`}`}
@@ -139,6 +144,6 @@ function CheckRow({ row, status }: { row: DoctorRow; status: DoctorStatus }) {
           </Typography>
         )}
       </View>
-    </View>
+    </CascadeItem>
   )
 }

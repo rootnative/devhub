@@ -4,6 +4,7 @@ import { NavigationDrawer } from '@rootnative/components/navigation-drawer'
 import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
+import { Motion, Presence } from '@rootnative/inertia'
 import { useState, type ReactNode } from 'react'
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import type { BuildList, DeviceReport } from '../api/types'
@@ -22,7 +23,7 @@ import {
   type Page,
   type ProjectCount,
 } from '../logic/sidebar'
-import type { Hue } from '../theme'
+import { HIGHLIGHT_TRANSITION, type Hue } from '../theme'
 import { IconTile, PlatformIcon, useHue } from './IconTile'
 import { ProjectBadge } from './ProjectBadge'
 
@@ -44,6 +45,11 @@ const ROW_START = 6
 const DEVICE_START = ROW_START + 20 + 8
 const DOT_SIZE = 7
 const PANEL_WIDTH = 60
+// One selection mark moves from row to row in the sidebar. The modal drawer
+// keeps a still mark: it slides in, so a move from its last place would
+// start off the screen.
+const HIGHLIGHT_ID = 'sidebar-selection'
+const ROW_RADIUS = 6
 
 const styles = StyleSheet.create({
   sidebar: {
@@ -59,8 +65,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingEnd: 8,
-    borderRadius: 6,
+    borderRadius: ROW_RADIUS,
   },
+  highlight: { borderRadius: ROW_RADIUS },
   label: { flex: 1, minWidth: 0 },
   count: { fontVariant: ['tabular-nums'] },
   badge: {
@@ -104,10 +111,14 @@ export function Sidebar(props: SidebarProps) {
   return (
     <View style={styles.sidebar} role="navigation" aria-label={LABEL}>
       <ScrollView style={styles.scroll}>
-        <SidebarItems {...props} />
+        <SidebarItems {...props} highlight={HIGHLIGHT_ID} />
       </ScrollView>
       <View style={[styles.footer, { borderTopColor: colors.outlineVariant }]}>
-        <SettingsRow open={props.settingsOpen} onPress={props.onSettings} />
+        <SettingsRow
+          open={props.settingsOpen}
+          onPress={props.onSettings}
+          highlight={HIGHLIGHT_ID}
+        />
       </View>
     </View>
   )
@@ -147,7 +158,8 @@ function SidebarItems({
   devices,
   targets,
   checks,
-}: SidebarProps) {
+  highlight,
+}: SidebarProps & { highlight?: string }) {
   const list = builds.kind === 'ok' ? builds.value : undefined
   const setup = setupMark(checks.result)
   const hue = setupHue(checks.result)
@@ -164,6 +176,7 @@ function SidebarItems({
         leading={<IconTile icon="builds" hue="violet" />}
         label="Builds"
         selected={page === 'builds'}
+        highlight={highlight}
         onPress={() => onPage('builds')}
         trailing={count === undefined ? undefined : <Count value={count} />}
         accessibilityLabel={
@@ -179,34 +192,45 @@ function SidebarItems({
         }
         label="Devices"
         selected={page === 'devices'}
+        highlight={highlight}
         onPress={() => onPage('devices')}
         accessibilityLabel={
           deviceWarning ? 'Devices. See the warning.' : 'Devices'
         }
       />
-      {devices.kind === 'ok' &&
-        sidebarDevices(devices.value.devices, targets).map((device) => (
-          <SideRow
-            key={device.value}
-            height={DEVICE_HEIGHT}
-            start={DEVICE_START}
-            dense
-            leading={<PlatformIcon platform={device.platform} size={13} />}
-            label={device.label}
-            trailing={
-              <>
-                {device.target && <TargetMark />}
-                <StateDot ready={device.ready} />
-              </>
-            }
-            onPress={() => onPage('devices')}
-            accessibilityLabel={device.accessibilityLabel}
-          />
-        ))}
+      <Presence>
+        {devices.kind === 'ok' &&
+          sidebarDevices(devices.value.devices, targets).map((device) => (
+            <Motion.View
+              key={device.value}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition="fade"
+            >
+              <SideRow
+                height={DEVICE_HEIGHT}
+                start={DEVICE_START}
+                dense
+                leading={<PlatformIcon platform={device.platform} size={13} />}
+                label={device.label}
+                trailing={
+                  <>
+                    {device.target && <TargetMark />}
+                    <StateDot ready={device.ready} />
+                  </>
+                }
+                onPress={() => onPage('devices')}
+                accessibilityLabel={device.accessibilityLabel}
+              />
+            </Motion.View>
+          ))}
+      </Presence>
       <SideRow
         leading={<IconTile icon={setup.icon} hue={hue} />}
         label="Setup"
         selected={page === 'setup'}
+        highlight={highlight}
         onPress={() => onPage('setup')}
         trailing={
           setup.problems > 0 ? (
@@ -222,15 +246,18 @@ function SidebarItems({
 function SettingsRow({
   open,
   onPress,
+  highlight,
 }: {
   open: boolean
   onPress: () => void
+  highlight?: string
 }) {
   return (
     <SideRow
       leading={<IconTile icon="settings" hue="slate" />}
       label="Settings"
       selected={open}
+      highlight={highlight}
       onPress={onPress}
     />
   )
@@ -250,11 +277,14 @@ function SideRow({
   height = ROW_HEIGHT,
   start = ROW_START,
   dense = false,
+  highlight,
 }: {
   leading: ReactNode
   label: string
   trailing?: ReactNode
   selected?: boolean
+  /** The `layoutId` of a selection mark that moves between rows. */
+  highlight?: string
   onPress: () => void
   accessibilityLabel?: string
   height?: number
@@ -263,6 +293,7 @@ function SideRow({
 }) {
   const { colors } = useTheme()
   const [hovered, setHovered] = useState(false)
+  const moving = selected && highlight !== undefined
   return (
     <Pressable
       onPress={onPress}
@@ -276,14 +307,31 @@ function SideRow({
         {
           height,
           paddingStart: start,
-          backgroundColor: selected
-            ? colors.surfaceContainerHighest
-            : hovered
-              ? colors.surfaceContainerHigh
-              : 'transparent',
+          backgroundColor:
+            selected && !moving
+              ? colors.surfaceContainerHighest
+              : hovered && !selected
+                ? colors.surfaceContainerHigh
+                : 'transparent',
         },
       ]}
     >
+      {/* First, so the row content draws over it. On web, the move starts
+          one frame after the mark first draws, so the mark starts hidden:
+          else it shows on the new row for one frame, then jumps back. */}
+      {moving && (
+        <Motion.View
+          layoutId={highlight}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={HIGHLIGHT_TRANSITION}
+          style={[
+            StyleSheet.absoluteFill,
+            styles.highlight,
+            { backgroundColor: colors.surfaceContainerHighest },
+          ]}
+        />
+      )}
       {leading}
       <Typography
         variant={selected ? 'labelLarge' : dense ? 'bodySmall' : 'bodyMedium'}

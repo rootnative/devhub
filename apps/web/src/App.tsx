@@ -12,6 +12,7 @@ import {
   useTheme,
   type ThemeMode,
 } from '@rootnative/core'
+import { Motion, MotionConfig } from '@rootnative/inertia'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { NO_TOKEN, getJson, postJson } from './api/client'
@@ -35,6 +36,7 @@ import { SettingsDialog } from './components/SettingsDialog'
 import { CheckButton, SetupSection } from './components/SetupSection'
 import { ALL_PROJECTS, Sidebar, SidebarDrawer } from './components/Sidebar'
 import { SummaryStrip } from './components/SummaryStrip'
+import { SyncBar } from './components/SyncBar'
 import { SyncControls } from './components/SyncControls'
 import { SyncDetailsDialog } from './components/SyncDetailsDialog'
 import { TargetPicker } from './components/TargetPicker'
@@ -57,6 +59,7 @@ import {
 import { buildCells, deviceCells, setupCells } from './logic/strip'
 import { buildSummary } from './logic/summary'
 import { SYNCING, syncMessage, type SyncDetails } from './logic/sync'
+import { NO_TINT, endTint, tintRows } from './logic/tint'
 import {
   isThemeMode,
   parseThemeMode,
@@ -66,7 +69,7 @@ import { TOKEN_KEY, resolveToken } from './logic/token'
 import type { BuildRow } from './logic/view'
 import { easStatus } from './logic/whoami'
 import { iconResolver, type IconName } from './icons'
-import { darkTheme, lightTheme } from './theme'
+import { TINT_DURATION, TRANSITIONS, darkTheme, lightTheme } from './theme'
 
 const TITLE = 'DevHub'
 const REFRESH_ICON: IconName = 'refresh'
@@ -88,6 +91,7 @@ const styles = StyleSheet.create({
   },
   panelNarrow: { marginStart: 8 },
   main: { flex: 1 },
+  page: { flex: 1 },
   toolbarControls: { minWidth: 0 },
   narrowControls: {
     flexDirection: 'row',
@@ -96,15 +100,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  // It floats on the top edge, so the status of a sync moves nothing.
-  progress: {
-    position: 'absolute',
-    top: 0,
-    start: 0,
-    end: 0,
-    height: 2,
-    opacity: 0.8,
   },
 })
 
@@ -138,29 +133,31 @@ export function App() {
   // Read at once, so the first paint already has the chosen mode.
   const [initialMode] = useState(readThemeMode)
   return (
-    <ThemeProvider
-      theme={{ light: lightTheme, dark: darkTheme }}
-      iconResolver={iconResolver}
-      defaultMode={initialMode ?? 'system'}
-      storage={THEME_STORAGE}
-    >
-      <PortalHost>
-        <SnackbarProvider>
-          <Layout>
-            {token === undefined ? (
-              <>
-                <TitleBar host={host} title={TITLE} />
-                <Container width="large" p="lg">
-                  <Notice tone="error">{NO_TOKEN}</Notice>
-                </Container>
-              </>
-            ) : (
-              <Dashboard token={token} host={host} />
-            )}
-          </Layout>
-        </SnackbarProvider>
-      </PortalHost>
-    </ThemeProvider>
+    <MotionConfig reducedMotion="user" transitions={TRANSITIONS}>
+      <ThemeProvider
+        theme={{ light: lightTheme, dark: darkTheme }}
+        iconResolver={iconResolver}
+        defaultMode={initialMode ?? 'system'}
+        storage={THEME_STORAGE}
+      >
+        <PortalHost>
+          <SnackbarProvider>
+            <Layout>
+              {token === undefined ? (
+                <>
+                  <TitleBar host={host} title={TITLE} />
+                  <Container width="large" p="lg">
+                    <Notice tone="error">{NO_TOKEN}</Notice>
+                  </Container>
+                </>
+              ) : (
+                <Dashboard token={token} host={host} />
+              )}
+            </Layout>
+          </SnackbarProvider>
+        </PortalHost>
+      </ThemeProvider>
+    </MotionConfig>
   )
 }
 
@@ -188,6 +185,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   // In memory only: devhub ui takes a new port at each start, so the page
   // storage does not survive a restart. The auto rule covers the usual case.
   const [chosen, setChosen] = useState<ChosenTargets>({})
+  const [tint, setTint] = useState(NO_TINT)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Below the expanded breakpoint, the sidebar is a modal drawer, and the EAS
@@ -212,6 +210,19 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     setChosen(keptChoice)
   }
   const targets = installTargets(deviceList, keptChoice)
+
+  // The tint ends when its fade ends, so a later visit to the page does not
+  // show it again.
+  useEffect(() => {
+    if (tint.ids.length === 0) {
+      return
+    }
+    const timer = setTimeout(
+      () => setTint((current) => endTint(current, tint.token)),
+      TINT_DURATION + 200,
+    )
+    return () => clearTimeout(timer)
+  }, [tint])
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -245,6 +256,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
       build === undefined ? undefined : buildSummary(build).project,
     )
     setPage('builds')
+    setTint((current) => tintRows(current, ids))
   }
 
   // The request returns when the sync ends, which can take minutes. The
@@ -264,6 +276,9 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
       void eas.reload()
     }
     const { message, added, details } = syncMessage(result)
+    if (added.length > 0) {
+      setTint((current) => tintRows(current, added))
+    }
     if (details !== undefined) {
       snackbar.show({
         message,
@@ -473,35 +488,41 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
             },
           ]}
         >
-          <PageHeader {...header} />
-          {cells !== undefined && <SummaryStrip cells={cells} />}
-          <ScrollView style={styles.main}>
-            {!wide && (
-              <View style={styles.narrowControls}>
-                {targetPicker}
-                {syncControls}
-              </View>
-            )}
-            {page === 'builds' && (
-              <BuildsSection
-                state={builds.state}
-                project={project}
-                now={now}
-                devices={deviceList}
-                targets={targets}
-                installing={installing}
-                onInstall={(row, device) => void install(row, device)}
-              />
-            )}
-            {page === 'devices' && <DevicesSection state={devices.state} />}
-            {page === 'setup' && <SetupSection state={checks} />}
-          </ScrollView>
-          {syncing && (
-            <View
-              aria-hidden
-              style={[styles.progress, { backgroundColor: colors.primary }]}
-            />
-          )}
+          {/* A new page fades in, and the old page goes at once: two pages
+              must not share the panel. */}
+          <Motion.View
+            key={`${page}:${project ?? ''}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition="fade"
+            style={styles.page}
+          >
+            <PageHeader {...header} />
+            {cells !== undefined && <SummaryStrip cells={cells} />}
+            <ScrollView style={styles.main}>
+              {!wide && (
+                <View style={styles.narrowControls}>
+                  {targetPicker}
+                  {syncControls}
+                </View>
+              )}
+              {page === 'builds' && (
+                <BuildsSection
+                  state={builds.state}
+                  project={project}
+                  now={now}
+                  devices={deviceList}
+                  targets={targets}
+                  tint={tint}
+                  installing={installing}
+                  onInstall={(row, device) => void install(row, device)}
+                />
+              )}
+              {page === 'devices' && <DevicesSection state={devices.state} />}
+              {page === 'setup' && <SetupSection state={checks} />}
+            </ScrollView>
+          </Motion.View>
+          <SyncBar visible={syncing} />
         </View>
       </View>
       {!wide && (

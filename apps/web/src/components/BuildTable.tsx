@@ -1,16 +1,17 @@
 import { Tooltip } from '@rootnative/components/tooltip'
 import { Typography } from '@rootnative/components/typography'
 import { useTheme } from '@rootnative/core'
-import { Fragment } from 'react'
 import { View, type TextStyle, type ViewStyle } from 'react-native'
 import type { Device } from '../api/types'
 import type { InstallTargets } from '../logic/install'
 import { buildCount } from '../logic/sidebar'
 import { platformOf } from '../logic/summary'
+import { tintToken, type RowTint } from '../logic/tint'
 import type { BuildCells, BuildRow, ProjectGroup } from '../logic/view'
 import { MONO_FONT } from '../theme'
 import { HueIcon, PlatformIcon, useHue } from './IconTile'
 import { InstallButton } from './InstallButton'
+import { Cascade, CascadeItem, RowTint as Tint } from './Motion'
 import { ProjectBadge } from './ProjectBadge'
 
 type TextKey = Exclude<
@@ -83,6 +84,7 @@ export function BuildTable({
   groups,
   devices,
   targets,
+  tint,
   installing,
   onInstall,
 }: {
@@ -91,6 +93,7 @@ export function BuildTable({
   groups: readonly ProjectGroup[]
   devices: readonly Device[] | undefined
   targets: InstallTargets
+  tint: RowTint
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
 }) {
@@ -151,73 +154,79 @@ export function BuildTable({
           </Typography>
         </View>
       </View>
-      {groups.map((group) => (
-        <Fragment key={group.project}>
-          {titled && (
-            <GroupRow
-              table
-              project={group.project}
-              count={group.builds.length}
-            />
-          )}
-          {group.builds.map((row) => {
+      {/* One flat list, so each row gets its own place in the cascade. */}
+      <Cascade>
+        {groups.flatMap((group) => [
+          ...(titled
+            ? [
+                <GroupRow
+                  key={`group:${group.project}`}
+                  table
+                  project={group.project}
+                  count={group.builds.length}
+                />,
+              ]
+            : []),
+          ...group.builds.flatMap((row) => {
             const problem = row.build.installProblem
-            return (
-              <Fragment key={row.id}>
-                <View
-                  role="row"
-                  style={[
-                    rowStyle,
-                    problem === undefined ? rule : undefined,
-                    { minHeight: 38, paddingVertical: 4 },
-                  ]}
-                >
-                  {COLUMNS.map((column) => (
-                    <View
-                      key={column.key}
-                      role="cell"
-                      style={columnStyle(column)}
-                    >
-                      <Cell column={column} row={row} />
-                    </View>
-                  ))}
+            const token = tintToken(tint, row.id)
+            const main = (
+              <CascadeItem
+                key={row.id}
+                role="row"
+                style={[
+                  rowStyle,
+                  problem === undefined ? rule : undefined,
+                  { minHeight: 38, paddingVertical: 4 },
+                ]}
+              >
+                {token !== undefined && <Tint key={token} />}
+                {COLUMNS.map((column) => (
                   <View
+                    key={column.key}
                     role="cell"
-                    style={{ width: INSTALL_WIDTH, alignItems: 'flex-end' }}
+                    style={columnStyle(column)}
                   >
-                    <InstallButton
-                      size="extraSmall"
-                      build={row.build}
-                      shortId={row.shortId}
-                      devices={devices}
-                      targets={targets}
-                      installing={installing === row.id}
-                      locked={installing !== undefined && installing !== row.id}
-                      onInstall={(device) => onInstall(row, device)}
-                    />
+                    <Cell column={column} row={row} />
                   </View>
+                ))}
+                <View
+                  role="cell"
+                  style={{ width: INSTALL_WIDTH, alignItems: 'flex-end' }}
+                >
+                  <InstallButton
+                    size="extraSmall"
+                    build={row.build}
+                    shortId={row.shortId}
+                    devices={devices}
+                    targets={targets}
+                    installing={installing === row.id}
+                    locked={installing !== undefined && installing !== row.id}
+                    onInstall={(device) => onInstall(row, device)}
+                  />
                 </View>
-                {problem !== undefined && (
-                  <View
-                    style={[
-                      rule,
-                      { paddingHorizontal: SIDE_PADDING, paddingBottom: 8 },
-                    ]}
-                  >
-                    <Typography
-                      variant="bodySmall"
-                      color={colors.error}
-                      selectable
-                    >
-                      {problem}
-                    </Typography>
-                  </View>
-                )}
-              </Fragment>
+              </CascadeItem>
             )
-          })}
-        </Fragment>
-      ))}
+            if (problem === undefined) {
+              return [main]
+            }
+            return [
+              main,
+              <CascadeItem
+                key={`${row.id}:problem`}
+                style={[
+                  rule,
+                  { paddingHorizontal: SIDE_PADDING, paddingBottom: 8 },
+                ]}
+              >
+                <Typography variant="bodySmall" color={colors.error} selectable>
+                  {problem}
+                </Typography>
+              </CascadeItem>,
+            ]
+          }),
+        ])}
+      </Cascade>
     </View>
   )
 }
@@ -235,7 +244,7 @@ export function GroupRow({
 }) {
   const { colors } = useTheme()
   return (
-    <View
+    <CascadeItem
       role={table ? 'row' : undefined}
       style={{
         flexDirection: 'row',
@@ -259,7 +268,7 @@ export function GroupRow({
           {buildCount(count)}
         </Typography>
       </View>
-    </View>
+    </CascadeItem>
   )
 }
 
