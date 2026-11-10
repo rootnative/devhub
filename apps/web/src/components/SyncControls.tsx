@@ -12,6 +12,7 @@ import { useHue } from './IconTile'
 const SYNC_ICON: IconName = 'sync'
 
 const styles = StyleSheet.create({
+  controls: { flexShrink: 1, minWidth: 0 },
   eas: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
   label: { flexShrink: 1 },
 })
@@ -45,7 +46,7 @@ export function SyncControls({
     </Button>
   )
   return (
-    <Row gap="md" align="center">
+    <Row gap="md" align="center" style={styles.controls}>
       <View style={styles.eas} accessibilityLiveRegion="polite">
         {eas.icon !== undefined && (
           <Icon

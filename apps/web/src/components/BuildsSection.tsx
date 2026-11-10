@@ -5,6 +5,7 @@ import { Fragment, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import type { BuildList, Device } from '../api/types'
 import type { ApiState } from '../api/useApi'
+import type { InstallTargets } from '../logic/install'
 import { platformOf } from '../logic/summary'
 import {
   groupBuilds,
@@ -42,6 +43,7 @@ export function BuildsSection({
   project,
   now,
   devices,
+  targets,
   installing,
   onInstall,
 }: {
@@ -51,6 +53,7 @@ export function BuildsSection({
   now: Date
   /** `undefined` while the page has no device list. */
   devices: readonly Device[] | undefined
+  targets: InstallTargets
   /** The ID of the build that installs now. */
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
@@ -93,6 +96,7 @@ export function BuildsSection({
             titled={all}
             groups={groups}
             devices={devices}
+            targets={targets}
             installing={installing}
             onInstall={onInstall}
           />
@@ -101,6 +105,7 @@ export function BuildsSection({
             titled={all}
             groups={groups}
             devices={devices}
+            targets={targets}
             installing={installing}
             onInstall={onInstall}
           />
@@ -118,12 +123,14 @@ function BuildRows({
   titled,
   groups,
   devices,
+  targets,
   installing,
   onInstall,
 }: {
   titled: boolean
   groups: readonly ProjectGroup[]
   devices: readonly Device[] | undefined
+  targets: InstallTargets
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
 }) {
@@ -169,6 +176,7 @@ function BuildRows({
                   build={row.build}
                   shortId={row.shortId}
                   devices={devices}
+                  targets={targets}
                   installing={installing === row.id}
                   locked={installing !== undefined && installing !== row.id}
                   onInstall={(device) => onInstall(row, device)}

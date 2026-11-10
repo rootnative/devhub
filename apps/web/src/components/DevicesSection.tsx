@@ -6,13 +6,11 @@ import { StyleSheet, View } from 'react-native'
 import type { Device, DeviceReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import type { IconName } from '../icons'
+import { NO_DEVICE } from '../logic/install'
 import { deviceRow } from '../logic/view'
 import { MONO_WRAP } from '../theme'
 import { IconTile, useHue } from './IconTile'
 import { Notice } from './Notice'
-
-const NO_DEVICE =
-  'No device runs now. Start an emulator, or connect an Android device with USB debugging on. On macOS, you can also boot a simulator.'
 
 const styles = StyleSheet.create({
   notes: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },

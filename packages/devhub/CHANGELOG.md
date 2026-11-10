@@ -57,6 +57,12 @@ notes name each one.
   bottom of the window, not in a card above the builds, so the page does
   not move. When the sync ends, Show opens the project of a new build, and
   Details shows the message of a project or a build that failed.
+- The `devhub ui` page has an install target for each platform: one
+  Android emulator or device, and one iOS simulator. The toolbar names
+  each target, and a menu there changes it. Install on a build then
+  installs on the target of its platform with one click, and its tooltip
+  names the device. When only one device of a platform is ready, it is
+  the target. The sidebar marks each target.
 - The `devhub ui` page shows a date in the 7 days before or after today as
   a relative time, for example "3 hours ago" or "in 5 days", and other
   dates as a short date in the format of the system. In the table, the

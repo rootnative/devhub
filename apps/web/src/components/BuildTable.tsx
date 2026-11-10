@@ -4,6 +4,7 @@ import { useTheme } from '@rootnative/core'
 import { Fragment } from 'react'
 import { View, type TextStyle, type ViewStyle } from 'react-native'
 import type { Device } from '../api/types'
+import type { InstallTargets } from '../logic/install'
 import { buildCount } from '../logic/sidebar'
 import { platformOf } from '../logic/summary'
 import type { BuildCells, BuildRow, ProjectGroup } from '../logic/view'
@@ -81,6 +82,7 @@ export function BuildTable({
   titled,
   groups,
   devices,
+  targets,
   installing,
   onInstall,
 }: {
@@ -88,6 +90,7 @@ export function BuildTable({
   titled: boolean
   groups: readonly ProjectGroup[]
   devices: readonly Device[] | undefined
+  targets: InstallTargets
   installing: string | undefined
   onInstall: (row: BuildRow, device: Device) => void
 }) {
@@ -187,6 +190,7 @@ export function BuildTable({
                       build={row.build}
                       shortId={row.shortId}
                       devices={devices}
+                      targets={targets}
                       installing={installing === row.id}
                       locked={installing !== undefined && installing !== row.id}
                       onInstall={(device) => onInstall(row, device)}

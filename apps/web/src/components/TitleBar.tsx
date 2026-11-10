@@ -25,6 +25,10 @@ const WINDOW = StyleSheet.create({
 const styles = StyleSheet.create({
   bar: { height: TITLE_BAR_HEIGHT },
   control: { flexShrink: 0 },
+  // The title keeps its width, and the controls at the end give way: their
+  // labels cut at the end when a desktop window is narrow.
+  titleGroup: { flexGrow: 1, flexShrink: 0 },
+  trailing: { flexShrink: 1, minWidth: 0 },
   title: { flexShrink: 1 },
 })
 
@@ -53,7 +57,7 @@ export function TitleBar({
       <View style={desktop ? WINDOW.drag : undefined}>
         <Row px="lg" gap="md" align="center" style={styles.bar}>
           {leading !== undefined && <View style={control}>{leading}</View>}
-          <Row flex={1} gap="sm" align="center">
+          <Row gap="sm" align="center" style={styles.titleGroup}>
             <Mark size={18} />
             <Typography
               variant="titleSmall"
@@ -64,7 +68,9 @@ export function TitleBar({
               {title}
             </Typography>
           </Row>
-          {trailing !== undefined && <View style={control}>{trailing}</View>}
+          {trailing !== undefined && (
+            <View style={[control, styles.trailing]}>{trailing}</View>
+          )}
         </Row>
       </View>
     </View>

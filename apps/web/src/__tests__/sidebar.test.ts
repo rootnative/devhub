@@ -175,6 +175,7 @@ describe('sidebarDevices', () => {
         label: 'Pixel 8',
         platform: 'android',
         ready: true,
+        target: false,
         accessibilityLabel: 'Pixel 8. Ready',
       },
       {
@@ -182,8 +183,21 @@ describe('sidebarDevices', () => {
         label: 'R5CT80',
         platform: 'android',
         ready: false,
+        target: false,
         accessibilityLabel: 'R5CT80. unauthorized',
       },
+    ])
+  })
+
+  it('marks the install target of a platform', () => {
+    expect(
+      sidebarDevices([PIXEL, PHONE], { android: PIXEL }).map((device) => [
+        device.target,
+        device.accessibilityLabel,
+      ]),
+    ).toEqual([
+      [true, 'Pixel 8. Ready. Install target'],
+      [false, 'R5CT80. unauthorized'],
     ])
   })
 })

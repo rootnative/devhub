@@ -9,6 +9,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import type { BuildList, DeviceReport } from '../api/types'
 import type { ApiState } from '../api/useApi'
 import type { DoctorState } from '../logic/doctor'
+import type { InstallTargets } from '../logic/install'
 import {
   countLabel,
   devicesWarning,
@@ -91,6 +92,7 @@ export type SidebarProps = {
   onProject: (project: string | undefined) => void
   builds: ApiState<BuildList>
   devices: ApiState<DeviceReport>
+  targets: InstallTargets
   checks: DoctorState
   settingsOpen: boolean
   onSettings: () => void
@@ -143,6 +145,7 @@ function SidebarItems({
   onProject,
   builds,
   devices,
+  targets,
   checks,
 }: SidebarProps) {
   const list = builds.kind === 'ok' ? builds.value : undefined
@@ -182,7 +185,7 @@ function SidebarItems({
         }
       />
       {devices.kind === 'ok' &&
-        sidebarDevices(devices.value.devices).map((device) => (
+        sidebarDevices(devices.value.devices, targets).map((device) => (
           <SideRow
             key={device.value}
             height={DEVICE_HEIGHT}
@@ -190,7 +193,12 @@ function SidebarItems({
             dense
             leading={<PlatformIcon platform={device.platform} size={13} />}
             label={device.label}
-            trailing={<StateDot ready={device.ready} />}
+            trailing={
+              <>
+                {device.target && <TargetMark />}
+                <StateDot ready={device.ready} />
+              </>
+            }
             onPress={() => onPage('devices')}
             accessibilityLabel={device.accessibilityLabel}
           />
@@ -311,6 +319,16 @@ function ProblemBadge({ count, hue }: { count: number; hue: Hue }) {
       <Typography variant="labelSmall" color={colors.onSurface}>
         {String(count)}
       </Typography>
+    </View>
+  )
+}
+
+/** The mark of an install target. The row label says it to a screen reader. */
+function TargetMark() {
+  const { colors } = useTheme()
+  return (
+    <View aria-hidden>
+      <Icon source="install-target" size={12} color={colors.primary} />
     </View>
   )
 }

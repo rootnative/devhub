@@ -5,6 +5,7 @@ import Apple from 'lucide-react-native/icons/apple'
 import ArrowLeftRight from 'lucide-react-native/icons/arrow-left-right'
 import Bot from 'lucide-react-native/icons/bot'
 import Check from 'lucide-react-native/icons/check'
+import ChevronDown from 'lucide-react-native/icons/chevron-down'
 import ChevronsUpDown from 'lucide-react-native/icons/chevrons-up-down'
 import CircleCheck from 'lucide-react-native/icons/circle-check'
 import CircleMinus from 'lucide-react-native/icons/circle-minus'
@@ -28,6 +29,7 @@ import RefreshCw from 'lucide-react-native/icons/refresh-cw'
 import Settings from 'lucide-react-native/icons/settings'
 import Smartphone from 'lucide-react-native/icons/smartphone'
 import Stethoscope from 'lucide-react-native/icons/stethoscope'
+import Target from 'lucide-react-native/icons/target'
 import Sun from 'lucide-react-native/icons/sun'
 import SunMoon from 'lucide-react-native/icons/sun-moon'
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert'
@@ -42,6 +44,8 @@ const ICONS = {
   builds: Package,
   sync: CloudDownload,
   install: Download,
+  'install-target': Target,
+  expand: ChevronDown,
   settings: Settings,
   copy: Copy,
   appearance: SunMoon,

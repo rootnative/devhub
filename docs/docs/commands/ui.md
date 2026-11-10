@@ -25,8 +25,9 @@ server stops after it ends. Press Ctrl+C again to stop the server at once.
 
 ## The page
 
-The toolbar shows the EAS login state, Sync, and Refresh. In a narrow
-window, the EAS login state and Sync are at the top of the page.
+The toolbar shows the install target, the EAS login state, Sync, and
+Refresh. In a narrow window, the install target, the EAS login state, and
+Sync are at the top of the page.
 
 The sidebar shows these items. Click an item to open its page.
 
@@ -36,8 +37,9 @@ The sidebar shows these items. Click an item to open its page.
 - **Builds:** the builds of the selected project, with the count.
 - **Devices:** one item for each device that runs now, with the icon of
   its platform. A filled dot shows a ready device. A ring in the error
-  color shows a device that is not ready. A warning icon on Devices shows
-  that the Devices page has a warning.
+  color shows a device that is not ready. A target icon shows an install
+  target. A warning icon on Devices shows that the Devices page has a
+  warning.
 - **Setup:** after a check, the count of warnings and failures.
 - **Settings:** at the end of the sidebar. Select the appearance: System
   (the light or dark mode of your computer), Light, or Dark. Settings also
@@ -81,10 +83,22 @@ time. The CLI shows ISO dates (`2026-11-09`).
 
 ### Install a build
 
-Click Install on a build to install it on the ready device of its
-platform. When two or more devices are ready, select the device in the
-menu.
+Click Install on a build to install it on the install target of its
+platform. Put the pointer on Install to see the device.
 
+Each platform has one install target: one Android emulator or device, and
+one iOS simulator. The toolbar shows the name of each target. To change a
+target, click the toolbar button, and select a device in the menu. The
+menu shows the devices of each platform, with a check on each target. A
+device that is not ready is off, with its state.
+
+- When only one device of a platform is ready, that device is the target,
+  with no selection.
+- When two or more devices of a platform are ready and you selected none,
+  Install opens a menu of the devices.
+- When the target stops or is not ready, the platform goes back to these
+  two rules.
+- The page keeps the targets until `devhub ui` stops.
 - The button is off when no device of the platform is ready.
 - A build that `devhub install` refuses has no button. The page shows the
   reason and the fix.

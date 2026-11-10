@@ -9,6 +9,7 @@ import type { ApiState } from '../api/useApi'
 import type { IconName } from '../icons'
 import type { Hue } from '../theme'
 import { doctorView } from './doctor'
+import type { InstallTargets } from './install'
 import { buildSummary } from './summary'
 import { deviceRow } from './view'
 
@@ -133,19 +134,26 @@ export type SidebarDevice = {
   label: string
   platform: Device['platform']
   ready: boolean
-  /** The name and the state, because the dot shows the state. */
+  /** Install on a row uses this device. */
+  target: boolean
+  /** The name, the state, and the target, because marks show them. */
   accessibilityLabel: string
 }
 
-export function sidebarDevices(devices: readonly Device[]): SidebarDevice[] {
+export function sidebarDevices(
+  devices: readonly Device[],
+  targets: InstallTargets = {},
+): SidebarDevice[] {
   return devices.map((device) => {
     const row = deviceRow(device)
+    const target = targets[device.platform]?.id === device.id
     return {
       value: deviceValue(device),
       label: row.title,
       platform: device.platform,
       ready: row.ready,
-      accessibilityLabel: `${row.title}. ${row.status}`,
+      target,
+      accessibilityLabel: `${row.title}. ${row.status}${target ? '. Install target' : ''}`,
     }
   })
 }

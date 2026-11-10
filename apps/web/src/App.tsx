@@ -37,10 +37,17 @@ import { ALL_PROJECTS, Sidebar, SidebarDrawer } from './components/Sidebar'
 import { SummaryStrip } from './components/SummaryStrip'
 import { SyncControls } from './components/SyncControls'
 import { SyncDetailsDialog } from './components/SyncDetailsDialog'
+import { TargetPicker } from './components/TargetPicker'
 import { TitleBar } from './components/TitleBar'
 import type { DoctorState } from './logic/doctor'
 import { HOST_KEY, resolveHost, type Host } from './logic/host'
-import { installedMessage } from './logic/install'
+import {
+  installTargets,
+  installedMessage,
+  keepChosen,
+  pickerView,
+  type ChosenTargets,
+} from './logic/install'
 import {
   devicesWarning,
   keepProject,
@@ -81,7 +88,15 @@ const styles = StyleSheet.create({
   },
   panelNarrow: { marginStart: 8 },
   main: { flex: 1 },
-  narrowControls: { paddingHorizontal: 16, paddingVertical: 12 },
+  toolbarControls: { minWidth: 0 },
+  narrowControls: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   // It floats on the top edge, so the status of a sync moves nothing.
   progress: {
     position: 'absolute',
@@ -170,6 +185,9 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   const [checks, setChecks] = useState<DoctorState>({ running: false })
   const [page, setPage] = useState<Page>('builds')
   const [selectedProject, setSelectedProject] = useState<string>()
+  // In memory only: devhub ui takes a new port at each start, so the page
+  // storage does not survive a restart. The auto rule covers the usual case.
+  const [chosen, setChosen] = useState<ChosenTargets>({})
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Below the expanded breakpoint, the sidebar is a modal drawer, and the EAS
@@ -187,6 +205,13 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
   if (project !== selectedProject) {
     setSelectedProject(project)
   }
+  const deviceList =
+    devices.state.kind === 'ok' ? devices.state.value.devices : undefined
+  const keptChoice = keepChosen(chosen, deviceList)
+  if (keptChoice !== chosen) {
+    setChosen(keptChoice)
+  }
+  const targets = installTargets(deviceList, keptChoice)
 
   // The device list is a snapshot. A device can start or stop while the
   // window is in the background, so a return to the window reads it again.
@@ -293,6 +318,15 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     }
   }
 
+  const targetPicker = (
+    <TargetPicker
+      picker={pickerView(deviceList, targets)}
+      align={wide ? 'end' : 'start'}
+      onSelect={(device) =>
+        setChosen((current) => ({ ...current, [device.platform]: device.id }))
+      }
+    />
+  )
   const syncControls = (
     <SyncControls
       eas={easStatus(eas.state)}
@@ -354,6 +388,7 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
     },
     builds: builds.state,
     devices: devices.state,
+    targets,
     checks,
     settingsOpen,
     onSettings: () => {
@@ -413,7 +448,8 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
         leading={wide ? undefined : menuButton}
         trailing={
           wide ? (
-            <Row gap="sm" align="center">
+            <Row gap="sm" align="center" style={styles.toolbarControls}>
+              {targetPicker}
               {syncControls}
               {refreshButton}
             </Row>
@@ -440,17 +476,19 @@ function Dashboard({ token, host }: { token: string; host: Host }) {
           <PageHeader {...header} />
           {cells !== undefined && <SummaryStrip cells={cells} />}
           <ScrollView style={styles.main}>
-            {!wide && <View style={styles.narrowControls}>{syncControls}</View>}
+            {!wide && (
+              <View style={styles.narrowControls}>
+                {targetPicker}
+                {syncControls}
+              </View>
+            )}
             {page === 'builds' && (
               <BuildsSection
                 state={builds.state}
                 project={project}
                 now={now}
-                devices={
-                  devices.state.kind === 'ok'
-                    ? devices.state.value.devices
-                    : undefined
-                }
+                devices={deviceList}
+                targets={targets}
                 installing={installing}
                 onInstall={(row, device) => void install(row, device)}
               />

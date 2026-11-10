@@ -1,8 +1,14 @@
 import { Button } from '@rootnative/components/button'
 import { Menu } from '@rootnative/components/menu'
+import { Tooltip } from '@rootnative/components/tooltip'
 import type { Device, ListedBuild } from '../api/types'
 import type { IconName } from '../icons'
-import { deviceLabel, installChoice } from '../logic/install'
+import {
+  deviceLabel,
+  installOnLabel,
+  rowInstall,
+  type InstallTargets,
+} from '../logic/install'
 
 const INSTALL_ICON: IconName = 'install'
 
@@ -17,6 +23,7 @@ export function InstallButton({
   build,
   shortId,
   devices,
+  targets,
   installing,
   locked,
   onInstall,
@@ -27,13 +34,14 @@ export function InstallButton({
   shortId: string
   /** `undefined` while the page has no device list. */
   devices: readonly Device[] | undefined
+  targets: InstallTargets
   /** This build installs now. */
   installing: boolean
   /** An install of another build runs now. */
   locked: boolean
   onInstall: (device: Device) => void
 }) {
-  const choice = installChoice(build, devices)
+  const choice = rowInstall(build, targets, devices)
   if (choice.kind === 'refused') {
     return null
   }
@@ -65,7 +73,11 @@ export function InstallButton({
     )
   }
   const only = choice.kind === 'one' ? choice.device : undefined
-  return (
+  const label =
+    only === undefined
+      ? `Install the build ${shortId}`
+      : installOnLabel(shortId, only)
+  const button = (
     <Button
       variant="outlined"
       size={size}
@@ -73,14 +85,17 @@ export function InstallButton({
       leadingIcon={INSTALL_ICON}
       loading={installing}
       disabled={locked || choice.kind === 'no-device'}
-      accessibilityLabel={
-        only === undefined
-          ? `Install the build ${shortId}`
-          : `Install the build ${shortId} on ${deviceLabel(only)}`
-      }
+      accessibilityLabel={label}
       onPress={only === undefined ? undefined : () => onInstall(only)}
     >
       Install
     </Button>
+  )
+  return only === undefined ? (
+    button
+  ) : (
+    <Tooltip side="top" align="end" anchor={button}>
+      {label}
+    </Tooltip>
   )
 }
