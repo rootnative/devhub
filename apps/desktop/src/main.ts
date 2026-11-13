@@ -10,6 +10,7 @@ import { desktopPageUrl } from './announcement'
 import { THEME_COOKIE, frameOptions, themeSource } from './chrome'
 import { devhubBin, startUiChild, type UiChild } from './child'
 import { decideNavigation } from './navigation'
+import { childEnv } from './shell-env'
 
 app.enableSandbox()
 
@@ -41,8 +42,13 @@ app.on('before-quit', (event) => {
 })
 
 async function start(): Promise<void> {
-  await followThemeChoice()
-  child = startUiChild(devhubBin(), process.env)
+  const [env] = await Promise.all([
+    childEnv(process.platform, process.env, (line) =>
+      process.stderr.write(`${line}\n`),
+    ),
+    followThemeChoice(),
+  ])
+  child = startUiChild(devhubBin(), env)
   let url: string
   try {
     url = (await child.announcement).url
