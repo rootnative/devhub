@@ -59,7 +59,9 @@ notes name each one.
   Details shows the message of a project or a build that failed.
 - The `devhub ui` page has an install target for each platform: one
   Android emulator or device, and one iOS simulator. The toolbar names
-  each target, and a menu there changes it. Install on a build then
+  each target, and a menu there changes it. The menu shows the target of
+  each platform as selected, and a screen reader hears which device is
+  the target. Install on a build then
   installs on the target of its platform with one click, and its tooltip
   names the device. When only one device of a platform is ready, it is
   the target. The sidebar marks each target.

@@ -169,15 +169,11 @@ export const ROW_INTERVAL = 18
 /** The delay between two check results, in ms. They arrive one by one. */
 export const CHECK_INTERVAL = 70
 
-/**
- * The selection mark of the sidebar: a spring for the move, and a short fade
- * for the mark that starts hidden.
- */
+/** The move of the selection mark of the sidebar. */
 export const HIGHLIGHT_TRANSITION = {
   type: 'spring',
   tension: 420,
   friction: 36,
-  opacity: { type: 'timing', duration: 90 },
 } as const
 
 /**

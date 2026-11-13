@@ -159,6 +159,7 @@ export function TargetPicker({
               leadingIcon={
                 <PlatformIcon platform={item.device.platform} size={16} />
               }
+              selected={item.target}
               trailingIcon={item.target ? 'check' : undefined}
               trailingText={item.state}
               disabled={item.state !== undefined}

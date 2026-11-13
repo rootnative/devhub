@@ -316,14 +316,10 @@ function SideRow({
         },
       ]}
     >
-      {/* First, so the row content draws over it. On web, the move starts
-          one frame after the mark first draws, so the mark starts hidden:
-          else it shows on the new row for one frame, then jumps back. */}
+      {/* First, so the row content draws over it. */}
       {moving && (
         <Motion.View
           layoutId={highlight}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
           transition={HIGHLIGHT_TRANSITION}
           style={[
             StyleSheet.absoluteFill,
