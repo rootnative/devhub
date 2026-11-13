@@ -1,0 +1,68 @@
+name: Desktop package
+
+# The packages of the desktop app. The maintainer's Mac does not build, so
+# CI makes them. A package has no Developer ID yet, so the workflow runs only
+# by hand, and each package goes to the run as an artifact, not to a
+# release.
+on:
+  workflow_dispatch:
+
+# The token only reads the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      # `cache: pnpm` is set on purpose. setup-node v6 and later cache
+      # automatically for npm only, so pnpm needs the explicit input.
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+
+      # electron-builder downloads its own Electron for each arch, so the
+      # install script of electron has nothing to do.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+      # Builds the page, the CLI, and the app, and then packages the app.
+      # electron-builder adds BUILD_NUMBER to the bundle version, so About
+      # DevHub shows the run that made the package.
+      - name: Package
+        run: pnpm run package:desktop
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+
+      # The log shows the fuses of each package. RunAsNode must be Disabled,
+      # because no other process may use the app as a Node runtime.
+      - name: Read the fuses
+        run: |
+          for app in apps/desktop/out/mac*/DevHub.app; do
+            echo "$app"
+            npx --yes @electron/fuses@2.1.3 read --app "$app"
+          done
+
+      - name: Upload the packages
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: devhub-macos-${{ github.sha }}
+          path: apps/desktop/out/*.zip
+          if-no-files-found: error
+          retention-days: 14

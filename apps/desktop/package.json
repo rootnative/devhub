@@ -8,10 +8,11 @@
   "scripts": {
     "build": "tsup",
     "start": "node scripts/start.mjs",
+    "package": "electron-builder --publish never",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
-    "clean": "node -e \"for (const p of ['dist', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
+    "clean": "node -e \"for (const p of ['dist', 'out', '.turbo']) require('node:fs').rmSync(p, { recursive: true, force: true })\""
   },
   "dependencies": {
     "@rootnative/devhub": "workspace:*"
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^22.20.2",
     "electron": "44.9.1",
+    "electron-builder": "26.18.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

@@ -1,0 +1,51 @@
+# The macOS package of the app, with no Developer ID. The "Desktop package"
+# workflow makes it, after the page, the CLI, and the app are built.
+appId: io.github.rootnative.devhub
+productName: DevHub
+copyright: Copyright © 2026 Root Native
+
+directories:
+  # tsup writes the main process to dist/, which is also the default output
+  # of electron-builder.
+  output: out
+
+files:
+  - dist/**/*
+
+# The app has no native module.
+npmRebuild: false
+
+# The only production dependency is @rootnative/devhub. Its bin runs in a
+# utility process, serves the page from dist/ui, and starts eas and npx, so
+# the bin and its dependencies stay real files next to app.asar.
+asarUnpack:
+  - node_modules/**/*
+
+# The fuses of the Electron security checklist. The child is a utility
+# process, so the app never needs to run as plain Node.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: false
+  # The only cookie is the theme choice. With an ad-hoc signature, each new
+  # build is a new app for the keychain, and macOS can ask for access again.
+  enableCookieEncryption: false
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  artifactName: ${productName}-${version}-${arch}-mac.${ext}
+  # An ad-hoc signature is the minimum that Apple silicon runs, and it must
+  # come after the fuses change the binary. With an ad-hoc signature, the
+  # hardened runtime rejects the Electron framework, and with no Developer
+  # ID there is no notarization.
+  identity: "-"
+  hardenedRuntime: false
+  notarize: false

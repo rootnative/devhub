@@ -2,16 +2,19 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { utilityProcess, type UtilityProcess } from 'electron'
 import { readAnnouncement, type UiAnnouncement } from './announcement'
+import { unpackedPath } from './unpacked'
 
 /**
  * The `devhub` bin of the `@rootnative/devhub` that the app bundles. The
  * app never uses a global `devhub`, because a different version can give
- * different JSON.
+ * different JSON. In the package, the bin runs from real files, so the
+ * child, its page files, and the `eas` that it starts do not depend on
+ * the archive support of Electron.
  */
 export function devhubBin(): string {
   const require = createRequire(import.meta.url)
   const packageJson = require.resolve('@rootnative/devhub/package.json')
-  return path.join(path.dirname(packageJson), 'dist', 'bin.js')
+  return unpackedPath(path.join(path.dirname(packageJson), 'dist', 'bin.js'))
 }
 
 export type UiChild = {
