@@ -35,7 +35,7 @@ export type UiServer = {
 const MAX_BODY_BYTES = 64 * 1024
 
 // The server sends no CORS headers, so a page of another origin cannot read
-// a response. react-native-web writes its styles into <style> elements at
+// a response. The web runtime writes its styles into <style> elements at
 // run time and supports no nonce, so the page needs 'unsafe-inline' for
 // styles. Scripts stay 'self'.
 const SECURITY_HEADERS: OutgoingHttpHeaders = {
