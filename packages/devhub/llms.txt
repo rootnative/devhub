@@ -587,8 +587,7 @@ Rules:
 ## Core API
 
 `import { listBuilds } from '@rootnative/devhub'`. The package is ESM only,
-for Node. The types are in `dist/index.d.ts`. The API can change in each
-version before `1.0.0`.
+for Node. The types are in `dist/index.d.ts`.
 
 Functions, classes, and constants: ADB_MISSING, ANDROID_ABIS,
 BUILD_LIST_PAGE_SIZE, DeviceError, EAS_ON_PATH, EAS_WITH_NPX, EasCliError,
