@@ -6,7 +6,7 @@ import { StyleSheet, View, type ViewStyle } from 'react-native'
 import { TITLE_BAR_HEIGHT, type Host } from '../logic/host'
 import { Mark } from './Mark'
 
-// react-native-web writes these keys into the CSS class of the style, but
+// The web runtime writes these keys into the CSS class of the style, but
 // the React Native types do not have them. Electron reads app-region for the
 // drag region of the window. The titlebar-area variables of the Window
 // Controls Overlay give the space of the window buttons. A browser, and

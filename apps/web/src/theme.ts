@@ -76,7 +76,7 @@ export const MONO_FONT =
 
 /**
  * For an ID or a path with no space to break at, such as a simulator UDID or
- * the store path: it wraps at any character. react-native-web passes
+ * the store path: it wraps at any character. The web runtime passes
  * `wordBreak` to the browser, but the React Native type does not have it.
  */
 export const MONO_WRAP = {
