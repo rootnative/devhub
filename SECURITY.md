@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-DevHub is before `1.0.0`. Only the latest release gets security fixes.
+Only the latest release gets security fixes.
 
 | Version | Supported |
 | --- | --- |

@@ -171,7 +171,6 @@ Rules:
 ## Core API
 
 `import { listBuilds } from '@rootnative/devhub'`. The package is ESM only,
-for Node. The types are in `dist/index.d.ts`. The API can change in each
-version before `1.0.0`.
+for Node. The types are in `dist/index.d.ts`.
 
 {{exports}}
