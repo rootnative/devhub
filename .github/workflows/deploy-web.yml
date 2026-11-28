@@ -18,25 +18,25 @@ on:
       - ".github/workflows/deploy-web.yml"
   workflow_dispatch:
 
-# deploy-pages needs `pages` and `id-token`. Nothing here writes to the
-# repository.
+# Only the deploy job gets `pages` and `id-token`, which deploy-pages needs.
+# Nothing here writes to the repository.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # One deploy at a time. A newer push makes the older run worthless.
 concurrency:
   group: pages
   cancel-in-progress: true
 
+# Two jobs, as in the Pages example of GitHub. In one job, the deploy step
+# asked for the artifact about 2 seconds after the upload, and GitHub
+# sometimes listed none ("Found 0 artifact(s)"), so the deploy failed after a
+# good build. The deploy job starts on a new runner after the build job ends,
+# some seconds later.
 jobs:
-  deploy:
-    name: Build and deploy to GitHub Pages
+  build:
+    name: Build the docs site
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +67,19 @@ jobs:
         with:
           path: docs/build
 
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
