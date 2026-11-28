@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('expo/metro-config')
+const { withRootNative } = require('@rootnative/web-expo/metro.cjs')
 const path = require('path')
 
 const projectRoot = __dirname
@@ -13,4 +14,4 @@ config.resolver.nodeModulesPaths = [
 ]
 config.resolver.disableHierarchicalLookup = true
 
-module.exports = config
+module.exports = withRootNative(config)
